@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Portal de Utilidades</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏗</text></svg>">
 <style>
 :root {
   --navy: #1a2744;
@@ -19,7 +20,6 @@
   --g5: #4a5568;
   --text: #1e2a3a;
   --accent: #e8a020;
-  --green: #27a85a;
   --sh: 0 2px 12px rgba(26,39,68,.10);
   --sh-lg: 0 8px 32px rgba(26,39,68,.14);
   --sh-hover: 0 16px 48px rgba(26,39,68,.20);
@@ -44,6 +44,9 @@ body {
   padding: 0 32px;
   box-shadow: var(--sh);
   gap: 14px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 .topbar-logo {
   width: 36px;
@@ -55,66 +58,49 @@ body {
   align-items: center;
   justify-content: center;
   font-size: 18px;
+  flex-shrink: 0;
 }
-.topbar-title {
-  color: #fff;
-  font-size: 16px;
-  font-weight: 700;
-  letter-spacing: .01em;
-}
-.topbar-sub {
-  color: var(--light);
-  font-size: 12px;
-  font-weight: 400;
-  margin-left: 2px;
-}
+.topbar-text { display: flex; flex-direction: column; gap: 1px; }
+.topbar-title { color: #fff; font-size: 15px; font-weight: 700; line-height: 1.2; }
+.topbar-sub { color: var(--light); font-size: 11px; font-weight: 400; }
 .topbar-space { flex: 1; }
-.topbar-date {
-  color: rgba(255,255,255,.45);
-  font-size: 12px;
-}
+.topbar-date { color: rgba(255,255,255,.4); font-size: 12px; }
 
-/* HERO */
-.hero {
+/* HEADER */
+.page-header {
   background: linear-gradient(135deg, var(--navy) 0%, var(--blue) 100%);
-  padding: 56px 32px 52px;
-  text-align: center;
+  padding: 32px 32px 28px;
   position: relative;
   overflow: hidden;
 }
-.hero::before {
+.page-header::before {
   content: '';
   position: absolute;
   inset: 0;
   background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
 }
-.hero-content { position: relative; }
-.hero h1 {
-  color: #fff;
-  font-size: 32px;
-  font-weight: 700;
-  margin-bottom: 10px;
-  letter-spacing: -.01em;
-}
-.hero p {
-  color: rgba(255,255,255,.65);
-  font-size: 15px;
-  max-width: 480px;
+.page-header-inner {
+  position: relative;
+  max-width: 1100px;
   margin: 0 auto;
-  line-height: 1.6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
 }
-.hero-badge {
-  display: inline-block;
+.page-header h1 { color: #fff; font-size: 22px; font-weight: 700; letter-spacing: -.01em; }
+.page-header p { color: rgba(255,255,255,.6); font-size: 13px; margin-top: 4px; }
+.header-count {
   background: rgba(255,255,255,.12);
-  border: 1px solid rgba(255,255,255,.2);
-  color: rgba(255,255,255,.8);
-  font-size: 11px;
+  border: 1px solid rgba(255,255,255,.18);
+  color: rgba(255,255,255,.85);
+  font-size: 12px;
   font-weight: 600;
-  padding: 4px 12px;
+  padding: 6px 14px;
   border-radius: 20px;
-  margin-bottom: 18px;
-  letter-spacing: .06em;
-  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* MAIN */
@@ -123,7 +109,7 @@ body {
   max-width: 1100px;
   width: 100%;
   margin: 0 auto;
-  padding: 40px 32px 60px;
+  padding: 32px 32px 60px;
 }
 .section-label {
   font-size: 11px;
@@ -143,10 +129,10 @@ body {
   background: var(--g2);
 }
 
-/* GRID TOOLS */
+/* GRID */
 .tools-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
 }
 
@@ -155,24 +141,28 @@ body {
   background: #fff;
   border-radius: var(--r);
   box-shadow: var(--sh);
-  padding: 24px;
+  padding: 22px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  cursor: pointer;
+  gap: 12px;
   text-decoration: none;
   color: inherit;
   border: 1px solid var(--g2);
-  transition: all .2s;
+  transition: transform .2s, box-shadow .2s, border-color .2s;
   position: relative;
   overflow: hidden;
+  opacity: 0;
+  transform: translateY(16px);
+}
+.tool-card.visible {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity .35s ease, transform .35s ease, box-shadow .2s, border-color .2s;
 }
 .tool-card::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+  top: 0; left: 0; right: 0;
   height: 3px;
   background: var(--blue);
   transform: scaleX(0);
@@ -184,93 +174,93 @@ body {
   transform: translateY(-3px);
   border-color: var(--pale);
 }
-.tool-card:hover::before {
-  transform: scaleX(1);
-}
+.tool-card:hover::before { transform: scaleX(1); }
 
+.tool-top { display: flex; align-items: flex-start; gap: 14px; }
 .tool-icon {
-  width: 48px;
-  height: 48px;
-  background: var(--palest);
+  width: 46px; height: 46px;
+  background: var(--pale);
   border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 22px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
   flex-shrink: 0;
 }
-.tool-icon.blue { background: var(--pale); }
 .tool-icon.green { background: #e8f8ef; }
 .tool-icon.amber { background: #fef3e2; }
+.tool-name { font-size: 14px; font-weight: 700; color: var(--navy); line-height: 1.3; }
+.tool-desc { font-size: 12px; color: var(--g5); line-height: 1.55; margin-top: 3px; }
 
-.tool-info { flex: 1; }
-.tool-name {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--navy);
-  margin-bottom: 5px;
-  line-height: 1.3;
+.tool-caps {
+  display: flex; flex-wrap: wrap; gap: 5px;
+  padding-top: 2px;
 }
-.tool-desc {
-  font-size: 12px;
-  color: var(--g5);
-  line-height: 1.5;
+.cap {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--blue);
+  background: var(--palest);
+  border: 1px solid var(--g2);
+  padding: 2px 8px;
+  border-radius: 8px;
 }
 
 .tool-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-top: 1px solid var(--g1);
+  display: flex; align-items: center; justify-content: space-between;
+  border-top: 1px solid var(--g2);
   padding-top: 12px;
   margin-top: 2px;
 }
 .tool-tag {
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
   letter-spacing: .06em;
-  background: var(--g1);
-  color: var(--g4);
-  padding: 3px 8px;
-  border-radius: 10px;
+  background: var(--pale); color: var(--blue);
+  padding: 3px 8px; border-radius: 10px;
 }
-.tool-tag.blue { background: var(--pale); color: var(--blue); }
-.tool-arrow {
-  color: var(--mid);
-  font-size: 16px;
-  transition: transform .2s;
-}
+.tool-tag.green { background: #e8f8ef; color: #1e7a42; }
+.tool-arrow { color: var(--mid); font-size: 16px; transition: transform .2s; }
 .tool-card:hover .tool-arrow { transform: translateX(4px); }
 
-/* CARD EM BREVE */
-.tool-card.soon {
+/* CARD NOVO */
+.add-card {
+  background: transparent;
+  border-radius: var(--r);
+  border: 2px dashed var(--g3);
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 160px;
+  opacity: 0;
+  transform: translateY(16px);
   cursor: default;
-  opacity: .6;
 }
-.tool-card.soon:hover {
-  transform: none;
-  box-shadow: var(--sh);
+.add-card.visible {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity .35s ease .15s, transform .35s ease .15s;
 }
-.tool-card.soon::before { display: none; }
-.soon-badge {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .06em;
-  background: var(--g2);
-  color: var(--g4);
-  padding: 3px 8px;
-  border-radius: 10px;
-}
+.add-icon { font-size: 24px; opacity: .3; }
+.add-text { font-size: 12px; color: var(--g4); font-weight: 500; }
 
 /* FOOTER */
 footer {
   background: var(--navy);
-  color: rgba(255,255,255,.35);
+  color: rgba(255,255,255,.3);
   font-size: 11px;
   text-align: center;
-  padding: 16px;
+  padding: 14px;
+}
+
+/* MOBILE */
+@media (max-width: 600px) {
+  .topbar { padding: 0 16px; }
+  .page-header { padding: 24px 16px 20px; }
+  .page-header h1 { font-size: 18px; }
+  .main { padding: 24px 16px 48px; }
+  .tools-grid { grid-template-columns: 1fr; }
+  .header-count { display: none; }
 }
 
 ::-webkit-scrollbar { width: 6px; }
@@ -281,48 +271,53 @@ footer {
 
 <div class="topbar">
   <div class="topbar-logo">🏗</div>
-  <div>
+  <div class="topbar-text">
     <span class="topbar-title">Portal de Utilidades</span>
+    <span class="topbar-sub">Obras &amp; Planejamento</span>
   </div>
   <div class="topbar-space"></div>
   <div class="topbar-date" id="topDate"></div>
 </div>
 
-<div class="hero">
-  <div class="hero-content">
-    <div class="hero-badge">Ferramentas Internas</div>
-    <h1>Portal de Utilidades</h1>
-    <p>Acesse as ferramentas de gestão, planejamento e controle de obras em um só lugar.</p>
+<div class="page-header">
+  <div class="page-header-inner">
+    <div>
+      <h1>Ferramentas Internas</h1>
+      <p>Acesse as ferramentas de gestão, planejamento e controle de obras.</p>
+    </div>
+    <div class="header-count" id="toolCount"></div>
   </div>
 </div>
 
 <div class="main">
 
-  <div class="section-label">Ferramentas disponíveis</div>
+  <div class="section-label">Disponíveis</div>
 
-  <div class="tools-grid">
+  <div class="tools-grid" id="toolsGrid">
 
     <a class="tool-card" href="MONTAGEM DE PROGRAMAÇÃO SEMANAL.html">
-      <div class="tool-icon blue">📅</div>
-      <div class="tool-info">
-        <div class="tool-name">Programação Semanal de Obras</div>
-        <div class="tool-desc">Gere, visualize e exporte programações semanais (PPC) com Gantt por semana, controle de feriados e múltiplas obras.</div>
+      <div class="tool-top">
+        <div class="tool-icon">📅</div>
+        <div>
+          <div class="tool-name">Programação Semanal de Obras</div>
+          <div class="tool-desc">Gere e exporte programações semanais (PPC) com Gantt por semana, controle de feriados e configuração de obra.</div>
+        </div>
+      </div>
+      <div class="tool-caps">
+        <span class="cap">Upload Excel</span>
+        <span class="cap">Gantt</span>
+        <span class="cap">Feriados</span>
+        <span class="cap">Exportar .xlsx</span>
       </div>
       <div class="tool-footer">
-        <span class="tool-tag blue">Planejamento</span>
+        <span class="tool-tag">Planejamento</span>
         <span class="tool-arrow">→</span>
       </div>
     </a>
 
-    <div class="tool-card soon">
-      <div class="tool-icon">📊</div>
-      <div class="tool-info">
-        <div class="tool-name">Em breve...</div>
-        <div class="tool-desc">Novas ferramentas serão adicionadas aqui conforme o portal for crescendo.</div>
-      </div>
-      <div class="tool-footer">
-        <span class="soon-badge">Em breve</span>
-      </div>
+    <div class="add-card">
+      <div class="add-icon">＋</div>
+      <div class="add-text">Novas ferramentas em breve</div>
     </div>
 
   </div>
@@ -334,11 +329,29 @@ footer {
 </footer>
 
 <script>
+  // Data na topbar
   const d = new Date();
   const dias = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
   const meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
   document.getElementById('topDate').textContent =
     `${dias[d.getDay()]}, ${d.getDate()} ${meses[d.getMonth()]} ${d.getFullYear()}`;
+
+  // Contador de ferramentas
+  const total = document.querySelectorAll('#toolsGrid .tool-card').length;
+  document.getElementById('toolCount').textContent =
+    `${total} ferramenta${total !== 1 ? 's' : ''} disponível${total !== 1 ? 'is' : ''}`;
+
+  // Animação de entrada
+  const targets = document.querySelectorAll('.tool-card, .add-card');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) {
+        setTimeout(() => e.target.classList.add('visible'), i * 80);
+        obs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1 });
+  targets.forEach(el => obs.observe(el));
 </script>
 
 </body>

@@ -502,12 +502,17 @@ function nomeFeriado(d){
 // ── PROCESSAR ─────────────────────────────────────────────
 function processar(){
   const c=S.cols;
+  const seen=new Set();
   S.proc=S.raw.map((row,i)=>{
     const ip=pd(row[c.iniPlan]),fp=pd(row[c.fimPlan]),ir=pd(row[c.iniReal]);
     if(!ip||!fp||!row[c.atividade])return null;
     const sems=S.semanas.filter(s=>ip<=s.fim&&fp>=s.ini).map(s=>s.nome);
     return{_i:i,codigo:row[c.codigo]||'',unidade:row[c.unidade]||'',local:row[c.local]||'',atividade:row[c.atividade]||'',ip,fp,ir,sems};
-  }).filter(Boolean);
+  }).filter(Boolean).filter(r=>{
+    const k=[r.unidade,r.local,r.atividade,dKey(r.ip),dKey(r.fp),r.ir?dKey(r.ir):''].join('|');
+    if(seen.has(k))return false;
+    seen.add(k);return true;
+  });
   S.semanas.forEach(s=>s.count=S.proc.filter(r=>r.sems.includes(s.nome)).length);
   renderSems();atuFiltros();filtrar();atuStatus();
 }
@@ -538,8 +543,9 @@ function addSemana(){
   S.semanas.push({nome:`SEMANA ${S.semanas.length+1}`,ini,fim,count:0});
   processar();
 }
-function delSem(i){S.semanas.splice(i,1);S.semanas.forEach((s,j)=>s.nome=`SEMANA ${j+1}`);processar();}
+function delSem(i){S.semanas.splice(i,1);processar();}
 function editSem(i,campo,v){const d=pdi(v);if(d)S.semanas[i][campo]=d;processar();}
+function editSemNome(i,v){if(v.trim())S.semanas[i].nome=v.trim();processar();}
 function renderSems(){
   const el=document.getElementById('semList');
   if(!S.semanas.length){el.innerHTML='<div style="font-size:11px;color:var(--g4);text-align:center;padding:6px 0">Nenhuma semana</div>';return;}
@@ -547,6 +553,7 @@ function renderSems(){
     <div class="sem-item">
       <span class="sem-badge">S${i+1}</span>
       <div class="sem-dates">
+        <input type="text" value="${s.nome.replace(/"/g,'&quot;')}" placeholder="Nome da aba" style="font-size:11px;font-weight:600;color:var(--navy);padding:3px 6px;border:1px solid var(--g2);border-radius:4px" onchange="editSemNome(${i},this.value)">
         <input type="date" value="${iso(s.ini)}" onchange="editSem(${i},'ini',this.value)">
         <input type="date" value="${iso(s.fim)}" onchange="editSem(${i},'fim',this.value)">
       </div>
@@ -731,7 +738,8 @@ async function exportarExcel(){
       // Colunas de dados começam em 4 (D)
       const DC=1; // primeira coluna de dados = A (sem cols de logo)
 
-      const ws=wb.addWorksheet(sem.nome.replace('SEMANA','SEM'),{
+      const wsNome=sem.nome.replace(/SEMANA/gi,'SEM').substring(0,31);
+      const ws=wb.addWorksheet(wsNome,{
         pageSetup:{paperSize:9,orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0},
         views:[{state:'frozen',xSplit:0,ySplit:5}]
       });
@@ -810,7 +818,7 @@ async function exportarExcel(){
         const nFer=isFer?nomeFeriado(dia):'';
         const bgDia=(isFds||isFer)?CL.grayFds:CL.pale;
         const cell=ws.getCell(5,DC+DATA_COLS+d);
-        cell.value=`${String(dia.getDate()).padStart(2,'0')}/${String(dia.getMonth()+1).padStart(2,'0')}\n${nmDia}${isFer?'\n🎉':isFds?'\n':'\n'}`;
+        cell.value=`${String(dia.getDate()).padStart(2,'0')}/${String(dia.getMonth()+1).padStart(2,'0')}\n${nmDia}${isFer?' 🎉':''}`;
         apply(cell,{bg:bgDia,fg:CL.navy,bold:true,sz:8,hAlign:'center',vAlign:'middle',wrap:true});
         if(nFer) cell.note={texts:[{text:nFer,font:{size:9}}]};
       }
@@ -902,7 +910,9 @@ async function exportarExcel(){
     const buf=await wb.xlsx.writeBuffer();
     const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
     const ts=new Date();
-    const nome=`PPC_${S.obraNome.replace(/[^a-zA-Z0-9]/g,'_')}_${ts.getFullYear()}${String(ts.getMonth()+1).padStart(2,'0')}${String(ts.getDate()).padStart(2,'0')}.xlsx`;
+    const obraSlug=(S.obraNome==='Obra não configurada'?'SEM-OBRA':S.obraNome).replace(/[/\\?%*:|"<>]/g,'-').trim();
+    const ddmmaa=`${String(ts.getDate()).padStart(2,'0')}.${String(ts.getMonth()+1).padStart(2,'0')}.${String(ts.getFullYear()).slice(2)}`;
+    const nome=`PROGRAMAÇÃO - ${obraSlug} - ${ddmmaa}.xlsx`;
     const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=nome;a.click();
     toast(`✔ Exportado: ${nome}`);
   }catch(e){
