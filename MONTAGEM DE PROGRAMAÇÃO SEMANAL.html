@@ -790,6 +790,9 @@ async function exportarExcel(){
         pageSetup:{paperSize:9,orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0},
         views:[{state:'frozen',xSplit:0,ySplit:5}]
       });
+      ws.pageSetup.printTitlesRow='1:5';
+      ws.pageSetup.margins={left:0.4,right:0.4,top:0.5,bottom:0.5,header:0.2,footer:0.2};
+      ws.headerFooter.oddFooter=`&L&8${S.obraNome}&C&8Página &P de &N&R&8&A`;
 
       // Larguras
       // Cols A-C: logo — largura total ~34 chars para acomodar logo bem
@@ -850,7 +853,7 @@ async function exportarExcel(){
       // GANTT header
       if(nDias>1) ws.mergeCells(4,DC+DATA_COLS,4,totalCols);
       const gh=ws.getCell(4,DC+DATA_COLS);
-      gh.value='G A N T T';
+      gh.value='ACOMPANHAMENTO DIÁRIO';
       apply(gh,{bg:CL.navy,fg:CL.white,bold:true,sz:9,hAlign:'center',vAlign:'middle'});
       for(let d=1;d<nDias;d++){apply(ws.getCell(4,DC+DATA_COLS+d),{bg:CL.navy,fg:CL.white});}
 
