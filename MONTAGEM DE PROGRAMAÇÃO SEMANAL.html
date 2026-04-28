@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Programação Semanal </title>
+<title>Programação Semanal</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
 <style>
@@ -12,7 +13,7 @@
   --pale:#dce8f8;--palest:#f0f5fc;--white:#fff;
   --g1:#f4f6fa;--g2:#e8edf5;--g3:#c5cedd;--g4:#8a97ab;--g5:#4a5568;
   --text:#1e2a3a;--accent:#e8a020;--green:#27a85a;--red:#d93025;
-  --gantt:#2a4a8e;
+  --gantt:#5B9BD5;
   --sh:0 2px 12px rgba(26,39,68,.10);--sh-lg:0 8px 32px rgba(26,39,68,.14);
   --r:10px;--rs:6px;
 }
@@ -54,7 +55,11 @@ textarea{resize:vertical;min-height:72px;font-family:monospace;font-size:12px}
 .upload-icon{font-size:24px;margin-bottom:5px}
 .upload-text{font-size:13px;color:var(--g5)}
 .upload-sub{font-size:11px;color:var(--g4);margin-top:3px}
-.sem-item{border:1px solid var(--g2);border-radius:var(--rs);padding:8px 10px;margin-bottom:6px;background:var(--palest);display:flex;align-items:flex-start;gap:6px}
+.sem-item{border:1px solid var(--g2);border-radius:var(--rs);padding:8px 10px;margin-bottom:6px;background:var(--palest);display:flex;align-items:flex-start;gap:6px;cursor:grab}
+.sem-item.dragging{opacity:.35;cursor:grabbing}
+.sem-item.drag-over{border-color:var(--mid);background:var(--pale);box-shadow:0 0 0 2px rgba(61,106,191,.15)}
+.sem-drag{color:var(--g3);font-size:15px;cursor:grab;flex-shrink:0;padding:2px 0;user-select:none;line-height:1}
+.sem-drag:hover{color:var(--g4)}
 .sem-badge{background:var(--navy);color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:12px;white-space:nowrap;margin-top:2px;flex-shrink:0}
 .sem-dates{flex:1;display:flex;flex-direction:column;gap:3px}
 .sem-dates input{padding:3px 6px;font-size:11px;border:1px solid var(--g2);border-radius:4px}
@@ -181,15 +186,23 @@ input[type=color]{width:30px;height:30px;padding:1px;border:1px solid var(--g2);
         <!-- preenchido por JS -->
       </div>
       <div class="color-custom-wrap" style="margin-top:8px">
-        <input type="color" id="ganttColorPicker" value="#2a4a8e" oninput="setGanttColor(this.value,true)">
+        <input type="color" id="ganttColorPicker" value="#5B9BD5" oninput="setGanttColor(this.value,true)">
         <span style="font-size:12px;color:var(--g5)">Cor personalizada</span>
-        <span id="ganttColorHex" style="font-size:12px;font-weight:600;color:var(--navy);font-family:monospace">#2a4a8e</span>
+        <span id="ganttColorHex" style="font-size:12px;font-weight:600;color:var(--navy);font-family:monospace">#5B9BD5</span>
       </div>
       <!-- preview barra -->
       <div style="margin-top:10px;padding:10px 14px;background:var(--g1);border-radius:var(--rs);display:flex;align-items:center;gap:8px">
         <div id="ganttPreviewBar" style="height:18px;width:80px;border-radius:4px;background:var(--gantt)"></div>
         <span style="font-size:12px;color:var(--g5)">Preview da barra ativa</span>
       </div>
+    </div>
+
+    <div class="modal-row">
+      <div class="modal-label">Dias úteis da semana</div>
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:9px 12px;background:var(--g1);border-radius:var(--rs);font-size:13px;border:1px solid var(--g2)">
+        <input type="checkbox" id="mSabadoUtil" style="width:15px;height:15px;flex-shrink:0;cursor:pointer;accent-color:var(--blue)">
+        <span>Incluir sábado como dia útil no Gantt</span>
+      </label>
     </div>
 
     <div class="modal-footer">
@@ -298,12 +311,14 @@ const S={
   sortCol:null,sortDir:1,
   obraNome:'Obra não configurada',obraResp:'',
   logoDataURL:null,logoLinhas:2,
-  ganttColor:'#2a4a8e',
+  ganttColor:'#5B9BD5',
+  sabadoUtil:false,
 };
 const MESES={jan:0,fev:1,mar:2,abr:3,mai:4,jun:5,jul:6,ago:7,set:8,out:9,nov:10,dez:11};
 
 // ── PALETAS GANTT ─────────────────────────────────────────
 const PALETAS=[
+  {hex:'#5B9BD5',label:'Azul Claro'},
   {hex:'#2a4a8e',label:'Azul'},
   {hex:'#1a5276',label:'Azul Escuro'},
   {hex:'#27a85a',label:'Verde'},
@@ -311,7 +326,6 @@ const PALETAS=[
   {hex:'#d35400',label:'Laranja'},
   {hex:'#b7950b',label:'Dourado'},
   {hex:'#717d7e',label:'Cinza'},
-  {hex:'#1a2744',label:'Azul Navy'},
 ];
 
 function initPaletas(){
@@ -340,6 +354,7 @@ document.getElementById('logoBtn').onclick=abrirModal;
 function abrirModal(){
   document.getElementById('mNome').value=S.obraNome!=='Obra não configurada'?S.obraNome:'';
   document.getElementById('mResp').value=S.obraResp;
+  document.getElementById('mSabadoUtil').checked=S.sabadoUtil;
   document.getElementById('ganttColorPicker').value=S.ganttColor;
   document.getElementById('ganttColorHex').textContent=S.ganttColor;
   document.getElementById('ganttPreviewBar').style.background=S.ganttColor;
@@ -383,10 +398,11 @@ function salvarObra(){
   S.obraNome=document.getElementById('mNome').value.trim()||'Obra não configurada';
   S.obraResp=document.getElementById('mResp').value.trim();
   S.logoLinhas=parseInt(document.getElementById('logoLinhas').value)||2;
+  S.sabadoUtil=document.getElementById('mSabadoUtil').checked;
   document.getElementById('tObra').textContent=S.obraNome;
   document.getElementById('tResp').textContent=S.obraResp?`— ${S.obraResp}`:'';
   setGanttColor(document.getElementById('ganttColorPicker').value);
-  fecharModal();toast('Configurações salvas');
+  fecharModal();filtrar();toast('Configurações salvas');
 }
 
 // ── TABS ─────────────────────────────────────────────────
@@ -543,14 +559,45 @@ function addSemana(){
   S.semanas.push({nome:`SEMANA ${S.semanas.length+1}`,ini,fim,count:0});
   processar();
 }
+let _dragIdx=null;
 function delSem(i){S.semanas.splice(i,1);processar();}
 function editSem(i,campo,v){const d=pdi(v);if(d)S.semanas[i][campo]=d;processar();}
 function editSemNome(i,v){if(v.trim())S.semanas[i].nome=v.trim();processar();}
+
+function onSemDragStart(e,i){
+  _dragIdx=i;
+  e.dataTransfer.effectAllowed='move';
+  setTimeout(()=>e.target.closest('.sem-item').classList.add('dragging'),0);
+}
+function onSemDragOver(e,i){
+  e.preventDefault();
+  e.dataTransfer.dropEffect='move';
+  document.querySelectorAll('.sem-item').forEach((el,j)=>
+    el.classList.toggle('drag-over',j===i&&i!==_dragIdx));
+}
+function onSemDrop(e,i){
+  e.preventDefault();
+  if(_dragIdx===null||_dragIdx===i)return;
+  const moved=S.semanas.splice(_dragIdx,1)[0];
+  S.semanas.splice(i,0,moved);
+  processar();toast('Semanas reordenadas');
+}
+function onSemDragEnd(){
+  _dragIdx=null;
+  document.querySelectorAll('.sem-item').forEach(el=>
+    el.classList.remove('dragging','drag-over'));
+}
+
 function renderSems(){
   const el=document.getElementById('semList');
   if(!S.semanas.length){el.innerHTML='<div style="font-size:11px;color:var(--g4);text-align:center;padding:6px 0">Nenhuma semana</div>';return;}
   el.innerHTML=S.semanas.map((s,i)=>`
-    <div class="sem-item">
+    <div class="sem-item" draggable="true"
+      ondragstart="onSemDragStart(event,${i})"
+      ondragover="onSemDragOver(event,${i})"
+      ondrop="onSemDrop(event,${i})"
+      ondragend="onSemDragEnd()">
+      <span class="sem-drag" title="Arrastar para reordenar">⠿</span>
       <span class="sem-badge">S${i+1}</span>
       <div class="sem-dates">
         <input type="text" value="${s.nome.replace(/"/g,'&quot;')}" placeholder="Nome da aba" style="font-size:11px;font-weight:600;color:var(--navy);padding:3px 6px;border:1px solid var(--g2);border-radius:4px" onchange="editSemNome(${i},this.value)">
@@ -813,7 +860,7 @@ async function exportarExcel(){
         const dia=new Date(sem.ini);dia.setDate(dia.getDate()+d);
         const dw=dia.getDay();
         const nmDia=DIAS_NM[dw===0?6:dw-1];
-        const isFds=dw===0||dw===6;
+        const isFds=dw===0||(dw===6&&!S.sabadoUtil);
         const isFer=isFeriado(dia);
         const nFer=isFer?nomeFeriado(dia):'';
         const bgDia=(isFds||isFer)?CL.grayFds:CL.pale;
@@ -845,7 +892,7 @@ async function exportarExcel(){
         for(let d=0;d<nDias;d++){
           const dia=new Date(sem.ini);dia.setDate(dia.getDate()+d);
           const dw=dia.getDay();
-          const isFds=dw===0||dw===6;
+          const isFds=dw===0||(dw===6&&!S.sabadoUtil);
           const isFer=isFeriado(dia);
           const ativo=row.ip&&row.fp&&dia>=row.ip&&dia<=row.fp;
           let fillBg;
