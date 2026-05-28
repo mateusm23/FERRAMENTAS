@@ -4,6 +4,24 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Programação Semanal — Prevision</title>
+<style>
+  .prevision-badge {
+    background: #f3eefa; color: #6c3483;
+    border: 1px solid #d9c5f0;
+    font-size: 10px; font-weight: 700;
+    padding: 2px 8px; border-radius: 10px;
+    letter-spacing: .04em; text-transform: uppercase;
+    margin-left: 6px; vertical-align: middle;
+  }
+  .portal-back {
+    display:flex;align-items:center;gap:5px;
+    color:rgba(255,255,255,.5);font-size:11px;
+    text-decoration:none;padding:4px 9px;
+    border-radius:5px;border:1px solid rgba(255,255,255,.12);
+    transition:all .15s;margin-right:6px;white-space:nowrap;
+  }
+  .portal-back:hover{color:#fff;border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.07);}
+</style>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
@@ -134,12 +152,14 @@ input[type=color]{width:30px;height:30px;padding:1px;border:1px solid var(--g2);
 
 <!-- TOPBAR -->
 <div class="topbar">
+  <a class="portal-back" href="index.html">← Portal</a>
   <div class="t-logo" id="logoBtn" title="Configurar obra">
     <img id="tLogoImg" src="" style="display:none">
     <div class="t-logo-ph" id="tLogoPh">LOGO</div>
   </div>
   <div class="t-obra" id="obraBtn">
     <span id="tObra">Obra não configurada</span>
+    <span class="prevision-badge">Prevision</span>
     <small id="tResp"></small>
   </div>
   <div class="t-space"></div>
@@ -227,13 +247,13 @@ input[type=color]{width:30px;height:30px;padding:1px;border:1px solid var(--g2);
       <div class="upload-zone" id="dz" onclick="document.getElementById('fi').click()">
         <input type="file" id="fi" accept=".xlsx,.xls,.csv" onchange="handleFile(this.files[0])">
         <div class="upload-icon">📊</div>
-        <div class="upload-text">Clique ou arraste a planilha</div>
-        <div class="upload-sub">.xlsx · .xls · .csv</div>
+        <div class="upload-text">Clique ou arraste o export do Prevision</div>
+        <div class="upload-sub">.xlsx exportado via "Exportar cronograma"</div>
       </div>
     </div>
     <div id="pColar" style="display:none">
       <label class="label">Cole os dados (TSV / CSV):</label>
-      <textarea id="pasteArea" rows="5" placeholder="Unidade&#9;Local&#9;Atividade&#9;Início Plan.&#9;Fim Plan.&#9;Início Real"></textarea>
+      <textarea id="pasteArea" rows="5" placeholder="ID&#9;Pacote de trabalho&#9;Serviço&#9;Grupo de replicação&#9;Lote&#9;Parte&#9;Data de Início&#9;Data de Término..."></textarea>
       <button class="btn btn-primary btn-sm btn-fw mt-8" onclick="parsePaste()">▶ Processar</button>
     </div>
   </div>
@@ -431,7 +451,8 @@ function parseXLSX(buf){
   try{
     const wb=XLSX.read(buf,{type:'array',cellDates:true});
     const ws=wb.Sheets[wb.SheetNames[0]];
-    loadRows(XLSX.utils.sheet_to_json(ws,{raw:false,dateNF:'DD/MM/YYYY'}));
+    // Prevision exporta 3 linhas de metadados antes do cabeçalho real (linha 4)
+    loadRows(XLSX.utils.sheet_to_json(ws,{raw:false,dateNF:'DD/MM/YYYY',range:3}));
   }catch(e){toast('Erro: '+e.message,true);}
 }
 function parseCSV(txt){
@@ -457,13 +478,13 @@ function loadRows(rows){
 
 // ── COLUNAS ───────────────────────────────────────────────
 const HINTS={
-  codigo:['código','codigo','cod','code','item','id'],
-  unidade:['unidade','bloco','edificio','torre','frente'],
-  local:['local','pavimento','pavto','andar','setor'],
-  atividade:['atividade','servico','serviço','descricao','descrição'],
-  iniPlan:['início plan','inicio plan','ini plan','início planejado','inicio planejado','data ini','start plan'],
-  fimPlan:['fim plan','término plan','termino plan','fim planejado','término planejado','data fim','end plan'],
-  iniReal:['início real','inicio real','ini real','real start'],
+  codigo:  ['id','código','codigo','cod'],
+  unidade: ['grupo de replica','grupo de replic','grupo'],
+  local:   ['lote'],
+  atividade:['pacote de trabalho','tarefa','atividade','serviço','servico','descrição','descricao'],
+  iniPlan: ['data de in','início','inicio','ini plan','data ini'],
+  fimPlan: ['data de t','término','termino','fim plan','data fim'],
+  iniReal: ['início real','inicio real','ini real'],
 };
 function detectCols(hdrs){
   const hl=hdrs.map(h=>h.toLowerCase());
