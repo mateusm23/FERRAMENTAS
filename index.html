@@ -9,19 +9,20 @@
 @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500&display=swap');
 
 :root {
-  --navy:   #1a2744;
-  --blue:   #2a4a8e;
-  --mid:    #3d6abf;
-  --light:  #7ba3e0;
-  --pale:   #dce8f8;
-  --palest: #f0f5fc;
-  --g1:     #f4f6fa;
-  --g2:     #e8edf5;
-  --g3:     #c5cedd;
-  --g4:     #8a97ab;
-  --g5:     #4a5568;
-  --text:   #1e2a3a;
-  --green:  #0f9b6e;
+  --navy:    #1a2744;
+  --blue:    #2a4a8e;
+  --mid:     #3d6abf;
+  --pale:    #dce8f8;
+  --g1:      #f4f6fa;
+  --g2:      #e8edf5;
+  --g3:      #c5cedd;
+  --g4:      #8a97ab;
+  --g5:      #4a5568;
+  --text:    #1e2a3a;
+  --green:   #0f9b6e;
+  --purple:  #6c3483;
+  --purple-l:#f3eefa;
+  --purple-b:#d9c5f0;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -32,29 +33,52 @@ body { font-family: 'DM Sans', sans-serif; background: var(--g1); color: var(--t
   background: linear-gradient(135deg, var(--navy) 0%, #1e3a6e 100%);
   padding: 36px 32px 40px;
   text-align: center;
-  position: relative;
-  overflow: hidden;
+  position: relative; overflow: hidden;
 }
 .header::before {
   content: '';
   position: absolute; inset: 0;
-  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.025'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.025'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E");
 }
 .header-content { position: relative; }
 .header-icon { font-size: 36px; margin-bottom: 10px; }
-.header h1 {
-  font-family: 'Sora', sans-serif;
-  font-size: 26px; font-weight: 800;
-  color: #fff; letter-spacing: -.02em;
-  margin-bottom: 6px;
-}
+.header h1 { font-family: 'Sora', sans-serif; font-size: 26px; font-weight: 800; color: #fff; letter-spacing: -.02em; margin-bottom: 6px; }
 .header p { color: rgba(255,255,255,.5); font-size: 13px; }
 
 /* MAIN */
-.main { flex: 1; max-width: 800px; width: 100%; margin: 0 auto; padding: 32px 24px 40px; }
+.main { flex: 1; max-width: 860px; width: 100%; margin: 0 auto; padding: 36px 24px 40px; }
+
+/* SECTION */
+.section { margin-bottom: 36px; }
+.section-header {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 16px;
+}
+.section-badge {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-family: 'Sora', sans-serif;
+  font-size: 12px; font-weight: 700;
+  letter-spacing: .03em;
+  flex-shrink: 0;
+}
+.section-badge.agilean {
+  background: var(--pale); color: var(--blue);
+  border: 1px solid #b8d0f5;
+}
+.section-badge.prevision {
+  background: var(--purple-l); color: var(--purple);
+  border: 1px solid var(--purple-b);
+}
+.section-badge .dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: currentColor; flex-shrink: 0;
+}
+.section-line { flex: 1; height: 1px; background: var(--g2); }
 
 /* GRID */
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-bottom: 16px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
 
 /* TOOL CARD */
 .tool-card {
@@ -63,16 +87,18 @@ body { font-family: 'DM Sans', sans-serif; background: var(--g1); color: var(--t
   border: 1px solid var(--g2);
   box-shadow: 0 2px 12px rgba(26,39,68,.08);
   text-decoration: none; color: inherit;
-  display: flex; flex-direction: column;
-  overflow: hidden;
+  display: flex; flex-direction: column; overflow: hidden;
   opacity: 0; transform: translateY(16px);
   transition: transform .2s, box-shadow .2s, border-color .2s;
 }
 .tool-card.visible { opacity: 1; transform: translateY(0); transition: opacity .35s, transform .35s, box-shadow .2s, border-color .2s; }
 .tool-card:hover { transform: translateY(-4px); box-shadow: 0 10px 32px rgba(26,39,68,.14); border-color: var(--pale); }
+.tool-card.prevision-card:hover { border-color: var(--purple-b); }
 
-.card-strip { height: 3px; background: linear-gradient(90deg, var(--blue), var(--mid)); flex-shrink: 0; }
+.card-strip { height: 3px; flex-shrink: 0; }
+.card-strip.blue  { background: linear-gradient(90deg, var(--blue), var(--mid)); }
 .card-strip.green { background: linear-gradient(90deg, #0f9b6e, #27c98a); }
+.card-strip.purple { background: linear-gradient(90deg, #6c3483, #9b59b6); }
 
 .card-body { padding: 18px; flex: 1; }
 .card-icon-wrap { font-size: 28px; margin-bottom: 10px; }
@@ -87,29 +113,27 @@ body { font-family: 'DM Sans', sans-serif; background: var(--g1); color: var(--t
 }
 .card-tag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--g4); }
 .card-arrow { font-size: 15px; color: var(--mid); transition: transform .2s; }
+.prevision-card .card-arrow { color: var(--purple); }
 .tool-card:hover .card-arrow { transform: translateX(4px); }
 
 /* SOON CARD */
 .soon-card {
-  background: transparent;
-  border-radius: 14px;
+  background: transparent; border-radius: 14px;
   border: 2px dashed var(--g3);
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  gap: 6px; min-height: 160px;
+  gap: 6px; min-height: 150px;
   opacity: 0; transform: translateY(16px);
 }
 .soon-card.visible { opacity: 1; transform: translateY(0); transition: opacity .35s ease .1s, transform .35s ease .1s; }
-.soon-icon { font-size: 22px; opacity: .25; }
+.soon-icon { font-size: 20px; opacity: .2; }
 .soon-text { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--g3); }
 
 /* AUTHOR */
 .author {
-  max-width: 800px; margin: 0 auto;
+  max-width: 860px; margin: 0 auto;
   padding: 0 24px 32px;
-  text-align: center;
-  color: var(--g4);
-  font-size: 12px;
+  text-align: center; color: var(--g4); font-size: 12px;
   display: flex; align-items: center; justify-content: center; gap: 10px;
 }
 .author-divider { width: 1px; height: 12px; background: var(--g3); }
@@ -134,45 +158,83 @@ body { font-family: 'DM Sans', sans-serif; background: var(--g1); color: var(--t
 </div>
 
 <div class="main">
-  <div class="grid" id="grid">
 
-    <a class="tool-card" href="MONTAGEM DE PROGRAMAÇÃO SEMANAL.html">
-      <div class="card-strip"></div>
-      <div class="card-body">
-        <div class="card-icon-wrap">📅</div>
-        <div class="card-name">Programação Semanal</div>
-        <div class="card-desc">Gere e exporte cronogramas semanais com Gantt, feriados e exportação .xlsx.</div>
-      </div>
-      <div class="card-footer">
-        <span class="card-tag">Planejamento</span>
-        <span class="card-arrow">→</span>
-      </div>
-    </a>
-
-    <a class="tool-card" href="ANALISE DE PESO FINANCEIRO.html">
-      <div class="card-strip green"></div>
-      <div class="card-body">
-        <div class="card-icon-wrap">📊</div>
-        <div class="card-name">Análise de Peso Financeiro</div>
-        <div class="card-desc">Compare baseline vs. real do Agilean e calcule desvio global por macro etapa.</div>
-      </div>
-      <div class="card-footer">
-        <span class="card-tag">Controle</span>
-        <span class="card-arrow">→</span>
-      </div>
-    </a>
-
-    <div class="soon-card">
-      <div class="soon-icon">＋</div>
-      <div class="soon-text">Em breve</div>
+  <!-- AGILEAN -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-badge agilean"><div class="dot"></div> Agilean</div>
+      <div class="section-line"></div>
     </div>
+    <div class="grid">
 
-    <div class="soon-card">
-      <div class="soon-icon">＋</div>
-      <div class="soon-text">Em breve</div>
+      <a class="tool-card" href="MONTAGEM DE PROGRAMAÇÃO SEMANAL.html">
+        <div class="card-strip blue"></div>
+        <div class="card-body">
+          <div class="card-icon-wrap">📅</div>
+          <div class="card-name">Programação Semanal</div>
+          <div class="card-desc">Gere e exporte cronogramas semanais com Gantt, feriados e exportação .xlsx.</div>
+        </div>
+        <div class="card-footer">
+          <span class="card-tag">Planejamento</span>
+          <span class="card-arrow">→</span>
+        </div>
+      </a>
+
+      <a class="tool-card" href="ANALISE DE PESO FINANCEIRO.html">
+        <div class="card-strip green"></div>
+        <div class="card-body">
+          <div class="card-icon-wrap">📊</div>
+          <div class="card-name">Análise de Peso Financeiro</div>
+          <div class="card-desc">Compare baseline vs. real e calcule desvio global ponderado por macro etapa.</div>
+        </div>
+        <div class="card-footer">
+          <span class="card-tag">Controle</span>
+          <span class="card-arrow">→</span>
+        </div>
+      </a>
+
+      <div class="soon-card">
+        <div class="soon-icon">＋</div>
+        <div class="soon-text">Em breve</div>
+      </div>
+
     </div>
-
   </div>
+
+  <!-- PREVISION -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-badge prevision"><div class="dot"></div> Prevision</div>
+      <div class="section-line"></div>
+    </div>
+    <div class="grid">
+
+      <a class="tool-card prevision-card" href="PROGRAMACAO SEMANAL PREVISION.html">
+        <div class="card-strip purple"></div>
+        <div class="card-body">
+          <div class="card-icon-wrap">📅</div>
+          <div class="card-name">Programação Semanal</div>
+          <div class="card-desc">Gere e exporte cronogramas semanais a partir de dados exportados do Prevision.</div>
+        </div>
+        <div class="card-footer">
+          <span class="card-tag">Planejamento</span>
+          <span class="card-arrow">→</span>
+        </div>
+      </a>
+
+      <div class="soon-card">
+        <div class="soon-icon">＋</div>
+        <div class="soon-text">Em breve</div>
+      </div>
+
+      <div class="soon-card">
+        <div class="soon-icon">＋</div>
+        <div class="soon-text">Em breve</div>
+      </div>
+
+    </div>
+  </div>
+
 </div>
 
 <div class="author">
