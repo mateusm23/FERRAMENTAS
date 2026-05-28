@@ -106,6 +106,7 @@ tbody td{padding:7px 11px;white-space:nowrap}
 .badge-sem{display:inline-block;background:var(--pale);color:var(--blue);font-size:10px;font-weight:600;padding:2px 6px;border-radius:10px;margin:1px}
 .g-cell{width:13px;height:13px;border-radius:3px;display:inline-block;margin:0 1px;vertical-align:middle}
 .g-on{background:var(--gantt)}
+.g-critico{background:#e8a020}
 .g-off{background:var(--g2)}
 .g-fds{background:var(--g3)}
 .g-fer{background:#f5a623;opacity:.7}
@@ -303,10 +304,16 @@ input[type=color]{width:30px;height:30px;padding:1px;border:1px solid var(--g2);
 
   <div class="card" id="filterCard" style="display:none;padding:12px 18px">
     <div class="filter-row">
-      <input type="text" id="fG" placeholder="🔍 Buscar..." oninput="filtrar()" style="max-width:200px">
-      <select id="fU" onchange="filtrar()"><option value="">Todas as unidades</option></select>
-      <select id="fL" onchange="filtrar()"><option value="">Todos os locais</option></select>
+      <input type="text" id="fG" placeholder="🔍 Buscar..." oninput="filtrar()" style="max-width:180px">
+      <select id="fU" onchange="filtrar()"><option value="">Todos os grupos</option></select>
+      <select id="fL" onchange="filtrar()"><option value="">Todos os lotes</option></select>
+      <select id="fR" onchange="filtrar()"><option value="">Todos os responsáveis</option></select>
       <select id="fS" onchange="filtrar()"><option value="">Todas as semanas</option></select>
+      <select id="fC" onchange="filtrar()">
+        <option value="">Todos</option>
+        <option value="1">⚠ Somente crítico</option>
+        <option value="0">Não crítico</option>
+      </select>
       <button class="btn btn-ghost btn-sm" onclick="limparF()">✕</button>
     </div>
   </div>
@@ -478,13 +485,15 @@ function loadRows(rows){
 
 // ── COLUNAS ───────────────────────────────────────────────
 const HINTS={
-  codigo:  ['id','código','codigo','cod'],
-  unidade: ['grupo de replica','grupo de replic','grupo'],
-  local:   ['lote'],
-  atividade:['pacote de trabalho','tarefa','atividade','serviço','servico','descrição','descricao'],
-  iniPlan: ['data de in','início','inicio','ini plan','data ini'],
-  fimPlan: ['data de t','término','termino','fim plan','data fim'],
-  iniReal: ['início real','inicio real','ini real'],
+  codigo:   ['id'],
+  unidade:  ['grupo de replica','grupo de replic','grupo'],
+  local:    ['lote'],
+  atividade:['pacote de trabalho','tarefa'],
+  parte:    ['parte'],
+  caminhoC: ['caminho cr'],
+  resp:     ['respons'],
+  iniPlan:  ['data de in','início','inicio'],
+  fimPlan:  ['data de t','término','termino'],
 };
 function detectCols(hdrs){
   const hl=hdrs.map(h=>h.toLowerCase());
@@ -497,7 +506,7 @@ function detectCols(hdrs){
 }
 function renderColMap(){
   document.getElementById('colMapSec').style.display='';
-  const labels={codigo:'Código',unidade:'Unidade',local:'Local',atividade:'Atividade',iniPlan:'Início Plan.',fimPlan:'Fim Plan.',iniReal:'Início Real'};
+  const labels={codigo:'ID',unidade:'Grupo de Replicação',local:'Lote',atividade:'Pacote de Trabalho',parte:'Parte',caminhoC:'Caminho Crítico',resp:'Responsáveis',iniPlan:'Data de Início',fimPlan:'Data de Término'};
   document.getElementById('colMapFields').innerHTML=Object.entries(labels).map(([k,lb])=>`
     <div class="colmap-row">
       <div class="colmap-label">${lb}</div>
@@ -541,12 +550,18 @@ function processar(){
   const c=S.cols;
   const seen=new Set();
   S.proc=S.raw.map((row,i)=>{
-    const ip=pd(row[c.iniPlan]),fp=pd(row[c.fimPlan]),ir=pd(row[c.iniReal]);
+    const ip=pd(row[c.iniPlan]),fp=pd(row[c.fimPlan]);
     if(!ip||!fp||!row[c.atividade])return null;
+    const parte=String(row[c.parte]||'').trim().replace(/^-$/,'');
+    const ativBase=row[c.atividade]||'';
+    const atividade=parte?`${ativBase} · Parte ${parte}`:ativBase;
+    const critico=String(row[c.caminhoC]||'').trim().toLowerCase();
+    const isCritico=critico==='sim'||critico==='yes'||critico==='1'||critico==='crítico'||critico==='critico'||critico==='true';
+    const resp=String(row[c.resp]||'').trim().replace(/^-$/,'');
     const sems=S.semanas.filter(s=>ip<=s.fim&&fp>=s.ini).map(s=>s.nome);
-    return{_i:i,codigo:row[c.codigo]||'',unidade:row[c.unidade]||'',local:row[c.local]||'',atividade:row[c.atividade]||'',ip,fp,ir,sems};
+    return{_i:i,codigo:row[c.codigo]||'',unidade:row[c.unidade]||'',local:row[c.local]||'',atividade,resp,isCritico,ip,fp,sems};
   }).filter(Boolean).filter(r=>{
-    const k=[r.unidade,r.local,r.atividade,dKey(r.ip),dKey(r.fp),r.ir?dKey(r.ir):''].join('|');
+    const k=[r.unidade,r.local,r.atividade,dKey(r.ip),dKey(r.fp)].join('|');
     if(seen.has(k))return false;
     seen.add(k);return true;
   });
@@ -689,23 +704,30 @@ function addFeriadosBR(){
 function atuFiltros(){
   const us=[...new Set(S.proc.map(r=>r.unidade))].filter(Boolean).sort();
   const ls=[...new Set(S.proc.map(r=>r.local))].filter(Boolean).sort();
-  const fu=document.getElementById('fU'),fl=document.getElementById('fL');
-  const cu=fu.value,cl=fl.value;
-  fu.innerHTML='<option value="">Todas as unidades</option>'+us.map(u=>`<option ${cu===u?'selected':''}>${u}</option>`).join('');
-  fl.innerHTML='<option value="">Todos os locais</option>'+ls.map(l=>`<option ${cl===l?'selected':''}>${l}</option>`).join('');
+  const rs=[...new Set(S.proc.map(r=>r.resp))].filter(Boolean).sort();
+  const fu=document.getElementById('fU'),fl=document.getElementById('fL'),fr=document.getElementById('fR');
+  const cu=fu.value,cl=fl.value,cr=fr.value;
+  fu.innerHTML='<option value="">Todos os grupos</option>'+us.map(u=>`<option ${cu===u?'selected':''}>${u}</option>`).join('');
+  fl.innerHTML='<option value="">Todos os lotes</option>'+ls.map(l=>`<option ${cl===l?'selected':''}>${l}</option>`).join('');
+  fr.innerHTML='<option value="">Todos os responsáveis</option>'+rs.map(r=>`<option ${cr===r?'selected':''}>${r}</option>`).join('');
   document.getElementById('filterCard').style.display=S.proc.length?'':'none';
 }
-function limparF(){['fG','fU','fL','fS'].forEach(id=>{const e=document.getElementById(id);e.tagName==='INPUT'?e.value='':e.value='';});filtrar();}
+function limparF(){['fG','fU','fL','fR','fS','fC'].forEach(id=>{const e=document.getElementById(id);e.tagName==='INPUT'?e.value='':e.selectedIndex=0;});filtrar();}
 function filtrar(){
   const g=document.getElementById('fG').value.toLowerCase();
   const u=document.getElementById('fU').value;
   const l=document.getElementById('fL').value;
+  const r=document.getElementById('fR').value;
   const s=document.getElementById('fS').value;
-  S.filtrado=S.proc.filter(r=>{
-    if(u&&r.unidade!==u)return false;
-    if(l&&r.local!==l)return false;
-    if(s&&!r.sems.includes(s))return false;
-    if(g){const t=[r.codigo,r.unidade,r.local,r.atividade,fd(r.ip),fd(r.fp)].join(' ').toLowerCase();if(!t.includes(g))return false;}
+  const c=document.getElementById('fC').value;
+  S.filtrado=S.proc.filter(row=>{
+    if(u&&row.unidade!==u)return false;
+    if(l&&row.local!==l)return false;
+    if(r&&row.resp!==r)return false;
+    if(s&&!row.sems.includes(s))return false;
+    if(c==='1'&&!row.isCritico)return false;
+    if(c==='0'&&row.isCritico)return false;
+    if(g){const t=[row.codigo,row.unidade,row.local,row.atividade,row.resp,fd(row.ip),fd(row.fp)].join(' ').toLowerCase();if(!t.includes(g))return false;}
     return true;
   });
   if(S.sortCol){S.filtrado.sort((a,b)=>{let va=a[S.sortCol],vb=b[S.sortCol];if(va instanceof Date&&vb instanceof Date)return(va-vb)*S.sortDir;return String(va).localeCompare(String(vb))*S.sortDir;});}
@@ -722,26 +744,30 @@ function renderTabela(){
   }
   const th=(col,lbl,ex='')=>`<th class="${S.sortCol===col?'sorted':''}" onclick="sortBy('${col}')" ${ex}>${lbl}<span class="sort-ico">${S.sortCol===col?(S.sortDir>0?'↑':'↓'):'⇅'}</span></th>`;
   const rows=S.filtrado.slice(0,500).map(r=>{
+    const criticoStyle=r.isCritico?'border-left:3px solid #e8a020;':'';
     const gantt=S.semanas.map(s=>{
       const on=r.sems.includes(s.nome);
-      return`<div class="g-cell ${on?'g-on':'g-off'}" title="${s.nome}"></div>`;
+      const cls=on?(r.isCritico?'g-cell g-critico':'g-cell g-on'):'g-cell g-off';
+      return`<div class="${cls}" title="${s.nome}"></div>`;
     }).join('');
     const badges=r.sems.map(s=>`<span class="badge-sem">${s}</span>`).join('');
-    return`<tr>
+    const criticoBadge=r.isCritico?'<span style="display:inline-block;background:#fef3e2;color:#e8a020;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:5px;vertical-align:middle">CRÍTICO</span>':'';
+    return`<tr style="${criticoStyle}">
       <td style="font-size:11px;color:var(--g4)">${r.codigo}</td>
       <td>${r.unidade}</td><td>${r.local}</td>
-      <td class="td-ativ">${r.atividade}</td>
+      <td class="td-ativ">${r.atividade}${criticoBadge}</td>
       <td>${fd(r.ip)}</td><td>${fd(r.fp)}</td>
-      <td>${r.ir?fd(r.ir):'<span style="color:var(--g3)">—</span>'}</td>
+      <td>${r.resp||'<span style="color:var(--g3)">—</span>'}</td>
       <td><div class="mini-gantt">${gantt}</div></td>
       <td>${badges||'<span style="color:var(--g3);font-size:11px">—</span>'}</td>
     </tr>`;
   }).join('');
   area.innerHTML=`<div class="tbl-wrap"><table>
     <thead><tr>
-      ${th('codigo','Código')}${th('unidade','Unidade')}${th('local','Local')}
-      ${th('atividade','Atividade','style="min-width:200px"')}
-      ${th('ip','Início Plan.')}${th('fp','Fim Plan.')}${th('ir','Início Real')}
+      ${th('codigo','ID')}${th('unidade','Grupo')}${th('local','Lote')}
+      ${th('atividade','Atividade / Parte','style="min-width:220px"')}
+      ${th('ip','Início Plan.')}${th('fp','Fim Plan.')}
+      ${th('resp','Responsável')}
       <th style="min-width:${Math.max(60,S.semanas.length*16)}px">Gantt</th>
       <th>Semanas ativas</th>
     </tr></thead>
@@ -777,10 +803,12 @@ async function exportarExcel(){
       blue:{argb:toArgb('#2a4a8e')},
       pale:{argb:toArgb('#dce8f8')},
       pale2:{argb:toArgb('#f0f5fc')},
-      grayFds:{argb:toArgb('#c5cedd')},  // FDS + Feriado = mesmo tom
+      grayFds:{argb:toArgb('#c5cedd')},
       white:{argb:'FFFFFFFF'},
       text:{argb:toArgb('#1e2a3a')},
       gantt:{argb:toArgb(S.ganttColor)},
+      critico:{argb:toArgb('#e8a020')},
+      criticoBg:{argb:toArgb('#fef3e2')},
     };
 
     function bdr(){return{top:{style:'thin',color:{argb:'FFC5CEDD'}},left:{style:'thin',color:{argb:'FFC5CEDD'}},bottom:{style:'thin',color:{argb:'FFC5CEDD'}},right:{style:'thin',color:{argb:'FFC5CEDD'}}};}
@@ -799,9 +827,9 @@ async function exportarExcel(){
 
       // Determinar quantas colunas a logo ocupa
       // Logo: cols A-C sempre, linhas 1 até logoLinhas
-      const LOGO_COLS=0; // sem colunas reservadas — logo flutua sobre cabeçalho
-      const DATA_COLS=8; // Código Unidade Local Atividade IniPlan FimPlan IniReal TermReal
-      const totalCols=DATA_COLS+nDias; // 8 cols dados + dias Gantt col D em diante para dados
+      const LOGO_COLS=0;
+      const DATA_COLS=7; // ID | Grupo | Lote | Atividade | Início Plan | Fim Plan | Responsável
+      const totalCols=DATA_COLS+nDias;
 
       // Colunas de dados começam em 4 (D)
       const DC=1; // primeira coluna de dados = A (sem cols de logo)
@@ -817,15 +845,14 @@ async function exportarExcel(){
 
       // Larguras
       // Cols A-C: logo — largura total ~34 chars para acomodar logo bem
-      ws.getColumn(1).width=10; // A Código
-      ws.getColumn(2).width=16; // B Unidade
-      ws.getColumn(3).width=22; // C Local
-      ws.getColumn(4).width=38; // D Atividade
+      ws.getColumn(1).width=10; // A ID
+      ws.getColumn(2).width=18; // B Grupo de replicação
+      ws.getColumn(3).width=24; // C Lote
+      ws.getColumn(4).width=40; // D Atividade / Parte
       ws.getColumn(5).width=13; // E Início Plan
       ws.getColumn(6).width=13; // F Término Plan
-      ws.getColumn(7).width=13; // G Início Real
-      ws.getColumn(8).width=13; // H Término Real
-      for(let d=0;d<nDias;d++) ws.getColumn(12+d).width=8;
+      ws.getColumn(7).width=18; // G Responsável
+      for(let d=0;d<nDias;d++) ws.getColumn(DATA_COLS+1+d).width=8;
 
       // ── L1: Logo (A1:C2 ou conforme logoLinhas) + Título (D1:fim) ──
       ws.getRow(1).height=45;
@@ -862,8 +889,8 @@ async function exportarExcel(){
       l3.value=`Emitido em: ${fd(now)} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}${S.obraResp?' — '+S.obraResp:''}`;
       apply(l3,{bg:CL.pale,fg:CL.navy,sz:8,hAlign:'right',vAlign:'middle',italic:true});
 
-      // Cabeçalhos dados L4 (D4:K4)
-      const hdrs=['CÓDIGO','UNIDADE','LOCAL','ATIVIDADE','INÍCIO PLAN.','TÉRMINO PLAN.','INÍCIO REAL','TÉRMINO REAL'];
+      // Cabeçalhos dados L4
+      const hdrs=['ID','GRUPO','LOTE','ATIVIDADE / PARTE','INÍCIO PLAN.','TÉRMINO PLAN.','RESPONSÁVEL'];
       // Logo cols L4: branco (mesclado visualmente com o bloco logo)
       for(let c=1;c<=LOGO_COLS;c++){const cell=ws.getCell(4,c);cell.fill={type:"pattern",pattern:"solid",fgColor:CL.white};cell.border=bdr();}
       hdrs.forEach((h,ci)=>{
@@ -903,14 +930,21 @@ async function exportarExcel(){
         // Logo cols nas linhas de dados: branco para não interferir com a imagem
         for(let c=1;c<=LOGO_COLS;c++){const cell=ws.getCell(R,c);cell.fill={type:"pattern",pattern:"solid",fgColor:CL.white};cell.border=bdr();}
 
+        const bgRow=row.isCritico?(ri%2===0?CL.criticoBg:{argb:toArgb('#fef8ee')}):bg;
         const vals=[row.codigo,row.unidade,row.local,row.atividade,
-          row.ip?fd(row.ip):'',row.fp?fd(row.fp):'',row.ir?fd(row.ir):'',''];
+          row.ip?fd(row.ip):'',row.fp?fd(row.fp):'',row.resp||''];
         vals.forEach((v,ci)=>{
           const cell=ws.getCell(R,DC+ci);
           cell.value=v;
-          const align=(ci>=1&&ci<=3)?'left':'center';
-          apply(cell,{bg,fg:CL.text,sz:9,hAlign:align,vAlign:'middle',wrap:ci===3});
+          const align=(ci>=1&&ci<=3||ci===6)?'left':'center';
+          apply(cell,{bg:bgRow,fg:CL.text,sz:9,hAlign:align,vAlign:'middle',wrap:ci===3});
         });
+        // Badge CRÍTICO na coluna Atividade se aplicável
+        if(row.isCritico){
+          const ac=ws.getCell(R,DC+3);
+          ac.value=row.atividade+' ★';
+          ac.font={...ac.font,color:CL.critico};
+        }
 
         // GANTT
         for(let d=0;d<nDias;d++){
@@ -924,9 +958,9 @@ async function exportarExcel(){
             // FDS e feriado: sempre cinza independente de estar ativo
             fillBg=CL.grayFds;
           } else if(ativo){
-            fillBg=CL.gantt;
+            fillBg=row.isCritico?CL.critico:CL.gantt;
           } else {
-            fillBg=bg;
+            fillBg=bgRow;
           }
           const cell=ws.getCell(R,DC+DATA_COLS+d);
           apply(cell,{bg:fillBg,fg:CL.white,sz:9,hAlign:'center',vAlign:'middle'});
