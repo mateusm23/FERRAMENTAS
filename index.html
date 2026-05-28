@@ -1,348 +1,187 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Portal de Utilidades</title>
+<title>Portal de Ferramentas</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏗</text></svg>">
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500&display=swap');
+
 :root {
-  --navy: #1a2744;
-  --blue: #2a4a8e;
-  --mid: #3d6abf;
-  --light: #7ba3e0;
-  --pale: #dce8f8;
+  --navy:   #1a2744;
+  --blue:   #2a4a8e;
+  --mid:    #3d6abf;
+  --light:  #7ba3e0;
+  --pale:   #dce8f8;
   --palest: #f0f5fc;
-  --g1: #f4f6fa;
-  --g2: #e8edf5;
-  --g3: #c5cedd;
-  --g4: #8a97ab;
-  --g5: #4a5568;
-  --text: #1e2a3a;
-  --accent: #e8a020;
-  --sh: 0 2px 12px rgba(26,39,68,.10);
-  --sh-lg: 0 8px 32px rgba(26,39,68,.14);
-  --sh-hover: 0 16px 48px rgba(26,39,68,.20);
-  --r: 14px;
-}
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  font-family: 'Segoe UI', system-ui, sans-serif;
-  background: var(--g1);
-  color: var(--text);
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+  --g1:     #f4f6fa;
+  --g2:     #e8edf5;
+  --g3:     #c5cedd;
+  --g4:     #8a97ab;
+  --g5:     #4a5568;
+  --text:   #1e2a3a;
+  --green:  #0f9b6e;
 }
 
-/* TOPBAR */
-.topbar {
-  background: var(--navy);
-  height: 58px;
-  display: flex;
-  align-items: center;
-  padding: 0 32px;
-  box-shadow: var(--sh);
-  gap: 14px;
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-.topbar-logo {
-  width: 36px;
-  height: 36px;
-  background: rgba(255,255,255,.12);
-  border: 1px solid rgba(255,255,255,.15);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  flex-shrink: 0;
-}
-.topbar-text { display: flex; flex-direction: column; gap: 1px; }
-.topbar-title { color: #fff; font-size: 15px; font-weight: 700; line-height: 1.2; }
-.topbar-sub { color: var(--light); font-size: 11px; font-weight: 400; }
-.topbar-space { flex: 1; }
-.topbar-date { color: rgba(255,255,255,.4); font-size: 12px; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--g1); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
 
 /* HEADER */
-.page-header {
-  background: linear-gradient(135deg, var(--navy) 0%, var(--blue) 100%);
-  padding: 32px 32px 28px;
+.header {
+  background: linear-gradient(135deg, var(--navy) 0%, #1e3a6e 100%);
+  padding: 36px 32px 40px;
+  text-align: center;
   position: relative;
   overflow: hidden;
 }
-.page-header::before {
+.header::before {
   content: '';
-  position: absolute;
-  inset: 0;
-  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  position: absolute; inset: 0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.025'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
 }
-.page-header-inner {
-  position: relative;
-  max-width: 1100px;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
+.header-content { position: relative; }
+.header-icon { font-size: 36px; margin-bottom: 10px; }
+.header h1 {
+  font-family: 'Sora', sans-serif;
+  font-size: 26px; font-weight: 800;
+  color: #fff; letter-spacing: -.02em;
+  margin-bottom: 6px;
 }
-.page-header h1 { color: #fff; font-size: 22px; font-weight: 700; letter-spacing: -.01em; }
-.page-header p { color: rgba(255,255,255,.6); font-size: 13px; margin-top: 4px; }
-.header-count {
-  background: rgba(255,255,255,.12);
-  border: 1px solid rgba(255,255,255,.18);
-  color: rgba(255,255,255,.85);
-  font-size: 12px;
-  font-weight: 600;
-  padding: 6px 14px;
-  border-radius: 20px;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
+.header p { color: rgba(255,255,255,.5); font-size: 13px; }
 
 /* MAIN */
-.main {
-  flex: 1;
-  max-width: 1100px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 32px 32px 60px;
-}
-.section-label {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  color: var(--g4);
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.section-label::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--g2);
-}
+.main { flex: 1; max-width: 800px; width: 100%; margin: 0 auto; padding: 32px 24px 40px; }
 
 /* GRID */
-.tools-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
-}
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-bottom: 16px; }
 
 /* TOOL CARD */
 .tool-card {
   background: #fff;
-  border-radius: var(--r);
-  box-shadow: var(--sh);
-  padding: 22px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  text-decoration: none;
-  color: inherit;
+  border-radius: 14px;
   border: 1px solid var(--g2);
-  transition: transform .2s, box-shadow .2s, border-color .2s;
-  position: relative;
+  box-shadow: 0 2px 12px rgba(26,39,68,.08);
+  text-decoration: none; color: inherit;
+  display: flex; flex-direction: column;
   overflow: hidden;
-  opacity: 0;
-  transform: translateY(16px);
+  opacity: 0; transform: translateY(16px);
+  transition: transform .2s, box-shadow .2s, border-color .2s;
 }
-.tool-card.visible {
-  opacity: 1;
-  transform: translateY(0);
-  transition: opacity .35s ease, transform .35s ease, box-shadow .2s, border-color .2s;
-}
-.tool-card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-  background: var(--blue);
-  transform: scaleX(0);
-  transition: transform .2s;
-  transform-origin: left;
-}
-.tool-card:hover {
-  box-shadow: var(--sh-hover);
-  transform: translateY(-3px);
-  border-color: var(--pale);
-}
-.tool-card:hover::before { transform: scaleX(1); }
+.tool-card.visible { opacity: 1; transform: translateY(0); transition: opacity .35s, transform .35s, box-shadow .2s, border-color .2s; }
+.tool-card:hover { transform: translateY(-4px); box-shadow: 0 10px 32px rgba(26,39,68,.14); border-color: var(--pale); }
 
-.tool-top { display: flex; align-items: flex-start; gap: 14px; }
-.tool-icon {
-  width: 46px; height: 46px;
-  background: var(--pale);
-  border-radius: 12px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 20px;
-  flex-shrink: 0;
-}
-.tool-icon.green { background: #e8f8ef; }
-.tool-icon.amber { background: #fef3e2; }
-.tool-name { font-size: 14px; font-weight: 700; color: var(--navy); line-height: 1.3; }
-.tool-desc { font-size: 12px; color: var(--g5); line-height: 1.55; margin-top: 3px; }
+.card-strip { height: 3px; background: linear-gradient(90deg, var(--blue), var(--mid)); flex-shrink: 0; }
+.card-strip.green { background: linear-gradient(90deg, #0f9b6e, #27c98a); }
 
-.tool-caps {
-  display: flex; flex-wrap: wrap; gap: 5px;
-  padding-top: 2px;
-}
-.cap {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--blue);
-  background: var(--palest);
-  border: 1px solid var(--g2);
-  padding: 2px 8px;
-  border-radius: 8px;
-}
+.card-body { padding: 18px; flex: 1; }
+.card-icon-wrap { font-size: 28px; margin-bottom: 10px; }
+.card-name { font-family: 'Sora', sans-serif; font-size: 14px; font-weight: 700; color: var(--navy); margin-bottom: 5px; line-height: 1.3; }
+.card-desc { font-size: 12px; color: var(--g5); line-height: 1.55; }
 
-.tool-footer {
-  display: flex; align-items: center; justify-content: space-between;
+.card-footer {
+  padding: 11px 18px;
   border-top: 1px solid var(--g2);
-  padding-top: 12px;
-  margin-top: 2px;
+  background: var(--g1);
+  display: flex; align-items: center; justify-content: space-between;
 }
-.tool-tag {
-  font-size: 10px; font-weight: 600; text-transform: uppercase;
-  letter-spacing: .06em;
-  background: var(--pale); color: var(--blue);
-  padding: 3px 8px; border-radius: 10px;
-}
-.tool-tag.green { background: #e8f8ef; color: #1e7a42; }
-.tool-arrow { color: var(--mid); font-size: 16px; transition: transform .2s; }
-.tool-card:hover .tool-arrow { transform: translateX(4px); }
+.card-tag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--g4); }
+.card-arrow { font-size: 15px; color: var(--mid); transition: transform .2s; }
+.tool-card:hover .card-arrow { transform: translateX(4px); }
 
-/* CARD NOVO */
-.add-card {
+/* SOON CARD */
+.soon-card {
   background: transparent;
-  border-radius: var(--r);
+  border-radius: 14px;
   border: 2px dashed var(--g3);
-  padding: 22px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 160px;
-  opacity: 0;
-  transform: translateY(16px);
-  cursor: default;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 6px; min-height: 160px;
+  opacity: 0; transform: translateY(16px);
 }
-.add-card.visible {
-  opacity: 1;
-  transform: translateY(0);
-  transition: opacity .35s ease .15s, transform .35s ease .15s;
-}
-.add-icon { font-size: 24px; opacity: .3; }
-.add-text { font-size: 12px; color: var(--g4); font-weight: 500; }
+.soon-card.visible { opacity: 1; transform: translateY(0); transition: opacity .35s ease .1s, transform .35s ease .1s; }
+.soon-icon { font-size: 22px; opacity: .25; }
+.soon-text { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: var(--g3); }
 
-/* FOOTER */
-footer {
-  background: var(--navy);
-  color: rgba(255,255,255,.3);
-  font-size: 11px;
+/* AUTHOR */
+.author {
+  max-width: 800px; margin: 0 auto;
+  padding: 0 24px 32px;
   text-align: center;
-  padding: 14px;
+  color: var(--g4);
+  font-size: 12px;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
 }
+.author-divider { width: 1px; height: 12px; background: var(--g3); }
 
-/* MOBILE */
-@media (max-width: 600px) {
-  .topbar { padding: 0 16px; }
-  .page-header { padding: 24px 16px 20px; }
-  .page-header h1 { font-size: 18px; }
-  .main { padding: 24px 16px 48px; }
-  .tools-grid { grid-template-columns: 1fr; }
-  .header-count { display: none; }
+@media (max-width: 500px) {
+  .header { padding: 28px 16px 32px; }
+  .main { padding: 24px 16px 32px; }
+  .grid { grid-template-columns: 1fr; }
 }
-
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-thumb { background: var(--g3); border-radius: 3px; }
 </style>
 </head>
 <body>
 
-<div class="topbar">
-  <div class="topbar-logo">🏗</div>
-  <div class="topbar-text">
-    <span class="topbar-title">Portal de Utilidades</span>
-    <span class="topbar-sub">Obras &amp; Planejamento</span>
-  </div>
-  <div class="topbar-space"></div>
-  <div class="topbar-date" id="topDate"></div>
-</div>
-
-<div class="page-header">
-  <div class="page-header-inner">
-    <div>
-      <h1>Ferramentas Internas</h1>
-      <p>Acesse as ferramentas de gestão, planejamento e controle de obras.</p>
-    </div>
-    <div class="header-count" id="toolCount"></div>
+<div class="header">
+  <div class="header-content">
+    <div class="header-icon">🏗</div>
+    <h1>Portal de Ferramentas</h1>
+    <p>Obras &amp; Planejamento</p>
   </div>
 </div>
 
 <div class="main">
-
-  <div class="section-label">Disponíveis</div>
-
-  <div class="tools-grid" id="toolsGrid">
+  <div class="grid" id="grid">
 
     <a class="tool-card" href="MONTAGEM DE PROGRAMAÇÃO SEMANAL.html">
-      <div class="tool-top">
-        <div class="tool-icon">📅</div>
-        <div>
-          <div class="tool-name">Programação Semanal de Obras</div>
-          <div class="tool-desc">Gere e exporte programações semanais (PPC) com Gantt por semana, controle de feriados e configuração de obra.</div>
-        </div>
+      <div class="card-strip"></div>
+      <div class="card-body">
+        <div class="card-icon-wrap">📅</div>
+        <div class="card-name">Programação Semanal</div>
+        <div class="card-desc">Gere e exporte cronogramas semanais com Gantt, feriados e exportação .xlsx.</div>
       </div>
-      <div class="tool-caps">
-        <span class="cap">Upload Excel</span>
-        <span class="cap">Gantt</span>
-        <span class="cap">Feriados</span>
-        <span class="cap">Exportar .xlsx</span>
-      </div>
-      <div class="tool-footer">
-        <span class="tool-tag">Planejamento</span>
-        <span class="tool-arrow">→</span>
+      <div class="card-footer">
+        <span class="card-tag">Planejamento</span>
+        <span class="card-arrow">→</span>
       </div>
     </a>
 
-    <div class="add-card">
-      <div class="add-icon">＋</div>
-      <div class="add-text">Novas ferramentas em breve</div>
+    <a class="tool-card" href="ANALISE DE PESO FINANCEIRO.html">
+      <div class="card-strip green"></div>
+      <div class="card-body">
+        <div class="card-icon-wrap">📊</div>
+        <div class="card-name">Análise de Peso Financeiro</div>
+        <div class="card-desc">Compare baseline vs. real do Agilean e calcule desvio global por macro etapa.</div>
+      </div>
+      <div class="card-footer">
+        <span class="card-tag">Controle</span>
+        <span class="card-arrow">→</span>
+      </div>
+    </a>
+
+    <div class="soon-card">
+      <div class="soon-icon">＋</div>
+      <div class="soon-text">Em breve</div>
+    </div>
+
+    <div class="soon-card">
+      <div class="soon-icon">＋</div>
+      <div class="soon-text">Em breve</div>
     </div>
 
   </div>
-
 </div>
 
-<footer>
-  Portal de Utilidades — Obras &amp; Planejamento
-</footer>
+<div class="author">
+  <span>Desenvolvido por <strong>Mateus Monteiro</strong></span>
+  <div class="author-divider"></div>
+  <span>(62) 99156-3421</span>
+</div>
 
 <script>
-  // Data na topbar
-  const d = new Date();
-  const dias = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
-  const meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
-  document.getElementById('topDate').textContent =
-    `${dias[d.getDay()]}, ${d.getDate()} ${meses[d.getMonth()]} ${d.getFullYear()}`;
-
-  // Contador de ferramentas
-  const total = document.querySelectorAll('#toolsGrid .tool-card').length;
-  document.getElementById('toolCount').textContent =
-    `${total} ferramenta${total !== 1 ? 's' : ''} disponível${total !== 1 ? 'is' : ''}`;
-
-  // Animação de entrada
-  const targets = document.querySelectorAll('.tool-card, .add-card');
   const obs = new IntersectionObserver(entries => {
     entries.forEach((e, i) => {
       if (e.isIntersecting) {
@@ -351,9 +190,8 @@ footer {
       }
     });
   }, { threshold: 0.1 });
-  targets.forEach(el => obs.observe(el));
+  document.querySelectorAll('.tool-card, .soon-card').forEach(el => obs.observe(el));
 </script>
-
   <script src="https://mateusm23.github.io/HUB/assets/tracker.js" data-tool="ferramentas"></script>
 </body>
 </html>

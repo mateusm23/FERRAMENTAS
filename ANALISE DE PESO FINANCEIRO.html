@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Análise de Peso Financeiro</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap');
+
+  :root {
+    --navy: #1a2b45;
+    --blue: #1B6FBF;
+    --blue-bright: #1A6EE8;
+    --bg: #f0f4f9;
+    --surface: #ffffff;
+    --surface2: #f7fafd;
+    --border: #d4dfe8;
+    --text: #1a2b45;
+    --text-muted: #6b80a0;
+    --green: #0f9b6e;
+    --red: #d63a3a;
+    --green-bg: #e6f7f2;
+    --red-bg: #fdf0f0;
+    --shadow: 0 2px 16px rgba(26,43,69,0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  header {
+    background: var(--navy);
+    padding: 18px 32px;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .header-back {
+    display: flex; align-items: center; gap: 6px;
+    color: rgba(255,255,255,0.5); font-size: 12px;
+    text-decoration: none; padding: 5px 10px;
+    border-radius: 6px; border: 1px solid rgba(255,255,255,0.12);
+    transition: all 0.15s; margin-right: 4px;
+  }
+  .header-back:hover { color: #fff; border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.07); }
+  header h1 { font-family: 'Sora', sans-serif; font-size: 17px; font-weight: 600; color: #fff; }
+  header h1 span { font-size: 13px; color: rgba(255,255,255,0.45); font-weight: 400; }
+
+  .container { max-width: 860px; margin: 0 auto; padding: 28px 24px 60px; }
+
+  /* ── STEPS ── */
+  .steps { display: flex; flex-direction: column; gap: 16px; }
+
+  .step-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; box-shadow: var(--shadow); overflow: hidden;
+  }
+  .step-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 20px; background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+  .step-num {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--navy); color: #fff;
+    font-family: 'Sora', sans-serif; font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .step-num.done { background: var(--green); }
+  .step-num.active { background: var(--blue-bright); }
+  .step-header h2 { font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 600; color: var(--text); }
+  .step-header .hint { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .step-header .tag { margin-left: auto; font-size: 11px; padding: 3px 9px; border-radius: 20px; background: var(--border); color: var(--text-muted); font-weight: 500; white-space: nowrap; }
+  .step-header .tag.ok { background: var(--green-bg); color: var(--green); }
+  .step-body { padding: 16px 20px; }
+
+  .step-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 12px; border-radius: 20px;
+    font-size: 11px; font-weight: 600;
+    margin-bottom: 10px;
+  }
+  .step-badge.blue { background: #e8f1fd; color: var(--blue-bright); border: 1px solid #b8d0f5; }
+  .step-badge.green { background: var(--green-bg); color: var(--green); border: 1px solid #b6e9d8; }
+  .step-badge .sq { width: 8px; height: 8px; border-radius: 2px; background: currentColor; }
+
+  textarea {
+    width: 100%; height: 110px;
+    border: 1px solid var(--border); border-radius: 7px;
+    padding: 10px 12px; font-family: 'DM Sans', sans-serif;
+    font-size: 12px; color: var(--text); resize: vertical;
+    background: var(--bg); outline: none; transition: border .15s;
+  }
+  textarea:focus { border-color: var(--blue); background: #fff; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 9px 18px; border-radius: 7px;
+    font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 600;
+    cursor: pointer; border: none; transition: all .15s;
+  }
+  .btn-primary { background: var(--blue-bright); color: #fff; }
+  .btn-primary:hover { background: var(--blue); }
+  .btn-primary:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; }
+  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
+  .btn-outline:hover { border-color: var(--blue); color: var(--blue); }
+
+  .row { display: flex; gap: 10px; margin-top: 10px; align-items: center; }
+  .parse-info { font-size: 12px; color: var(--text-muted); }
+  .parse-info.ok { color: var(--green); }
+  .parse-info.err { color: var(--red); }
+
+  .mes-row { display: flex; align-items: center; gap: 12px; }
+  select {
+    border: 1px solid var(--border); border-radius: 7px;
+    padding: 9px 14px; font-family: 'DM Sans', sans-serif;
+    font-size: 13px; color: var(--text); background: var(--bg);
+    cursor: pointer; outline: none; transition: border .15s; min-width: 160px;
+  }
+  select:focus { border-color: var(--blue); background: #fff; }
+
+  /* ── RESULTADO ── */
+  #resultado { margin-top: 24px; }
+  .result-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .result-title { font-family: 'Sora', sans-serif; font-size: 16px; font-weight: 700; color: var(--navy); }
+  .result-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); overflow: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead tr { background: var(--navy); }
+  thead th { font-family: 'Sora', sans-serif; font-size: 11px; font-weight: 600; color: rgba(255,255,255,.85); text-transform: uppercase; letter-spacing: .6px; padding: 11px 14px; text-align: right; white-space: nowrap; }
+  thead th:first-child { text-align: left; min-width: 220px; }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+  tbody tr:hover { background: var(--surface2); }
+  tbody tr:last-child { border-bottom: none; }
+  tbody td { padding: 10px 14px; text-align: right; }
+  tbody td:first-child { text-align: left; font-weight: 500; color: var(--navy); font-size: 12.5px; }
+  .pos { color: var(--green); font-weight: 600; }
+  .neg { color: var(--red); font-weight: 600; }
+  .zer { color: var(--text-muted); }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11.5px; font-weight: 600; }
+  .pill.pos { background: var(--green-bg); color: var(--green); }
+  .pill.neg { background: var(--red-bg); color: var(--red); }
+  .pill.zer { background: var(--border); color: var(--text-muted); }
+  tfoot tr { background: var(--navy); }
+  tfoot td { padding: 11px 14px; text-align: right; font-family: 'Sora', sans-serif; font-size: 12px; font-weight: 700; color: #fff; }
+  tfoot td:first-child { text-align: left; }
+
+  .kpi-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px; }
+  .kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; box-shadow: var(--shadow); }
+  .kpi-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); margin-bottom: 6px; }
+  .kpi-val { font-family: 'Sora', sans-serif; font-size: 22px; font-weight: 700; color: var(--navy); }
+  .kpi-val.pos { color: var(--green); }
+  .kpi-val.neg { color: var(--red); }
+  .kpi-sub { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+
+  @media (max-width: 700px) {
+    .kpi-row { grid-template-columns: 1fr 1fr; }
+    .excel-section { grid-template-columns: 1fr; }
+    header { padding: 14px 16px; }
+    .container { padding: 16px 12px; }
+    .flow { flex-direction: column; }
+    .flow-step + .flow-step { margin-left: 0; margin-top: 24px; }
+    .flow-step + .flow-step::before { content: '↓'; left: 50%; top: -18px; transform: translateX(-50%); }
+  }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-thumb { background: #c5cedd; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="header-back" href="index.html">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+    Portal
+  </a>
+  <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+    <rect width="28" height="28" rx="7" fill="#1A6EE8"/>
+    <rect x="5" y="18" width="4" height="6" rx="1" fill="white" opacity="0.5"/>
+    <rect x="11" y="13" width="4" height="11" rx="1" fill="white" opacity="0.75"/>
+    <rect x="17" y="8" width="4" height="16" rx="1" fill="white"/>
+    <path d="M5 17 L13 12 L19 7" stroke="white" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>
+  </svg>
+  <div>
+    <h1>Análise de Peso Financeiro <span>— Agilean</span></h1>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- ── INSTRUÇÃO ── -->
+  <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:20px;display:flex;gap:12px;align-items:flex-start;box-shadow:var(--shadow)">
+    <span style="font-size:18px;flex-shrink:0;margin-top:1px">💡</span>
+    <div style="font-size:13px;color:var(--text-muted);line-height:1.8">
+      <strong style="color:var(--navy);font-family:'Sora',sans-serif">Como usar:</strong>
+      Abra o Excel com o plug-in Agilean → selecione a obra → clique em <strong style="color:var(--text)">Mensal</strong> e escolha <strong style="color:var(--blue-bright)">Base</strong>, copie a tabela e cole no campo abaixo.
+      Depois repita o processo escolhendo <strong style="color:var(--green)">Real</strong> e cole no segundo campo.
+    </div>
+  </div>
+
+  <!-- ── STEPS ── -->
+  <div class="steps">
+
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num active" id="num1">1</div>
+        <div>
+          <h2>Cole os dados do BASELINE (Base)</h2>
+          <div class="hint">Copie a tabela gerada pelo Agilean com a opção "Base" selecionada</div>
+        </div>
+        <span class="tag" id="tag1">Aguardando</span>
+      </div>
+      <div class="step-body">
+        <div class="step-badge blue"><div class="sq"></div> Opção: BASE</div>
+        <textarea id="inputBaseline" placeholder="Cole aqui (Ctrl+V) a tabela copiada do Excel com a opção BASE..."></textarea>
+        <div class="row">
+          <button class="btn btn-primary" onclick="parseBaseline()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Processar Baseline
+          </button>
+          <span class="parse-info" id="infoBaseline"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num" id="num2">2</div>
+        <div>
+          <h2>Cole os dados do REAL</h2>
+          <div class="hint">Volte ao Excel, mude para "Real", atualize e copie a tabela</div>
+        </div>
+        <span class="tag" id="tag2">Aguardando</span>
+      </div>
+      <div class="step-body">
+        <div class="step-badge green"><div class="sq"></div> Opção: REAL</div>
+        <textarea id="inputReal" placeholder="Cole aqui (Ctrl+V) a tabela copiada do Excel com a opção REAL..."></textarea>
+        <div class="row">
+          <button class="btn btn-primary" id="btnReal" onclick="parseReal()" disabled>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Processar Real
+          </button>
+          <span class="parse-info" id="infoReal"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num" id="num3">3</div>
+        <div>
+          <h2>Selecione o mês de análise</h2>
+          <div class="hint">Escolha o mês de referência para calcular o acumulado</div>
+        </div>
+        <span class="tag" id="tag3">Aguardando</span>
+      </div>
+      <div class="step-body">
+        <div class="mes-row">
+          <select id="selectMes" disabled>
+            <option value="">— selecione o mês —</option>
+          </select>
+          <button class="btn btn-primary" id="btnGerar" onclick="gerarTabela()" disabled>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            Gerar Análise
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="resultado"></div>
+</div>
+
+<script>
+  let dataBaseline = null, dataReal = null;
+
+  function parseTable(raw) {
+    const lines = raw.trim().split('\n').filter(l => l.trim());
+    if (lines.length < 2) throw new Error('Dados insuficientes');
+    const headers = lines[0].split('\t').map(h => h.trim());
+    const meses = headers.slice(1);
+    const rows = [];
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split('\t');
+      const etapa = cols[0].trim();
+      if (!etapa) continue;
+      const valores = cols.slice(1).map(v => parseBRL(v.trim()));
+      while (valores.length < meses.length) valores.push(0);
+      rows.push({ etapa, valores });
+    }
+    return { meses, rows };
+  }
+
+  function parseBRL(v) {
+    if (!v) return 0;
+    const clean = v.replace(/R\$\s?/g, '').replace(/\./g, '').replace(',', '.').trim();
+    const n = parseFloat(clean);
+    return isNaN(n) ? 0 : n;
+  }
+
+  function parseBaseline() {
+    try {
+      dataBaseline = parseTable(document.getElementById('inputBaseline').value);
+      const { rows, meses } = dataBaseline;
+      document.getElementById('infoBaseline').textContent = `✓ ${rows.length} etapas × ${meses.length} meses`;
+      document.getElementById('infoBaseline').className = 'parse-info ok';
+      document.getElementById('tag1').textContent = `${rows.length} etapas`;
+      document.getElementById('tag1').className = 'tag ok';
+      document.getElementById('num1').className = 'step-num done';
+      document.getElementById('btnReal').disabled = false;
+      document.getElementById('num2').className = 'step-num active';
+    } catch(e) {
+      document.getElementById('infoBaseline').textContent = '✗ Erro: ' + e.message;
+      document.getElementById('infoBaseline').className = 'parse-info err';
+    }
+  }
+
+  function parseReal() {
+    try {
+      dataReal = parseTable(document.getElementById('inputReal').value);
+      const { rows, meses } = dataReal;
+      document.getElementById('infoReal').textContent = `✓ ${rows.length} etapas × ${meses.length} meses`;
+      document.getElementById('infoReal').className = 'parse-info ok';
+      document.getElementById('tag2').textContent = `${rows.length} etapas`;
+      document.getElementById('tag2').className = 'tag ok';
+      document.getElementById('num2').className = 'step-num done';
+      document.getElementById('num3').className = 'step-num active';
+      populateSelect();
+      document.getElementById('selectMes').disabled = false;
+      document.getElementById('btnGerar').disabled = false;
+      document.getElementById('tag3').textContent = 'Pronto';
+    } catch(e) {
+      document.getElementById('infoReal').textContent = '✗ Erro: ' + e.message;
+      document.getElementById('infoReal').className = 'parse-info err';
+    }
+  }
+
+  function populateSelect() {
+    const sel = document.getElementById('selectMes');
+    sel.innerHTML = '<option value="">— selecione o mês —</option>';
+    dataBaseline.meses.forEach((m, i) => {
+      const opt = document.createElement('option');
+      opt.value = i; opt.textContent = m;
+      sel.appendChild(opt);
+    });
+  }
+
+  function gerarTabela() {
+    const mesIdx = parseInt(document.getElementById('selectMes').value);
+    if (isNaN(mesIdx)) return;
+    const mesLabel = dataBaseline.meses[mesIdx];
+    const totalGeralBaseline = dataBaseline.rows.reduce((acc, r) => acc + r.valores.reduce((a,b)=>a+b,0), 0);
+    const realMap = {};
+    dataReal.rows.forEach(r => { realMap[r.etapa] = r; });
+    const rows = dataBaseline.rows.map(rowB => {
+      const etapa = rowB.etapa;
+      const rowR = realMap[etapa] || { valores: [] };
+      const totalEtapaBase = rowB.valores.reduce((a,b)=>a+b,0);
+      const acumBase = rowB.valores.slice(0, mesIdx+1).reduce((a,b)=>a+b,0);
+      const acumReal = (rowR.valores||[]).slice(0, mesIdx+1).reduce((a,b)=>a+b,0);
+      const peso = totalGeralBaseline > 0 ? totalEtapaBase / totalGeralBaseline : 0;
+      const prev = totalEtapaBase > 0 ? acumBase / totalEtapaBase : 0;
+      const real = totalEtapaBase > 0 ? acumReal / totalEtapaBase : 0;
+      const deltaEtapa = prev - real;
+      const deltaGlobal = deltaEtapa * peso;
+      return { etapa, peso, prev, real, deltaEtapa, deltaGlobal };
+    });
+    const totPeso = rows.reduce((a,r)=>a+r.peso,0);
+    const totDeltaGlobal = rows.reduce((a,r)=>a+r.deltaGlobal,0);
+    const prevMedia = rows.reduce((a,r)=>a+(r.prev*r.peso),0) / totPeso;
+    const realMedia = rows.reduce((a,r)=>a+(r.real*r.peso),0) / totPeso;
+    renderResult(mesLabel, rows, totPeso, totDeltaGlobal, prevMedia, realMedia);
+    document.getElementById('num3').className = 'step-num done';
+    document.getElementById('tag3').className = 'tag ok';
+    document.getElementById('tag3').textContent = mesLabel;
+  }
+
+  function fmt(v, d=2) { return (v*100).toFixed(d) + '%'; }
+  function fmtPP(v) { return (v>=0?'+':'') + (v*100).toFixed(2) + ' p.p.'; }
+  function clsDelta(v) { if(Math.abs(v)<0.00001)return'zer'; return v>0?'neg':'pos'; }
+  function clsReal(r,p) { const d=r-p; if(Math.abs(d)<0.00001)return'zer'; return d>=0?'pos':'neg'; }
+  function clsDesvio(v) { if(Math.abs(v)<0.00001)return'zer'; return v>0?'neg':'pos'; }
+
+  let _lastRows=[], _totDeltaGlobal=0, _totPeso=0, _totPrev=0, _totReal=0;
+
+  // Usa vírgula como decimal para colar no Excel em PT-BR
+  function fmtXL(v, d=4) { return (v*100).toFixed(d).replace('.', ',') + '%'; }
+  function fmtPPXL(v) { return (v>=0?'+':'') + (v*100).toFixed(4).replace('.', ',') + ' p.p.'; }
+
+  function copiarExcel() {
+    const lines = [['Etapa','Peso','Prev.','Real','Delta Etapa','Delta Global'].join('\t')];
+    _lastRows.forEach(r => lines.push([r.etapa, fmtXL(r.peso), fmtXL(r.prev), fmtXL(r.real), fmtXL(r.deltaEtapa), fmtXL(r.deltaGlobal)].join('\t')));
+    lines.push(['TOTAL', fmtXL(_totPeso), fmtXL(_totPrev), fmtXL(_totReal), '—', fmtXL(_totDeltaGlobal)].join('\t'));
+    navigator.clipboard.writeText(lines.join('\n')).then(() => {
+      const btn = document.getElementById('btnCopiar');
+      const orig = btn.innerHTML;
+      btn.textContent = '✓ Copiado!';
+      btn.style.cssText = 'color:var(--green);border-color:var(--green)';
+      setTimeout(() => { btn.innerHTML = orig; btn.style.cssText = ''; }, 2000);
+    });
+  }
+
+  function renderResult(mesLabel, rows, totPeso, totDeltaGlobal, prevMedia, realMedia) {
+    _lastRows=rows; _totDeltaGlobal=totDeltaGlobal; _totPeso=totPeso; _totPrev=prevMedia; _totReal=realMedia;
+    const div = document.getElementById('resultado');
+    div.innerHTML = `
+      <div class="result-header">
+        <div><div class="result-title">Análise de Peso Financeiro</div><div class="result-sub">Acumulado até ${mesLabel}</div></div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-outline" id="btnCopiar" onclick="copiarExcel()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copiar para Excel
+          </button>
+          <button class="btn btn-outline" onclick="document.getElementById('resultado').innerHTML=''">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+            Limpar
+          </button>
+        </div>
+      </div>
+      <div class="kpi-row">
+        <div class="kpi"><div class="kpi-label">Mês de Análise</div><div class="kpi-val" style="font-size:18px">${mesLabel}</div><div class="kpi-sub">Acumulado desde o início</div></div>
+        <div class="kpi"><div class="kpi-label">Avanço Previsto</div><div class="kpi-val">${fmt(prevMedia)}</div><div class="kpi-sub">Baseline pond. por peso</div></div>
+        <div class="kpi"><div class="kpi-label">Avanço Real</div><div class="kpi-val ${clsReal(realMedia,prevMedia)}">${fmt(realMedia)}</div><div class="kpi-sub">Real pond. por peso</div></div>
+        <div class="kpi"><div class="kpi-label">Desvio Global</div><div class="kpi-val ${clsDesvio(totDeltaGlobal)}">${fmtPP(totDeltaGlobal)}</div><div class="kpi-sub">${totDeltaGlobal>0.00001?'⚠ Obra atrasada':totDeltaGlobal<-0.00001?'✓ Obra adiantada':'= Em dia'}</div></div>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Etapa</th><th>Peso</th><th>Prev.</th><th>Real</th><th>Delta Etapa</th><th>Delta Global</th></tr></thead>
+        <tbody>${rows.map(r=>`<tr>
+          <td>${r.etapa}</td><td>${fmt(r.peso)}</td><td>${fmt(r.prev)}</td>
+          <td class="${clsReal(r.real,r.prev)}">${fmt(r.real)}</td>
+          <td class="${clsDelta(r.deltaEtapa)}">${fmtPP(r.deltaEtapa)}</td>
+          <td><span class="pill ${clsDelta(r.deltaGlobal)}">${fmtPP(r.deltaGlobal)}</span></td>
+        </tr>`).join('')}</tbody>
+        <tfoot><tr><td>TOTAL</td><td>${fmt(totPeso)}</td><td>${fmt(prevMedia)}</td><td class="${clsReal(realMedia,prevMedia)}">${fmt(realMedia)}</td><td>—</td><td>${fmtPP(totDeltaGlobal)}</td></tr></tfoot>
+      </table></div>`;
+    div.scrollIntoView({ behavior:'smooth', block:'start' });
+  }
+</script>
+  <script src="https://mateusm23.github.io/HUB/assets/tracker.js" data-tool="ferramentas"></script>
+</body>
+</html>
