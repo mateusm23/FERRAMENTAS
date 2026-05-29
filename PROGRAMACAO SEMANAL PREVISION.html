@@ -847,7 +847,7 @@ async function exportarExcel(){
       // Determinar quantas colunas a logo ocupa
       // Logo: cols A-C sempre, linhas 1 até logoLinhas
       const LOGO_COLS=0;
-      const DATA_COLS=7; // ID | Grupo | Lote | Atividade | Início Plan | Fim Plan | Responsável
+      const DATA_COLS=9; // ID | Grupo | Lote | Atividade | Início Plan | Fim Plan | Responsável | Início Real | Término Real
       const totalCols=DATA_COLS+nDias;
 
       // Colunas de dados começam em 4 (D)
@@ -871,6 +871,8 @@ async function exportarExcel(){
       ws.getColumn(5).width=13; // E Início Plan
       ws.getColumn(6).width=13; // F Término Plan
       ws.getColumn(7).width=18; // G Responsável
+      ws.getColumn(8).width=13; // H Início Real
+      ws.getColumn(9).width=13; // I Término Real
       for(let d=0;d<nDias;d++) ws.getColumn(DATA_COLS+1+d).width=8;
 
       // ── L1: Logo (A1:C2 ou conforme logoLinhas) + Título (D1:fim) ──
@@ -909,7 +911,7 @@ async function exportarExcel(){
       apply(l3,{bg:CL.pale,fg:CL.navy,sz:8,hAlign:'right',vAlign:'middle',italic:true});
 
       // Cabeçalhos dados L4
-      const hdrs=['ID','GRUPO','LOTE','ATIVIDADE / PARTE','INÍCIO PLAN.','TÉRMINO PLAN.','RESPONSÁVEL'];
+      const hdrs=['ID','GRUPO','LOTE','ATIVIDADE / PARTE','INÍCIO PLAN.','TÉRMINO PLAN.','RESPONSÁVEL','INÍCIO REAL','TÉRMINO REAL'];
       // Logo cols L4: branco (mesclado visualmente com o bloco logo)
       for(let c=1;c<=LOGO_COLS;c++){const cell=ws.getCell(4,c);cell.fill={type:"pattern",pattern:"solid",fgColor:CL.white};cell.border=bdr();}
       hdrs.forEach((h,ci)=>{
@@ -951,7 +953,7 @@ async function exportarExcel(){
 
         const bgRow=row.isCritico?(ri%2===0?CL.criticoBg:{argb:toArgb('#fef8ee')}):bg;
         const vals=[row.codigo,row.unidade,row.local,row.atividade,
-          row.ip?fd(row.ip):'',row.fp?fd(row.fp):'',row.resp||''];
+          row.ip?fd(row.ip):'',row.fp?fd(row.fp):'',row.resp||'','',''];
         vals.forEach((v,ci)=>{
           const cell=ws.getCell(R,DC+ci);
           cell.value=v;
