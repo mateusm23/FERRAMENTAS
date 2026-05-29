@@ -314,6 +314,11 @@ input[type=color]{width:30px;height:30px;padding:1px;border:1px solid var(--g2);
         <option value="1">⚠ Somente crítico</option>
         <option value="0">Não crítico</option>
       </select>
+      <select id="fP" onchange="filtrar()">
+        <option value="pendente" selected>Ocultar 100% concluídas</option>
+        <option value="">Todas (incl. concluídas)</option>
+        <option value="concluida">Somente 100% concluídas</option>
+      </select>
       <button class="btn btn-ghost btn-sm" onclick="limparF()">✕</button>
     </div>
   </div>
@@ -494,6 +499,8 @@ const HINTS={
   resp:     ['respons'],
   iniPlan:  ['data de in','início','inicio'],
   fimPlan:  ['data de t','término','termino'],
+  // "Realizado_1" = 2ª ocorrência no export Prevision = Avanço físico (%)
+  realizado:['realizado_1','realizado'],
 };
 function detectCols(hdrs){
   const hl=hdrs.map(h=>h.toLowerCase());
@@ -506,7 +513,7 @@ function detectCols(hdrs){
 }
 function renderColMap(){
   document.getElementById('colMapSec').style.display='';
-  const labels={codigo:'ID',unidade:'Grupo de Replicação',local:'Lote',atividade:'Pacote de Trabalho',parte:'Parte',caminhoC:'Caminho Crítico',resp:'Responsáveis',iniPlan:'Data de Início',fimPlan:'Data de Término'};
+  const labels={codigo:'ID',unidade:'Grupo de Replicação',local:'Lote',atividade:'Pacote de Trabalho',parte:'Parte',caminhoC:'Caminho Crítico',resp:'Responsáveis',iniPlan:'Data de Início',fimPlan:'Data de Término',realizado:'Realizado (%) — col. 29'};
   document.getElementById('colMapFields').innerHTML=Object.entries(labels).map(([k,lb])=>`
     <div class="colmap-row">
       <div class="colmap-label">${lb}</div>
@@ -558,8 +565,10 @@ function processar(){
     const critico=String(row[c.caminhoC]||'').trim().toLowerCase();
     const isCritico=critico==='sim'||critico==='yes'||critico==='1'||critico==='crítico'||critico==='critico'||critico==='true';
     const resp=String(row[c.resp]||'').trim().replace(/^-$/,'');
+    const realizado=parseFloat(String(row[c.realizado]||'0').replace(',','.'));
+    const pct=isNaN(realizado)?0:Math.round(realizado);
     const sems=S.semanas.filter(s=>ip<=s.fim&&fp>=s.ini).map(s=>s.nome);
-    return{_i:i,codigo:row[c.codigo]||'',unidade:row[c.unidade]||'',local:row[c.local]||'',atividade,resp,isCritico,ip,fp,sems};
+    return{_i:i,codigo:row[c.codigo]||'',unidade:row[c.unidade]||'',local:row[c.local]||'',atividade,resp,isCritico,pct,ip,fp,sems};
   }).filter(Boolean).filter(r=>{
     const k=[r.unidade,r.local,r.atividade,dKey(r.ip),dKey(r.fp)].join('|');
     if(seen.has(k))return false;
@@ -712,7 +721,12 @@ function atuFiltros(){
   fr.innerHTML='<option value="">Todos os responsáveis</option>'+rs.map(r=>`<option ${cr===r?'selected':''}>${r}</option>`).join('');
   document.getElementById('filterCard').style.display=S.proc.length?'':'none';
 }
-function limparF(){['fG','fU','fL','fR','fS','fC'].forEach(id=>{const e=document.getElementById(id);e.tagName==='INPUT'?e.value='':e.selectedIndex=0;});filtrar();}
+function limparF(){
+  ['fG','fU','fL','fR','fS','fC'].forEach(id=>{const e=document.getElementById(id);e.tagName==='INPUT'?e.value='':e.selectedIndex=0;});
+  // fP volta ao padrão: ocultar concluídas
+  document.getElementById('fP').value='pendente';
+  filtrar();
+}
 function filtrar(){
   const g=document.getElementById('fG').value.toLowerCase();
   const u=document.getElementById('fU').value;
@@ -720,7 +734,10 @@ function filtrar(){
   const r=document.getElementById('fR').value;
   const s=document.getElementById('fS').value;
   const c=document.getElementById('fC').value;
+  const p=document.getElementById('fP').value;
   S.filtrado=S.proc.filter(row=>{
+    if(p==='pendente'&&row.pct>=100)return false;
+    if(p==='concluida'&&row.pct<100)return false;
     if(u&&row.unidade!==u)return false;
     if(l&&row.local!==l)return false;
     if(r&&row.resp!==r)return false;
@@ -752,10 +769,12 @@ function renderTabela(){
     }).join('');
     const badges=r.sems.map(s=>`<span class="badge-sem">${s}</span>`).join('');
     const criticoBadge=r.isCritico?'<span style="display:inline-block;background:#fef3e2;color:#e8a020;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:5px;vertical-align:middle">CRÍTICO</span>':'';
+    const pctColor=r.pct>=100?'var(--green)':r.pct>0?'var(--accent)':'var(--g4)';
+    const pctBadge=`<span style="display:inline-block;background:var(--palest);color:${pctColor};font-size:9px;font-weight:700;padding:1px 6px;border-radius:4px;margin-left:5px;vertical-align:middle;border:1px solid var(--g2)">${r.pct}%</span>`;
     return`<tr style="${criticoStyle}">
       <td style="font-size:11px;color:var(--g4)">${r.codigo}</td>
       <td>${r.unidade}</td><td>${r.local}</td>
-      <td class="td-ativ">${r.atividade}${criticoBadge}</td>
+      <td class="td-ativ">${r.atividade}${criticoBadge}${pctBadge}</td>
       <td>${fd(r.ip)}</td><td>${fd(r.fp)}</td>
       <td>${r.resp||'<span style="color:var(--g3)">—</span>'}</td>
       <td><div class="mini-gantt">${gantt}</div></td>
