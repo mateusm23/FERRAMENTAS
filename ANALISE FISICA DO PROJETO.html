@@ -377,14 +377,12 @@ function parseCSV(text) {
   if (rows.length === 0) throw new Error('Nenhum dado encontrado. Verifique o formato do arquivo.');
 
   // Normaliza contribuições: a soma do Base deve ser exatamente 100%.
-  // O CSV do Agilean exporta valores já arredondados a 2 casas, então a
-  // soma acumula pequenos erros. Aplicamos o mesmo fator em todos os
-  // cenários para preservar o desvio relativo entre Base, Reprog e Real.
-  const sumBase = rows.reduce((s, r) => s + r.cBase, 0);
-  if (sumBase > 0 && Math.abs(sumBase - 100) < 15) {
-    const f = 100 / sumBase;
-    rows.forEach(r => { r.cBase *= f; r.cReprog *= f; r.cReal *= f; });
-  }
+  // Normaliza Base e Reprog independentemente para corrigir arredondamento do Agilean.
+  // Real não é normalizado: representa progresso parcial (não precisa somar 100%).
+  const sumBase   = rows.reduce((s, r) => s + r.cBase,   0);
+  const sumReprog = rows.reduce((s, r) => s + r.cReprog,  0);
+  if (sumBase   > 0 && Math.abs(sumBase   - 100) < 15) { const f = 100 / sumBase;   rows.forEach(r => { r.cBase   *= f; }); }
+  if (sumReprog > 0 && Math.abs(sumReprog - 100) < 15) { const f = 100 / sumReprog; rows.forEach(r => { r.cReprog *= f; }); }
 
   const monthMap = new Map();
   rows.forEach(r => { monthMap.set(r.data.label, r.data); });
