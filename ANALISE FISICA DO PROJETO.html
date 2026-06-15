@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Análise Física do Projeto</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap');
+
+:root {
+  --navy: #1a2b45;
+  --blue: #1B6FBF;
+  --blue-bright: #1A6EE8;
+  --bg: #f0f4f9;
+  --surface: #ffffff;
+  --surface2: #f7fafd;
+  --border: #d4dfe8;
+  --text: #1a2b45;
+  --text-muted: #6b80a0;
+  --green: #0f9b6e;
+  --red: #d63a3a;
+  --green-bg: #e6f7f2;
+  --red-bg: #fdf0f0;
+  --shadow: 0 2px 16px rgba(26,43,69,0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+header {
+  background: var(--navy);
+  padding: 18px 32px;
+  display: flex; align-items: center; gap: 14px;
+}
+.header-back {
+  display: flex; align-items: center; gap: 6px;
+  color: rgba(255,255,255,0.5); font-size: 12px;
+  text-decoration: none; padding: 5px 10px;
+  border-radius: 6px; border: 1px solid rgba(255,255,255,0.12);
+  transition: all 0.15s; margin-right: 4px;
+}
+.header-back:hover { color: #fff; border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.07); }
+header h1 { font-family: 'Sora', sans-serif; font-size: 17px; font-weight: 600; color: #fff; }
+header h1 span { font-size: 13px; color: rgba(255,255,255,0.45); font-weight: 400; }
+
+.container { max-width: 1100px; margin: 0 auto; padding: 28px 24px 60px; }
+
+.steps { display: flex; flex-direction: column; gap: 16px; }
+
+.step-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; box-shadow: var(--shadow); overflow: hidden;
+}
+.step-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 20px; background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+}
+.step-num {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--navy); color: #fff;
+  font-family: 'Sora', sans-serif; font-size: 12px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.step-num.done { background: var(--green); }
+.step-num.active { background: var(--blue-bright); }
+.step-header h2 { font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 600; color: var(--text); }
+.step-header .hint { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.step-header .tag { margin-left: auto; font-size: 11px; padding: 3px 9px; border-radius: 20px; background: var(--border); color: var(--text-muted); font-weight: 500; white-space: nowrap; }
+.step-header .tag.ok { background: var(--green-bg); color: var(--green); }
+.step-body { padding: 16px 20px; }
+
+.upload-zone {
+  border: 2px dashed var(--border); border-radius: 10px;
+  padding: 32px 24px; text-align: center;
+  cursor: pointer; transition: all 0.15s; background: var(--bg);
+  display: block;
+}
+.upload-zone:hover, .upload-zone.drag-over { border-color: var(--blue-bright); background: #eef4fd; }
+.upload-zone input[type=file] { display: none; }
+.upload-icon { font-size: 32px; margin-bottom: 10px; }
+.upload-text { font-size: 14px; color: var(--text-muted); }
+.upload-text strong { color: var(--blue-bright); }
+
+.config-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.config-label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
+
+select {
+  border: 1px solid var(--border); border-radius: 7px;
+  padding: 9px 14px; font-family: 'DM Sans', sans-serif;
+  font-size: 13px; color: var(--text); background: var(--bg);
+  cursor: pointer; outline: none; transition: border .15s; min-width: 160px;
+}
+select:focus { border-color: var(--blue); background: #fff; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 18px; border-radius: 7px;
+  font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 600;
+  cursor: pointer; border: none; transition: all .15s;
+}
+.btn-primary { background: var(--blue-bright); color: #fff; }
+.btn-primary:hover { background: var(--blue); }
+.btn-primary:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; }
+.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
+.btn-outline:hover { border-color: var(--blue); color: var(--blue); }
+
+.parse-info { font-size: 12px; color: var(--text-muted); }
+.parse-info.ok { color: var(--green); }
+.parse-info.err { color: var(--red); }
+
+/* TABS */
+.tabs-bar { display: flex; gap: 3px; margin-bottom: -1px; position: relative; z-index: 1; }
+.tab-btn {
+  padding: 10px 20px; border-radius: 8px 8px 0 0;
+  font-family: 'Sora', sans-serif; font-size: 12px; font-weight: 600;
+  cursor: pointer; border: 1px solid var(--border);
+  background: var(--surface2); color: var(--text-muted);
+  transition: all 0.15s; border-bottom-color: transparent;
+}
+.tab-btn.active { background: var(--surface); color: var(--blue-bright); border-color: var(--border); border-bottom-color: var(--surface); }
+.tab-pane { display: none; background: var(--surface); border: 1px solid var(--border); border-radius: 0 10px 10px 10px; padding: 22px; box-shadow: var(--shadow); }
+.tab-pane.active { display: block; }
+
+#resultado { margin-top: 24px; }
+.result-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; gap: 12px; }
+.result-title { font-family: 'Sora', sans-serif; font-size: 15px; font-weight: 700; color: var(--navy); }
+.result-sub { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+
+/* TABLE */
+.table-wrap { border: 1px solid var(--border); border-radius: 10px; overflow: auto; box-shadow: var(--shadow); }
+table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+thead tr { background: var(--navy); }
+thead tr.subhead { background: #223357; }
+thead th {
+  font-family: 'Sora', sans-serif; font-size: 10.5px; font-weight: 600;
+  color: rgba(255,255,255,.85); text-transform: uppercase; letter-spacing: .5px;
+  padding: 10px 12px; text-align: right; white-space: nowrap;
+}
+thead th:first-child { text-align: left; }
+thead th.grp { text-align: center; border-left: 1px solid rgba(255,255,255,0.1); border-right: 1px solid rgba(255,255,255,0.1); }
+thead th.grp-base { background: rgba(26,110,232,0.3); }
+thead th.grp-reprog { background: rgba(217,119,6,0.3); }
+thead th.grp-real { background: rgba(15,155,110,0.3); }
+thead th.sub-base { background: rgba(26,110,232,0.15); }
+thead th.sub-reprog { background: rgba(217,119,6,0.15); }
+thead th.sub-real { background: rgba(15,155,110,0.15); }
+tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+tbody tr:hover { background: var(--surface2); }
+tbody tr:last-child { border-bottom: none; }
+tbody tr.cutoff-row { background: #fef9e7; }
+tbody tr.cutoff-row:hover { background: #fef3c7; }
+tbody td { padding: 9px 12px; text-align: right; }
+tbody td:first-child { text-align: left; font-weight: 500; color: var(--navy); font-size: 12px; }
+.pos { color: var(--green); font-weight: 600; }
+.neg { color: var(--red); font-weight: 600; }
+.zer { color: var(--text-muted); }
+.muted { color: var(--text-muted); }
+.pill { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.pill.pos { background: var(--green-bg); color: var(--green); }
+.pill.neg { background: var(--red-bg); color: var(--red); }
+.pill.zer { background: var(--border); color: var(--text-muted); }
+tfoot tr { background: var(--navy); }
+tfoot td { padding: 10px 12px; text-align: right; font-family: 'Sora', sans-serif; font-size: 11.5px; font-weight: 700; color: #fff; }
+tfoot td:first-child { text-align: left; }
+
+/* KPI */
+.kpi-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 18px; }
+.kpi-row-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 18px; }
+.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; box-shadow: var(--shadow); }
+.kpi-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); margin-bottom: 6px; }
+.kpi-val { font-family: 'Sora', sans-serif; font-size: 20px; font-weight: 700; color: var(--navy); }
+.kpi-val.pos { color: var(--green); }
+.kpi-val.neg { color: var(--red); }
+.kpi-val.zer { color: var(--text-muted); }
+.kpi-sub { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+
+@media (max-width: 700px) {
+  .kpi-row { grid-template-columns: 1fr 1fr; }
+  .kpi-row-3 { grid-template-columns: 1fr 1fr 1fr; }
+  header { padding: 14px 16px; }
+  .container { padding: 16px 12px; }
+}
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-thumb { background: #c5cedd; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="header-back" href="index.html">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+    Portal
+  </a>
+  <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+    <rect width="28" height="28" rx="7" fill="#1A6EE8"/>
+    <polyline points="4,21 9,14 14,17 19,10 24,6" stroke="white" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="24" cy="6" r="2" fill="white"/>
+  </svg>
+  <div>
+    <h1>Análise Física do Projeto <span>— Agilean</span></h1>
+  </div>
+</header>
+
+<div class="container">
+
+  <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:20px;display:flex;gap:12px;align-items:flex-start;box-shadow:var(--shadow)">
+    <span style="font-size:18px;flex-shrink:0;margin-top:1px">💡</span>
+    <div style="font-size:13px;color:var(--text-muted);line-height:1.8">
+      <strong style="color:var(--navy);font-family:'Sora',sans-serif">Como usar:</strong>
+      Exporte o cronograma do Agilean em formato <strong style="color:var(--text)">.csv</strong> (arquivo com as colunas <em>Código, Unidade, Macro Etapa, Etapa, Data, Contribuição e Avanço</em>). Carregue o arquivo abaixo e configure o mês de corte para gerar as 3 análises.
+    </div>
+  </div>
+
+  <div class="steps">
+
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num active" id="num1">1</div>
+        <div>
+          <h2>Carregar base de dados do Agilean</h2>
+          <div class="hint">Arquivo .csv exportado do cronograma (3 linhas de cabeçalho + dados)</div>
+        </div>
+        <span class="tag" id="tag1">Aguardando</span>
+      </div>
+      <div class="step-body">
+        <label class="upload-zone" id="uploadZone"
+          ondragover="ev.preventDefault();document.getElementById('uploadZone').classList.add('drag-over')"
+          ondragleave="document.getElementById('uploadZone').classList.remove('drag-over')"
+          ondrop="doDrop(event)">
+          <input type="file" id="fileInput" accept=".csv,.txt" onchange="handleFile(this.files[0])">
+          <div class="upload-icon">📂</div>
+          <div class="upload-text"><strong>Clique para selecionar</strong> ou arraste o arquivo aqui</div>
+          <div class="upload-text" style="font-size:11px;margin-top:4px;color:var(--text-muted)">Formato .csv — exportação do Agilean</div>
+        </label>
+        <div style="margin-top:10px"><span class="parse-info" id="infoFile"></span></div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num" id="num2">2</div>
+        <div>
+          <h2>Configurar análise</h2>
+          <div class="hint">Mês de corte para o cálculo de avanço acumulado</div>
+        </div>
+        <span class="tag" id="tag2">Aguardando</span>
+      </div>
+      <div class="step-body">
+        <div class="config-row">
+          <span class="config-label">Mês de Corte</span>
+          <select id="selectCorte" disabled onchange="onCorteChange()">
+            <option value="">— carregue o arquivo primeiro —</option>
+          </select>
+          <button class="btn btn-primary" id="btnGerar" onclick="gerarAnalise()" disabled>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            Gerar Análise
+          </button>
+          <span class="parse-info" id="infoCorte" style="font-size:11px"></span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="resultado"></div>
+</div>
+
+<script>
+const S = { rows: [], months: [], cutoffIdx: -1 };
+
+const MONTH_NUM = {
+  jan:1, feb:2, fev:2, mar:3, apr:4, abr:4, may:5, mai:5,
+  jun:6, jul:7, aug:8, ago:8, sep:9, set:9, oct:10, out:10,
+  nov:11, dec:12, dez:12
+};
+
+const PT_MONTHS = {
+  jan:'Jan', feb:'Fev', fev:'Fev', mar:'Mar', apr:'Abr', abr:'Abr',
+  may:'Mai', mai:'Mai', jun:'Jun', jul:'Jul', aug:'Ago', ago:'Ago',
+  sep:'Set', set:'Set', oct:'Out', out:'Out', nov:'Nov', dec:'Dez', dez:'Dez'
+};
+
+function parseMonthStr(s) {
+  if (!s) return null;
+  s = s.trim();
+  const m = s.match(/^([A-Za-zç]+)[\/\-](\d{4})$/);
+  if (!m) return null;
+  const key = m[1].toLowerCase();
+  const mn = MONTH_NUM[key];
+  const yr = parseInt(m[2]);
+  if (!mn || isNaN(yr)) return null;
+  const ptMonth = PT_MONTHS[key] || m[1];
+  return { label: ptMonth + '/' + m[2], sortKey: yr * 100 + mn };
+}
+
+function parsePct(v) {
+  if (!v && v !== 0) return 0;
+  const s = String(v).trim().replace(/%/g, '').replace(',', '.').trim();
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
+function detectSep(line) {
+  const t = (line.match(/\t/g) || []).length;
+  const sc = (line.match(/;/g) || []).length;
+  const cm = (line.match(/,/g) || []).length;
+  if (t >= sc && t >= cm) return '\t';
+  if (sc >= cm) return ';';
+  return ',';
+}
+
+function splitLine(line, sep) {
+  if (!line.includes('"')) return line.split(sep);
+  const out = []; let cur = ''; let q = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') { q = !q; }
+    else if (ch === sep && !q) { out.push(cur); cur = ''; }
+    else { cur += ch; }
+  }
+  out.push(cur);
+  return out;
+}
+
+function parseCSV(text) {
+  text = text.replace(/^﻿/, '');
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  if (lines.length < 4) throw new Error('Arquivo muito curto — esperado 3 linhas de cabeçalho + dados');
+
+  const sep = detectSep(lines[0]);
+
+  // Col positions (0-indexed): fixed by Agilean export format
+  // 0:Código 1:Unidade 2:Local 3:MacroEtapa 4:Etapa 5:Data
+  // 6:ContribReal 7:ContribReprog 8:ContribBase
+  // 9:AvancoReal  10:AvancoReprog 11:AvancoBase
+  const COL = { codigo:0, unidade:1, local:2, macroEtapa:3, etapa:4, data:5,
+                cReal:6, cReprog:7, cBase:8, aReal:9, aReprog:10, aBase:11 };
+
+  // Try to auto-detect column positions from header row (row index 2)
+  const headerCols = splitLine(lines[2], sep).map(h => h.trim().toLowerCase());
+  headerCols.forEach((h, i) => {
+    if (h === 'código' || h === 'codigo') COL.codigo = i;
+    else if (h === 'unidade') COL.unidade = i;
+    else if (h === 'local') COL.local = i;
+    else if (h.includes('macro')) COL.macroEtapa = i;
+    else if (h === 'etapa') COL.etapa = i;
+    else if (h === 'data') COL.data = i;
+  });
+
+  const rows = [];
+  for (let i = 3; i < lines.length; i++) {
+    const cols = splitLine(lines[i], sep);
+    if (cols.length < 9) continue;
+    const dataStr = (cols[COL.data] || '').trim();
+    if (!dataStr) continue;
+    const dataParsed = parseMonthStr(dataStr);
+    if (!dataParsed) continue;
+    const unidade = (cols[COL.unidade] || '').trim();
+    const macroEtapa = (cols[COL.macroEtapa] || '').trim();
+    if (!unidade && !macroEtapa) continue;
+    rows.push({
+      codigo:    (cols[COL.codigo]    || '').trim(),
+      unidade:   unidade || '(sem unidade)',
+      local:     (cols[COL.local]     || '').trim(),
+      macroEtapa: macroEtapa || '(sem macro etapa)',
+      etapa:     (cols[COL.etapa]     || '').trim(),
+      data:      dataParsed,
+      cReal:     parsePct(cols[COL.cReal]),
+      cReprog:   parsePct(cols[COL.cReprog]),
+      cBase:     parsePct(cols[COL.cBase]),
+      aReal:     parsePct(cols[COL.aReal]),
+      aReprog:   parsePct(cols[COL.aReprog]),
+      aBase:     parsePct(cols[COL.aBase])
+    });
+  }
+  if (rows.length === 0) throw new Error('Nenhum dado encontrado. Verifique o formato do arquivo.');
+
+  // Normaliza contribuições: a soma do Base deve ser exatamente 100%.
+  // O CSV do Agilean exporta valores já arredondados a 2 casas, então a
+  // soma acumula pequenos erros. Aplicamos o mesmo fator em todos os
+  // cenários para preservar o desvio relativo entre Base, Reprog e Real.
+  const sumBase = rows.reduce((s, r) => s + r.cBase, 0);
+  if (sumBase > 0 && Math.abs(sumBase - 100) < 15) {
+    const f = 100 / sumBase;
+    rows.forEach(r => { r.cBase *= f; r.cReprog *= f; r.cReal *= f; });
+  }
+
+  const monthMap = new Map();
+  rows.forEach(r => { monthMap.set(r.data.label, r.data); });
+  const months = [...monthMap.values()].sort((a, b) => a.sortKey - b.sortKey);
+
+  return { rows, months };
+}
+
+// --- File Handling ---
+
+function doDrop(e) {
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.remove('drag-over');
+  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+}
+
+function handleFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const { rows, months } = parseCSV(e.target.result);
+      S.rows = rows;
+      S.months = months;
+
+      // Auto-detect cutoff: last month with any cReal > 0
+      let lastIdx = -1;
+      months.forEach((m, idx) => {
+        const sum = rows.filter(r => r.data.label === m.label).reduce((s, r) => s + r.cReal, 0);
+        if (sum > 0) lastIdx = idx;
+      });
+      S.cutoffIdx = lastIdx >= 0 ? lastIdx : months.length - 1;
+
+      const unidades  = [...new Set(rows.map(r => r.unidade))].filter(Boolean);
+      const macros    = [...new Set(rows.map(r => r.macroEtapa))].filter(Boolean);
+      const info = `✓ ${rows.length.toLocaleString('pt-BR')} registros — ${months.length} meses — ${unidades.length} unidades — ${macros.length} macro etapas`;
+
+      document.getElementById('infoFile').textContent = info;
+      document.getElementById('infoFile').className = 'parse-info ok';
+      document.getElementById('tag1').textContent = `${rows.length.toLocaleString('pt-BR')} reg.`;
+      document.getElementById('tag1').className = 'tag ok';
+      document.getElementById('num1').className = 'step-num done';
+      document.getElementById('num2').className = 'step-num active';
+
+      const sel = document.getElementById('selectCorte');
+      sel.innerHTML = '';
+      months.forEach((m, i) => {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = m.label;
+        if (i === S.cutoffIdx) opt.selected = true;
+        sel.appendChild(opt);
+      });
+      sel.disabled = false;
+      document.getElementById('btnGerar').disabled = false;
+      document.getElementById('tag2').textContent = 'Pronto';
+      document.getElementById('tag2').className = 'tag ok';
+      document.getElementById('infoCorte').textContent = `Auto-detectado: ${months[S.cutoffIdx].label}`;
+      document.getElementById('infoCorte').className = 'parse-info ok';
+    } catch (err) {
+      document.getElementById('infoFile').textContent = '✗ ' + err.message;
+      document.getElementById('infoFile').className = 'parse-info err';
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function onCorteChange() {
+  const idx = parseInt(document.getElementById('selectCorte').value);
+  if (!isNaN(idx)) {
+    document.getElementById('infoCorte').textContent = `Selecionado: ${S.months[idx].label}`;
+    document.getElementById('infoCorte').className = 'parse-info ok';
+  }
+}
+
+// --- Build data ---
+
+function buildCurvaSGlobal() {
+  let bAcum = 0, rAcum = 0, rpAcum = 0;
+  return S.months.map((m, idx) => {
+    const mRows = S.rows.filter(r => r.data.label === m.label);
+    const bMes  = mRows.reduce((s, r) => s + r.cBase, 0);
+    const rpMes = mRows.reduce((s, r) => s + r.cReprog, 0);
+    const rMes  = idx <= S.cutoffIdx ? mRows.reduce((s, r) => s + r.cReal, 0) : null;
+    bAcum  += bMes;
+    rpAcum += rpMes;
+    if (rMes !== null) rAcum += rMes;
+    return {
+      label: m.label,
+      bMes, bAcum,
+      rpMes, rpAcum,
+      rMes,
+      rAcum: idx <= S.cutoffIdx ? rAcum : null,
+      isCutoff: idx === S.cutoffIdx
+    };
+  });
+}
+
+function buildCurvaSUnidade() {
+  const units = [...new Set(S.rows.map(r => r.unidade))].filter(Boolean).sort();
+  const cutSet = new Set(S.months.slice(0, S.cutoffIdx + 1).map(m => m.label));
+  return units.map(u => {
+    const uRows = S.rows.filter(r => r.unidade === u);
+    let bTotal = 0, bCut = 0, rpCut = 0, rCut = 0;
+    uRows.forEach(r => {
+      bTotal += r.cBase;
+      if (cutSet.has(r.data.label)) {
+        bCut  += r.cBase;
+        rpCut += r.cReprog;
+        rCut  += r.cReal;
+      }
+    });
+    return { unidade: u, bTotal, bCut, rpCut, rCut, dev: rCut - bCut };
+  });
+}
+
+function buildCurvaSUnidadeMensal(unidade) {
+  const uRows = S.rows.filter(r => r.unidade === unidade);
+  // Normaliza para que o peso total da unidade = 100%
+  const unitBase = uRows.reduce((s, r) => s + r.cBase, 0);
+  const f = unitBase > 0 ? 100 / unitBase : 1;
+
+  let bAcum = 0, rpAcum = 0, rAcum = 0;
+  return S.months.map((m, idx) => {
+    const mRows = uRows.filter(r => r.data.label === m.label);
+    const bMes  = mRows.reduce((s, r) => s + r.cBase,   0) * f;
+    const rpMes = mRows.reduce((s, r) => s + r.cReprog, 0) * f;
+    const rMes  = idx <= S.cutoffIdx ? mRows.reduce((s, r) => s + r.cReal, 0) * f : null;
+    bAcum  += bMes;
+    rpAcum += rpMes;
+    if (rMes !== null) rAcum += rMes;
+    return {
+      label: m.label,
+      bMes, bAcum,
+      rpMes, rpAcum,
+      rMes,
+      rAcum: idx <= S.cutoffIdx ? rAcum : null,
+      isCutoff: idx === S.cutoffIdx
+    };
+  });
+}
+
+function buildPrevistoReal() {
+  const macros = [...new Set(S.rows.map(r => r.macroEtapa))].filter(Boolean).sort();
+  const cutSet = new Set(S.months.slice(0, S.cutoffIdx + 1).map(m => m.label));
+  return macros.map(me => {
+    const mRows = S.rows.filter(r => r.macroEtapa === me);
+    let bTotal = 0, bCut = 0, rpCut = 0, rCut = 0;
+    mRows.forEach(r => {
+      bTotal += r.cBase;
+      if (cutSet.has(r.data.label)) {
+        bCut  += r.cBase;
+        rpCut += r.cReprog;
+        rCut  += r.cReal;
+      }
+    });
+    return { macroEtapa: me, bTotal, bCut, rpCut, rCut, dev: rCut - bCut };
+  });
+}
+
+// --- Formatting ---
+
+function p(v, d) {
+  d = d === undefined ? 2 : d;
+  return v === null ? '—' : v.toFixed(d) + '%';
+}
+function pp(v) { return (v >= 0 ? '+' : '') + v.toFixed(2) + ' p.p.'; }
+function px(v, d) { d = d === undefined ? 2 : d; return v === null ? '' : v.toFixed(d).replace('.', ',') + '%'; }
+function ppx(v) { return (v >= 0 ? '+' : '') + v.toFixed(2).replace('.', ',') + ' p.p.'; }
+function cls(v) { if (v === null || Math.abs(v) < 0.005) return 'zer'; return v > 0 ? 'pos' : 'neg'; }
+function statusPill(v) {
+  if (Math.abs(v) < 0.005) return '<span class="pill zer">Em dia</span>';
+  return v > 0 ? '<span class="pill pos">Adiantado</span>' : '<span class="pill neg">Atrasado</span>';
+}
+
+// Copy helpers
+function copyFeedback(btnId) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  const orig = btn.innerHTML;
+  btn.textContent = '✓ Copiado!';
+  btn.style.cssText = 'color:var(--green);border-color:var(--green);border:1px solid;padding:9px 18px;border-radius:7px;font-family:Sora,sans-serif;font-size:13px;font-weight:600;cursor:pointer;background:transparent';
+  setTimeout(() => { btn.innerHTML = orig; btn.style.cssText = ''; }, 2000);
+}
+
+function copyTSV(tsv, btnId) {
+  navigator.clipboard.writeText(tsv).then(() => copyFeedback(btnId)).catch(() => {});
+}
+
+// --- Analysis ---
+
+let _GD, _UD, _ED, _UD_sel, _UD_monthly;
+
+function gerarAnalise() {
+  const cutoffIdx = parseInt(document.getElementById('selectCorte').value);
+  if (isNaN(cutoffIdx)) return;
+  S.cutoffIdx = cutoffIdx;
+  const cutLabel = S.months[cutoffIdx].label;
+
+  _GD = buildCurvaSGlobal();
+  _UD = buildCurvaSUnidade();
+  _ED = buildPrevistoReal();
+
+  _UD_sel = _UD.length > 0 ? _UD[0].unidade : null;
+  _UD_monthly = _UD_sel ? buildCurvaSUnidadeMensal(_UD_sel) : [];
+
+  renderResultado(cutLabel);
+  document.getElementById('num2').className = 'step-num done';
+  document.getElementById('tag2').textContent = cutLabel;
+}
+
+function renderResultado(cutLabel) {
+  const cutRow  = _GD.find(r => r.isCutoff);
+  const bAcum   = cutRow ? cutRow.bAcum  : 0;
+  const rAcum   = cutRow ? (cutRow.rAcum || 0) : 0;
+  const rpAcum  = cutRow ? cutRow.rpAcum : 0;
+  const devGlob = rAcum - bAcum;
+
+  const div = document.getElementById('resultado');
+  div.innerHTML = `
+    <div class="kpi-row">
+      <div class="kpi">
+        <div class="kpi-label">Mês de Corte</div>
+        <div class="kpi-val" style="font-size:17px">${cutLabel}</div>
+        <div class="kpi-sub">Referência de análise</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Base Acumulado</div>
+        <div class="kpi-val">${p(bAcum)}</div>
+        <div class="kpi-sub">Previsto até o corte</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Real Acumulado</div>
+        <div class="kpi-val ${cls(devGlob)}">${p(rAcum)}</div>
+        <div class="kpi-sub">Executado até o corte</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Desvio Global</div>
+        <div class="kpi-val ${cls(devGlob)}">${pp(devGlob)}</div>
+        <div class="kpi-sub">${devGlob > 0.005 ? '✓ Obra adiantada' : devGlob < -0.005 ? '⚠ Obra atrasada' : '= Em dia'}</div>
+      </div>
+    </div>
+
+    <div class="tabs-bar">
+      <button class="tab-btn active" id="tbtn-global"   onclick="switchTab('global',this)">Curva S Global</button>
+      <button class="tab-btn"        id="tbtn-unidade"  onclick="switchTab('unidade',this)">Curva S por Unidade</button>
+      <button class="tab-btn"        id="tbtn-etapas"   onclick="switchTab('etapas',this)">Previsto × Real por Etapas</button>
+    </div>
+
+    <div class="tab-pane active" id="tab-global">
+      ${renderTabGlobal(cutLabel)}
+    </div>
+    <div class="tab-pane" id="tab-unidade">
+      ${renderTabUnidade(cutLabel)}
+    </div>
+    <div class="tab-pane" id="tab-etapas">
+      ${renderTabEtapas(cutLabel)}
+    </div>
+  `;
+  div.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function switchTab(id, el) {
+  document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  el.classList.add('active');
+}
+
+// --- Tab Global ---
+
+function renderTabGlobal(cutLabel) {
+  const rows = _GD.map(r => `
+    <tr class="${r.isCutoff ? 'cutoff-row' : ''}">
+      <td>${r.label}${r.isCutoff ? ' <span style="font-size:10px;color:var(--blue-bright);font-weight:600">◀ CORTE</span>' : ''}</td>
+      <td>${p(r.bMes)}</td>
+      <td><strong>${p(r.bAcum)}</strong></td>
+      <td>${p(r.rpMes)}</td>
+      <td><strong>${p(r.rpAcum)}</strong></td>
+      <td class="${r.rMes !== null ? '' : 'muted'}">${p(r.rMes)}</td>
+      <td class="${r.rAcum !== null ? cls(r.rAcum - r.bAcum) : 'muted'}"><strong>${p(r.rAcum)}</strong></td>
+      <td>${r.rAcum !== null ? '<span class="pill ' + cls(r.rAcum - r.bAcum) + '">' + pp(r.rAcum - r.bAcum) + '</span>' : '—'}</td>
+    </tr>`).join('');
+
+  return `
+    <div class="result-header">
+      <div>
+        <div class="result-title">Curva S Global — Evolução Mensal</div>
+        <div class="result-sub">Acumulado de contribuições físicas ponderadas • Base, Reprogramado e Real</div>
+      </div>
+      <button class="btn btn-outline" id="btnCopyGlobal" onclick="doCopyGlobal()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copiar para Excel
+      </button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th rowspan="2" style="vertical-align:middle;min-width:110px">Mês</th>
+            <th colspan="2" class="grp grp-base">Base</th>
+            <th colspan="2" class="grp grp-reprog">Reprog</th>
+            <th colspan="2" class="grp grp-real">Real</th>
+            <th rowspan="2" style="vertical-align:middle">Desvio<br><span style="font-size:9px;opacity:.7">(Real − Base)</span></th>
+          </tr>
+          <tr class="subhead">
+            <th class="sub-base">Mensal</th><th class="sub-base">Acum.</th>
+            <th class="sub-reprog">Mensal</th><th class="sub-reprog">Acum.</th>
+            <th class="sub-real">Mensal</th><th class="sub-real">Acum.</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+function doCopyGlobal() {
+  const hdr = ['Mês','Base Mensal (%)','Base Acum (%)','Reprog Mensal (%)','Reprog Acum (%)','Real Mensal (%)','Real Acum (%)','Desvio (p.p.)'];
+  const rows = _GD.map(r => [
+    r.label,
+    px(r.bMes), px(r.bAcum),
+    px(r.rpMes), px(r.rpAcum),
+    r.rMes !== null ? px(r.rMes) : '',
+    r.rAcum !== null ? px(r.rAcum) : '',
+    r.rAcum !== null ? ppx(r.rAcum - r.bAcum) : ''
+  ]);
+  copyTSV([hdr, ...rows].map(r => r.join('\t')).join('\n'), 'btnCopyGlobal');
+}
+
+// --- Tab Unidade ---
+
+function renderTabUnidade(cutLabel) {
+  const opts = _UD.map(r =>
+    `<option value="${r.unidade}" ${r.unidade === _UD_sel ? 'selected' : ''}>${r.unidade}</option>`
+  ).join('');
+
+  const cutRow = _UD_monthly.find(r => r.isCutoff);
+
+  return `
+    <div class="result-header">
+      <div>
+        <div class="result-title">Curva S por Unidade — Evolução Mensal</div>
+        <div class="result-sub">Avanço físico normalizado: peso total da unidade = 100%</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <select id="selectUnidade" onchange="mudarUnidade()" style="min-width:220px">${opts}</select>
+        <button class="btn btn-outline" id="btnCopyUnidade" onclick="doCopyUnidade()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copiar para Excel
+        </button>
+      </div>
+    </div>
+    <div id="uni-kpis">${renderUnidadeKpis(cutRow)}</div>
+    <div id="uni-table">${renderUnidadeTable()}</div>`;
+}
+
+function renderUnidadeKpis(cutRow) {
+  if (!cutRow) return '';
+  const bCut = cutRow.bAcum;
+  const rCut = cutRow.rAcum || 0;
+  const dev  = rCut - bCut;
+  const status = dev > 0.005 ? 'Adiantada' : dev < -0.005 ? 'Atrasada' : 'Em dia';
+  return `
+    <div class="kpi-row-3" style="margin-bottom:18px">
+      <div class="kpi">
+        <div class="kpi-label">Base até Corte</div>
+        <div class="kpi-val">${p(bCut)}</div>
+        <div class="kpi-sub">Previsto acumulado (0–100%)</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Real até Corte</div>
+        <div class="kpi-val ${cls(dev)}">${p(rCut)}</div>
+        <div class="kpi-sub">Executado acumulado (0–100%)</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Desvio</div>
+        <div class="kpi-val ${cls(dev)}">${pp(dev)}</div>
+        <div class="kpi-sub">${status}</div>
+      </div>
+    </div>`;
+}
+
+function renderUnidadeTable() {
+  const rows = _UD_monthly.map(r => `
+    <tr class="${r.isCutoff ? 'cutoff-row' : ''}">
+      <td>${r.label}${r.isCutoff ? ' <span style="font-size:10px;color:var(--blue-bright);font-weight:600">◀ CORTE</span>' : ''}</td>
+      <td>${p(r.bMes)}</td>
+      <td><strong>${p(r.bAcum)}</strong></td>
+      <td>${p(r.rpMes)}</td>
+      <td><strong>${p(r.rpAcum)}</strong></td>
+      <td class="${r.rMes !== null ? '' : 'muted'}">${p(r.rMes)}</td>
+      <td class="${r.rAcum !== null ? cls(r.rAcum - r.bAcum) : 'muted'}"><strong>${p(r.rAcum)}</strong></td>
+      <td>${r.rAcum !== null ? '<span class="pill ' + cls(r.rAcum - r.bAcum) + '">' + pp(r.rAcum - r.bAcum) + '</span>' : '—'}</td>
+    </tr>`).join('');
+
+  return `
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th rowspan="2" style="vertical-align:middle;min-width:110px">Mês</th>
+            <th colspan="2" class="grp grp-base">Base</th>
+            <th colspan="2" class="grp grp-reprog">Reprog</th>
+            <th colspan="2" class="grp grp-real">Real</th>
+            <th rowspan="2" style="vertical-align:middle">Desvio<br><span style="font-size:9px;opacity:.7">(Real − Base)</span></th>
+          </tr>
+          <tr class="subhead">
+            <th class="sub-base">Mensal</th><th class="sub-base">Acum.</th>
+            <th class="sub-reprog">Mensal</th><th class="sub-reprog">Acum.</th>
+            <th class="sub-real">Mensal</th><th class="sub-real">Acum.</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+function mudarUnidade() {
+  const sel = document.getElementById('selectUnidade');
+  if (!sel) return;
+  _UD_sel = sel.value;
+  _UD_monthly = buildCurvaSUnidadeMensal(_UD_sel);
+  const cutRow = _UD_monthly.find(r => r.isCutoff);
+  document.getElementById('uni-kpis').innerHTML = renderUnidadeKpis(cutRow);
+  document.getElementById('uni-table').innerHTML = renderUnidadeTable();
+}
+
+function doCopyUnidade() {
+  const hdr = ['Mês','Base Mensal (%)','Base Acum (%)','Reprog Mensal (%)','Reprog Acum (%)','Real Mensal (%)','Real Acum (%)','Desvio (p.p.)'];
+  const rows = _UD_monthly.map(r => [
+    r.label,
+    px(r.bMes), px(r.bAcum),
+    px(r.rpMes), px(r.rpAcum),
+    r.rMes !== null ? px(r.rMes) : '',
+    r.rAcum !== null ? px(r.rAcum) : '',
+    r.rAcum !== null ? ppx(r.rAcum - r.bAcum) : ''
+  ]);
+  copyTSV([hdr, ...rows].map(r => r.join('\t')).join('\n'), 'btnCopyUnidade');
+}
+
+// --- Tab Etapas ---
+
+function renderTabEtapas(cutLabel) {
+  const ahead   = _ED.filter(r => r.dev > 0.005).length;
+  const behind  = _ED.filter(r => r.dev < -0.005).length;
+  const ontrack = _ED.length - ahead - behind;
+
+  const totBT  = _ED.reduce((s, r) => s + r.bTotal, 0);
+  const totBC  = _ED.reduce((s, r) => s + r.bCut, 0);
+  const totRP  = _ED.reduce((s, r) => s + r.rpCut, 0);
+  const totRC  = _ED.reduce((s, r) => s + r.rCut, 0);
+  const totDev = totRC - totBC;
+
+  const rows = _ED.map(r => `
+    <tr>
+      <td>${r.macroEtapa}</td>
+      <td>${p(r.bTotal)}</td>
+      <td>${p(r.bCut)}</td>
+      <td>${p(r.rpCut)}</td>
+      <td class="${cls(r.dev)}">${p(r.rCut)}</td>
+      <td><span class="pill ${cls(r.dev)}">${pp(r.dev)}</span></td>
+      <td>${statusPill(r.dev)}</td>
+    </tr>`).join('');
+
+  return `
+    <div class="result-header">
+      <div>
+        <div class="result-title">Previsto × Real por Macro Etapa — até ${cutLabel}</div>
+        <div class="result-sub">Contribuição acumulada por macro etapa comparada ao baseline</div>
+      </div>
+      <button class="btn btn-outline" id="btnCopyEtapas" onclick="doCopyEtapas()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copiar para Excel
+      </button>
+    </div>
+    <div class="kpi-row-3">
+      <div class="kpi"><div class="kpi-label">Adiantadas</div><div class="kpi-val pos">${ahead}</div><div class="kpi-sub">etapas</div></div>
+      <div class="kpi"><div class="kpi-label">Em dia</div><div class="kpi-val zer">${ontrack}</div><div class="kpi-sub">etapas</div></div>
+      <div class="kpi"><div class="kpi-label">Atrasadas</div><div class="kpi-val neg">${behind}</div><div class="kpi-sub">etapas</div></div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Macro Etapa</th>
+          <th>Peso Total (Base)</th>
+          <th>Base até Corte</th>
+          <th>Reprog até Corte</th>
+          <th>Real até Corte</th>
+          <th>Desvio (R−B)</th>
+          <th>Status</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot><tr>
+          <td>TOTAL</td>
+          <td>${p(totBT)}</td>
+          <td>${p(totBC)}</td>
+          <td>${p(totRP)}</td>
+          <td class="${cls(totDev)}">${p(totRC)}</td>
+          <td><span class="pill ${cls(totDev)}">${pp(totDev)}</span></td>
+          <td>—</td>
+        </tr></tfoot>
+      </table>
+    </div>`;
+}
+
+function doCopyEtapas() {
+  const hdr = ['Macro Etapa','Peso Total Base (%)','Base até Corte (%)','Reprog até Corte (%)','Real até Corte (%)','Desvio (p.p.)','Status'];
+  const rows = _ED.map(r => [
+    r.macroEtapa, px(r.bTotal), px(r.bCut), px(r.rpCut), px(r.rCut), ppx(r.dev),
+    r.dev > 0.005 ? 'Adiantado' : r.dev < -0.005 ? 'Atrasado' : 'Em dia'
+  ]);
+  copyTSV([hdr, ...rows].map(r => r.join('\t')).join('\n'), 'btnCopyEtapas');
+}
+</script>
+<script src="https://mateusm23.github.io/HUB/assets/tracker.js" data-tool="ferramentas"></script>
+</body>
+</html>
