@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Análise Física do Projeto v2</title>
+<title>Análise Física do Projeto</title>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap');
@@ -38,9 +38,43 @@ header { background: var(--navy); padding: 18px 32px; display: flex; align-items
 .header-back:hover { color: #fff; border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.07); }
 header h1 { font-family: 'Sora', sans-serif; font-size: 17px; font-weight: 600; color: #fff; }
 header h1 span { font-size: 13px; color: rgba(255,255,255,0.45); font-weight: 400; }
+.header-modo-badge { margin-left: auto; font-family: 'Sora', sans-serif; font-size: 11px; font-weight: 700; padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.7); letter-spacing: .04em; }
 
 .container { max-width: 1200px; margin: 0 auto; padding: 28px 24px 60px; }
 .steps { display: flex; flex-direction: column; gap: 16px; }
+
+/* ── Seletor de modo ── */
+.modo-selector {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 22px;
+  box-shadow: var(--shadow);
+  margin-bottom: 20px;
+}
+.modo-selector-title {
+  font-family: 'Sora', sans-serif; font-size: 12px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted);
+  margin-bottom: 14px;
+}
+.modo-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.modo-card {
+  border: 2px solid var(--border); border-radius: 10px; padding: 16px 18px;
+  cursor: pointer; transition: all .18s; background: var(--bg);
+  position: relative; user-select: none;
+}
+.modo-card:hover { border-color: var(--blue-bright); background: #eef4fd; }
+.modo-card.selected { border-color: var(--blue-bright); background: #eef4fd; }
+.modo-card.selected::after {
+  content: '✓'; position: absolute; top: 10px; right: 12px;
+  color: var(--blue-bright); font-size: 14px; font-weight: 700;
+}
+.modo-card-icon { font-size: 22px; margin-bottom: 8px; }
+.modo-card-name { font-family: 'Sora', sans-serif; font-size: 14px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+.modo-card-sub  { font-size: 11.5px; color: var(--text-muted); line-height: 1.6; }
+.modo-card-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 9px; }
+.modo-tag { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px; background: var(--border); color: var(--text-muted); }
+.modo-card.selected .modo-tag { background: rgba(26,110,232,0.12); color: var(--blue-bright); }
 
 .step-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); overflow: hidden; }
 .step-header { display: flex; align-items: center; gap: 12px; padding: 14px 20px; background: var(--surface2); border-bottom: 1px solid var(--border); }
@@ -80,13 +114,11 @@ select:focus { border-color: var(--blue); background: #fff; }
 .parse-info.ok { color: var(--green); }
 .parse-info.err { color: var(--red); }
 
-/* Toggle */
 .toggle-group { display: inline-flex; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
 .toggle-btn { padding: 7px 16px; font-family: 'Sora', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; border: none; background: transparent; color: var(--text-muted); transition: all .15s; }
 .toggle-btn.active { background: var(--navy); color: #fff; }
 .toggle-btn:hover:not(.active) { background: var(--surface2); }
 
-/* TABS */
 .tabs-bar { display: flex; gap: 3px; margin-bottom: -1px; position: relative; z-index: 1; flex-wrap: wrap; }
 .tab-btn { padding: 10px 18px; border-radius: 8px 8px 0 0; font-family: 'Sora', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--surface2); color: var(--text-muted); transition: all 0.15s; border-bottom-color: transparent; }
 .tab-btn.active { background: var(--surface); color: var(--blue-bright); border-color: var(--border); border-bottom-color: var(--surface); }
@@ -98,7 +130,6 @@ select:focus { border-color: var(--blue); background: #fff; }
 .result-title { font-family: 'Sora', sans-serif; font-size: 15px; font-weight: 700; color: var(--navy); }
 .result-sub { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
 
-/* TABLE */
 .table-wrap { border: 1px solid var(--border); border-radius: 10px; overflow: auto; box-shadow: var(--shadow); }
 .table-wrap-scroll { border: 1px solid var(--border); border-radius: 10px; overflow-y: auto; max-height: 560px; box-shadow: var(--shadow); }
 table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
@@ -130,12 +161,10 @@ tbody td:first-child { text-align: left; font-weight: 500; color: var(--navy); f
 .pill.pos { background: var(--green-bg); color: var(--green); }
 .pill.neg { background: var(--red-bg); color: var(--red); }
 .pill.zer { background: var(--border); color: var(--text-muted); }
-.pill.ok { background: var(--green-bg); color: var(--green); }
 tfoot tr { background: var(--navy); }
 tfoot td { padding: 10px 12px; text-align: right; font-family: 'Sora', sans-serif; font-size: 11.5px; font-weight: 700; color: #fff; }
 tfoot td:first-child { text-align: left; }
 
-/* KPI */
 .kpi-row   { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 12px; }
 .kpi-row-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 12px; }
 .kpi-row-4c { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 18px; }
@@ -147,13 +176,13 @@ tfoot td:first-child { text-align: left; }
 .kpi-val.zer { color: var(--text-muted); }
 .kpi-sub { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
 
-/* Filtro bar */
 .filter-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 16px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 16px; }
 .filter-bar .config-label { font-size: 11px; }
 
 @media (max-width: 700px) {
   .kpi-row { grid-template-columns: 1fr 1fr; }
   .kpi-row-3 { grid-template-columns: 1fr 1fr; }
+  .modo-cards { grid-template-columns: 1fr; }
   header { padding: 14px 16px; }
   .container { padding: 16px 12px; }
 }
@@ -174,12 +203,50 @@ tfoot td:first-child { text-align: left; }
     <circle cx="24" cy="6" r="2" fill="white"/>
   </svg>
   <div>
-    <h1>Análise Física do Projeto <span>— Agilean v2</span></h1>
+    <h1>Análise Física do Projeto <span>— Agilean</span></h1>
   </div>
+  <span class="header-modo-badge" id="headerModoBadge">SINTÉTICO</span>
 </header>
 
 <div class="container">
 
+  <!-- ── Seletor de modo ─────────────────────────────────────────────────── -->
+  <div class="modo-selector">
+    <div class="modo-selector-title">Modo de análise</div>
+    <div class="modo-cards">
+
+      <div class="modo-card selected" id="modoCardSin" onclick="setModo('sintetico')">
+        <div class="modo-card-icon">📋</div>
+        <div class="modo-card-name">Sintético</div>
+        <div class="modo-card-sub">Visão consolidada: Curva S global, por unidade e desvio por macro etapa.</div>
+        <div class="modo-card-tags">
+          <span class="modo-tag">4 KPIs</span>
+          <span class="modo-tag">3 abas</span>
+          <span class="modo-tag">Curva S Global</span>
+          <span class="modo-tag">Curva S Unidade</span>
+          <span class="modo-tag">Previsto × Real</span>
+        </div>
+      </div>
+
+      <div class="modo-card" id="modoCardAna" onclick="setModo('analitico')">
+        <div class="modo-card-icon">🔬</div>
+        <div class="modo-card-name">Analítico</div>
+        <div class="modo-card-sub">Visão detalhada com indicadores de desempenho, projeção e conclusão por atividade.</div>
+        <div class="modo-card-tags">
+          <span class="modo-tag">7 KPIs</span>
+          <span class="modo-tag">4 abas</span>
+          <span class="modo-tag">IDP</span>
+          <span class="modo-tag">Projeção de Término</span>
+          <span class="modo-tag">Conclusão por Etapa</span>
+          <span class="modo-tag">Filtros</span>
+          <span class="modo-tag">Exportar Excel</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── Como usar ──────────────────────────────────────────────────────── -->
   <div style="background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:20px;display:flex;gap:12px;align-items:flex-start;box-shadow:var(--shadow)">
     <span style="font-size:18px;flex-shrink:0;margin-top:1px">💡</span>
     <div style="font-size:13px;color:var(--text-muted);line-height:1.8">
@@ -243,13 +310,28 @@ tfoot td:first-child { text-align: left; }
 </div>
 
 <script>
-// ─── State ───────────────────────────────────────────────────────────────────
+// ─── Modo ─────────────────────────────────────────────────────────────────────
+let modo = 'sintetico';
+
+function setModo(m) {
+  modo = m;
+  document.getElementById('modoCardSin').classList.toggle('selected', m === 'sintetico');
+  document.getElementById('modoCardAna').classList.toggle('selected', m === 'analitico');
+  document.getElementById('headerModoBadge').textContent = m === 'sintetico' ? 'SINTÉTICO' : 'ANALÍTICO';
+  // Re-renderiza se já existe análise gerada
+  if (S.rows.length > 0 && _GD.length > 0) {
+    const cutLabel = S.months[S.cutoffIdx].label;
+    renderResultado(cutLabel);
+  }
+}
+
+// ─── State ────────────────────────────────────────────────────────────────────
 const S = { rows: [], months: [], cutoffIdx: -1 };
 let _GD = [], _UD = [], _UD_sel = null, _UD_monthly = [];
 let _ED = [], _ED_unit = 'TODAS', _ED_nivel = 'macro';
 let _CE = [], _CE_unit = 'TODAS', _CE_macro = 'TODAS';
 
-// ─── Parse ───────────────────────────────────────────────────────────────────
+// ─── Parse ────────────────────────────────────────────────────────────────────
 const MONTH_NUM = {
   jan:1, feb:2, fev:2, mar:3, apr:4, abr:4, may:5, mai:5,
   jun:6, jul:7, aug:8, ago:8, sep:9, set:9, oct:10, out:10, nov:11, dec:12, dez:12
@@ -324,16 +406,16 @@ function parseCSV(text) {
     if (!dataStr) continue;
     const dataParsed = parseMonthStr(dataStr);
     if (!dataParsed) continue;
-    const unidade = (cols[COL.unidade] || '').trim();
+    const unidade    = (cols[COL.unidade]    || '').trim();
     const macroEtapa = (cols[COL.macroEtapa] || '').trim();
     if (!unidade && !macroEtapa) continue;
     rows.push({
-      codigo:    (cols[COL.codigo]    || '').trim(),
-      unidade:   unidade    || '(sem unidade)',
-      local:     (cols[COL.local]     || '').trim(),
+      codigo:     (cols[COL.codigo]    || '').trim(),
+      unidade:    unidade    || '(sem unidade)',
+      local:      (cols[COL.local]     || '').trim(),
       macroEtapa: macroEtapa || '(sem macro etapa)',
-      etapa:     (cols[COL.etapa]     || '').trim(),
-      data:      dataParsed,
+      etapa:      (cols[COL.etapa]     || '').trim(),
+      data:       dataParsed,
       cReal:   parsePct(cols[COL.cReal]),
       cReprog: parsePct(cols[COL.cReprog]),
       cBase:   parsePct(cols[COL.cBase]),
@@ -344,7 +426,6 @@ function parseCSV(text) {
   }
   if (rows.length === 0) throw new Error('Nenhum dado encontrado. Verifique o formato do arquivo.');
 
-  // Normaliza contribuições: Base deve somar 100%
   const sumBase = rows.reduce((s, r) => s + r.cBase, 0);
   if (sumBase > 0 && Math.abs(sumBase - 100) < 15) {
     const f = 100 / sumBase;
@@ -357,7 +438,7 @@ function parseCSV(text) {
   return { rows, months };
 }
 
-// ─── File handling ────────────────────────────────────────────────────────────
+// ─── File handling ─────────────────────────────────────────────────────────────
 function doDrop(e) {
   e.preventDefault();
   document.getElementById('uploadZone').classList.remove('drag-over');
@@ -414,7 +495,7 @@ function onCorteChange() {
   }
 }
 
-// ─── Build data ───────────────────────────────────────────────────────────────
+// ─── Build data ────────────────────────────────────────────────────────────────
 function buildCurvaSGlobal() {
   let bAcum = 0, rpAcum = 0, rAcum = 0;
   return S.months.map((m, idx) => {
@@ -463,20 +544,14 @@ function buildCurvaSUnidadeMensal(unidade) {
 function buildPrevistoRealFiltrado(filtroUnidade, nivel) {
   const cutSet = new Set(S.months.slice(0, S.cutoffIdx + 1).map(m => m.label));
   const baseRows = filtroUnidade === 'TODAS' ? S.rows : S.rows.filter(r => r.unidade === filtroUnidade);
-  const keyFn = nivel === 'macro'
-    ? r => r.macroEtapa
-    : r => (r.codigo || (r.macroEtapa + '||' + r.etapa));
-  const labelFn = nivel === 'macro'
-    ? (key, rows) => key
-    : (key, rows) => rows[0].macroEtapa + ' › ' + rows[0].etapa;
-
+  const keyFn   = nivel === 'macro' ? r => r.macroEtapa : r => (r.codigo || (r.macroEtapa + '||' + r.etapa));
+  const labelFn = nivel === 'macro' ? (key, rows) => key : (key, rows) => rows[0].macroEtapa + ' › ' + rows[0].etapa;
   const groupMap = new Map();
   baseRows.forEach(r => {
     const k = keyFn(r);
     if (!groupMap.has(k)) groupMap.set(k, []);
     groupMap.get(k).push(r);
   });
-
   const result = [];
   groupMap.forEach((gRows, key) => {
     const label = labelFn(key, gRows);
@@ -495,15 +570,12 @@ function buildConclusaoEtapas(filtroUnidade, filtroMacro) {
   let rows = S.rows.filter(r => cutMonths.has(r.data.label));
   if (filtroUnidade !== 'TODAS') rows = rows.filter(r => r.unidade === filtroUnidade);
   if (filtroMacro   !== 'TODAS') rows = rows.filter(r => r.macroEtapa === filtroMacro);
-
-  // Para cada atividade, pegar o registro do mês mais recente até o corte
   const actMap = new Map();
   rows.forEach(r => {
     const key = r.codigo || (r.unidade + '||' + r.macroEtapa + '||' + r.etapa);
     const ex = actMap.get(key);
     if (!ex || r.data.sortKey > ex.data.sortKey) actMap.set(key, r);
   });
-
   return [...actMap.values()]
     .sort((a, b) =>
       a.unidade.localeCompare(b.unidade, 'pt-BR') ||
@@ -512,8 +584,7 @@ function buildConclusaoEtapas(filtroUnidade, filtroMacro) {
     .map(r => ({
       codigo: r.codigo, unidade: r.unidade, macroEtapa: r.macroEtapa,
       etapa: r.etapa, mesRef: r.data.label,
-      aBase: r.aBase, aReprog: r.aReprog, aReal: r.aReal,
-      dev: r.aReal - r.aBase
+      aBase: r.aBase, aReprog: r.aReprog, aReal: r.aReal, dev: r.aReal - r.aBase
     }));
 }
 
@@ -543,7 +614,7 @@ function addMonthsStr(sortKey, n) {
   return PT[mo] + '/' + yr;
 }
 
-// ─── Analysis entry ───────────────────────────────────────────────────────────
+// ─── Analysis entry ────────────────────────────────────────────────────────────
 function gerarAnalise() {
   const cutoffIdx = parseInt(document.getElementById('selectCorte').value);
   if (isNaN(cutoffIdx)) return;
@@ -562,7 +633,7 @@ function gerarAnalise() {
   document.getElementById('tag2').textContent = cutLabel;
 }
 
-// ─── Formatting ───────────────────────────────────────────────────────────────
+// ─── Formatting ────────────────────────────────────────────────────────────────
 function p(v, d)  { d = d === undefined ? 2 : d; return v === null ? '—' : v.toFixed(d) + '%'; }
 function pp(v)    { return (v >= 0 ? '+' : '') + v.toFixed(2) + ' p.p.'; }
 function px(v)    { return v === null ? '' : v.toFixed(2).replace('.', ',') + '%'; }
@@ -591,28 +662,43 @@ function copyFeedback(btnId) {
 }
 function copyTSV(tsv, btnId) { navigator.clipboard.writeText(tsv).then(() => copyFeedback(btnId)).catch(() => {}); }
 
-// ─── Render principal ─────────────────────────────────────────────────────────
+// ─── Render principal ──────────────────────────────────────────────────────────
 function renderResultado(cutLabel) {
   const cutRow  = _GD.find(r => r.isCutoff);
-  const bAcum   = cutRow ? cutRow.bAcum  : 0;
+  const bAcum   = cutRow ? cutRow.bAcum : 0;
   const rAcum   = cutRow ? (cutRow.rAcum || 0) : 0;
   const devGlob = rAcum - bAcum;
   const idp     = bAcum > 0 ? (rAcum / bAcum) : 0;
   const proj    = projecaoTermino();
 
-  const div = document.getElementById('resultado');
-  div.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
-      <div>
-        <div style="font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:var(--navy)">Análise Física do Projeto</div>
-        <div style="font-size:12px;color:var(--text-muted);margin-top:2px">Corte em ${cutLabel}</div>
-      </div>
-      <button class="btn btn-green" id="btnExportarExcel" onclick="exportarExcel()">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Exportar Excel (4 abas)
-      </button>
-    </div>
+  const isSin = modo === 'sintetico';
 
+  // KPIs
+  const kpisSintetico = `
+    <div class="kpi-row" style="margin-bottom:20px">
+      <div class="kpi">
+        <div class="kpi-label">Mês de Corte</div>
+        <div class="kpi-val" style="font-size:17px">${cutLabel}</div>
+        <div class="kpi-sub">Referência de análise</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Base Acumulado</div>
+        <div class="kpi-val">${p(bAcum)}</div>
+        <div class="kpi-sub">Previsto até o corte</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Real Acumulado</div>
+        <div class="kpi-val ${cls(devGlob)}">${p(rAcum)}</div>
+        <div class="kpi-sub">Executado até o corte</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Desvio Global</div>
+        <div class="kpi-val ${cls(devGlob)}">${pp(devGlob)}</div>
+        <div class="kpi-sub">${devGlob > 0.005 ? '✓ Adiantada' : devGlob < -0.005 ? '⚠ Atrasada' : '= Em dia'}</div>
+      </div>
+    </div>`;
+
+  const kpisAnalitico = `
     <div class="kpi-row" style="margin-bottom:12px">
       <div class="kpi">
         <div class="kpi-label">Mês de Corte</div>
@@ -639,7 +725,7 @@ function renderResultado(cutLabel) {
       <div class="kpi">
         <div class="kpi-label">IDP — Índice de Desempenho</div>
         <div class="kpi-val ${idp >= 1 ? 'pos' : 'neg'}">${idp.toFixed(2)}</div>
-        <div class="kpi-sub">${idp >= 1.01 ? 'Adiantado' : idp <= 0.99 ? 'Atrasado' : 'Em dia'} • Real / Base até corte</div>
+        <div class="kpi-sub">${idp >= 1.01 ? 'Adiantado' : idp <= 0.99 ? 'Atrasado' : 'Em dia'} • Real ÷ Base até corte</div>
       </div>
       <div class="kpi">
         <div class="kpi-label">Projeção de Término</div>
@@ -651,27 +737,46 @@ function renderResultado(cutLabel) {
         <div class="kpi-val ${proj && proj.months > 0 ? '' : 'zer'}">${proj ? (proj.months > 0 ? proj.months : '—') : '—'}</div>
         <div class="kpi-sub">A partir de ${cutLabel}</div>
       </div>
-    </div>
+    </div>`;
 
+  // Tabs
+  const tabsSintetico = `
+    <div class="tabs-bar">
+      <button class="tab-btn active" onclick="switchTab('global',this)">Curva S Global</button>
+      <button class="tab-btn"        onclick="switchTab('unidade',this)">Curva S por Unidade</button>
+      <button class="tab-btn"        onclick="switchTab('etapas',this)">Previsto × Real</button>
+    </div>
+    <div class="tab-pane active" id="tab-global">${renderTabGlobal(cutLabel)}</div>
+    <div class="tab-pane" id="tab-unidade">${renderTabUnidade(cutLabel)}</div>
+    <div class="tab-pane" id="tab-etapas">${renderTabEtapasSin(cutLabel)}</div>`;
+
+  const tabsAnalitico = `
     <div class="tabs-bar">
       <button class="tab-btn active" onclick="switchTab('global',this)">Curva S Global</button>
       <button class="tab-btn"        onclick="switchTab('unidade',this)">Curva S por Unidade</button>
       <button class="tab-btn"        onclick="switchTab('etapas',this)">Previsto × Real</button>
       <button class="tab-btn"        onclick="switchTab('conclusao',this)">Conclusão por Etapa</button>
     </div>
+    <div class="tab-pane active" id="tab-global">${renderTabGlobal(cutLabel)}</div>
+    <div class="tab-pane" id="tab-unidade">${renderTabUnidade(cutLabel)}</div>
+    <div class="tab-pane" id="tab-etapas">${renderTabEtapasAna(cutLabel)}</div>
+    <div class="tab-pane" id="tab-conclusao">${renderTabConclusao(cutLabel)}</div>`;
 
-    <div class="tab-pane active" id="tab-global">
-      ${renderTabGlobal(cutLabel)}
+  const div = document.getElementById('resultado');
+  div.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+      <div>
+        <div style="font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:var(--navy)">Análise Física do Projeto</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:2px">Corte em ${cutLabel} · Modo ${isSin ? 'Sintético' : 'Analítico'}</div>
+      </div>
+      ${!isSin ? `
+      <button class="btn btn-green" id="btnExportarExcel" onclick="exportarExcel()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exportar Excel (4 abas)
+      </button>` : ''}
     </div>
-    <div class="tab-pane" id="tab-unidade">
-      ${renderTabUnidade(cutLabel)}
-    </div>
-    <div class="tab-pane" id="tab-etapas">
-      ${renderTabEtapas(cutLabel)}
-    </div>
-    <div class="tab-pane" id="tab-conclusao">
-      ${renderTabConclusao(cutLabel)}
-    </div>
+    ${isSin ? kpisSintetico : kpisAnalitico}
+    ${isSin ? tabsSintetico : tabsAnalitico}
   `;
   div.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
@@ -683,7 +788,7 @@ function switchTab(id, el) {
   el.classList.add('active');
 }
 
-// ─── Tab Global ───────────────────────────────────────────────────────────────
+// ─── Tab Global ────────────────────────────────────────────────────────────────
 function renderTabGlobal(cutLabel) {
   const rows = _GD.map(r => `
     <tr class="${r.isCutoff ? 'cutoff-row' : ''}">
@@ -728,7 +833,7 @@ function doCopyGlobal() {
   copyTSV([hdr, ...rows].map(r => r.join('\t')).join('\n'), 'btnCopyGlobal');
 }
 
-// ─── Tab Unidade ──────────────────────────────────────────────────────────────
+// ─── Tab Unidade ───────────────────────────────────────────────────────────────
 function renderTabUnidade(cutLabel) {
   const opts = _UD.map(r => `<option value="${r.unidade}" ${r.unidade === _UD_sel ? 'selected' : ''}>${r.unidade}</option>`).join('');
   const cutRow = _UD_monthly.find(r => r.isCutoff);
@@ -802,8 +907,64 @@ function doCopyUnidade() {
   copyTSV([hdr, ...rows].map(r => r.join('\t')).join('\n'), 'btnCopyUnidade');
 }
 
-// ─── Tab Etapas ───────────────────────────────────────────────────────────────
-function renderTabEtapas(cutLabel) {
+// ─── Tab Etapas — Sintético (apenas macro, sem filtros) ───────────────────────
+function renderTabEtapasSin(cutLabel) {
+  // Modo sintético: sempre macro, sem filtro de unidade
+  const data = buildPrevistoRealFiltrado('TODAS', 'macro');
+  const ahead   = data.filter(r => r.dev > 0.005).length;
+  const behind  = data.filter(r => r.dev < -0.005).length;
+  const ontrack = data.length - ahead - behind;
+  const totBC  = data.reduce((s, r) => s + r.bCut, 0);
+  const totRP  = data.reduce((s, r) => s + r.rpCut, 0);
+  const totRC  = data.reduce((s, r) => s + r.rCut, 0);
+  const totDev = totRC - totBC;
+  const rows   = data.map(r => `
+    <tr>
+      <td>${r.label}</td>
+      <td>${p(r.bCut)}</td><td>${p(r.rpCut)}</td>
+      <td class="${cls(r.dev)}">${p(r.rCut)}</td>
+      <td><span class="pill ${cls(r.dev)}">${pp(r.dev)}</span></td>
+      <td>${statusPill(r.dev)}</td>
+    </tr>`).join('');
+  return `
+    <div class="result-header">
+      <div><div class="result-title">Previsto × Real — Acumulado até ${cutLabel}</div><div class="result-sub">Contribuição acumulada por macro etapa vs. baseline</div></div>
+      <button class="btn btn-outline" id="btnCopyEtapasSin" onclick="doCopyEtapasSin()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copiar para Excel
+      </button>
+    </div>
+    <div class="kpi-row-3" style="margin-bottom:16px">
+      <div class="kpi"><div class="kpi-label">Adiantadas</div><div class="kpi-val pos">${ahead}</div><div class="kpi-sub">macro etapas</div></div>
+      <div class="kpi"><div class="kpi-label">Em dia</div><div class="kpi-val zer">${ontrack}</div><div class="kpi-sub">macro etapas</div></div>
+      <div class="kpi"><div class="kpi-label">Atrasadas</div><div class="kpi-val neg">${behind}</div><div class="kpi-sub">macro etapas</div></div>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>Macro Etapa</th>
+        <th>Base até Corte</th><th>Reprog até Corte</th><th>Real até Corte</th>
+        <th>Desvio (R−B)</th><th>Status</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr>
+        <td>TOTAL</td>
+        <td>${p(totBC)}</td><td>${p(totRP)}</td>
+        <td class="${cls(totDev)}">${p(totRC)}</td>
+        <td><span class="pill ${cls(totDev)}">${pp(totDev)}</span></td>
+        <td>—</td>
+      </tr></tfoot>
+    </table></div>`;
+}
+function doCopyEtapasSin() {
+  const data = buildPrevistoRealFiltrado('TODAS', 'macro');
+  const hdr = ['Macro Etapa','Base até Corte (%)','Reprog até Corte (%)','Real até Corte (%)','Desvio (p.p.)','Status'];
+  const rows = data.map(r => [r.label, px(r.bCut), px(r.rpCut), px(r.rCut), ppx(r.dev),
+    r.dev > 0.005 ? 'Adiantado' : r.dev < -0.005 ? 'Atrasado' : 'Em dia']);
+  copyTSV([hdr, ...rows].map(r => r.join('\t')).join('\n'), 'btnCopyEtapasSin');
+}
+
+// ─── Tab Etapas — Analítico (com filtros) ─────────────────────────────────────
+function renderTabEtapasAna(cutLabel) {
   const unidades = ['TODAS', ...[...new Set(S.rows.map(r => r.unidade))].filter(Boolean).sort()];
   const unitOpts = unidades.map(u => `<option value="${u}" ${u === _ED_unit ? 'selected' : ''}>${u === 'TODAS' ? '— todas as unidades —' : u}</option>`).join('');
   return `
@@ -886,7 +1047,7 @@ function doCopyEtapas() {
   copyTSV([hdr, ...rows].map(r => r.join('\t')).join('\n'), 'btnCopyEtapas');
 }
 
-// ─── Tab Conclusão ────────────────────────────────────────────────────────────
+// ─── Tab Conclusão ─────────────────────────────────────────────────────────────
 function renderTabConclusao(cutLabel) {
   const unidades = ['TODAS', ...[...new Set(S.rows.map(r => r.unidade))].filter(Boolean).sort()];
   const unitOpts = unidades.map(u => `<option value="${u}">${u === 'TODAS' ? '— todas as unidades —' : u}</option>`).join('');
@@ -910,7 +1071,7 @@ function renderTabConclusao(cutLabel) {
     <div id="ce-table">${renderConclusaoTable()}</div>`;
 }
 function renderConclusaoKpis() {
-  const total     = _CE.length;
+  const total      = _CE.length;
   const concluidas = _CE.filter(r => r.aReal >= 99.9).length;
   const atrasadas  = _CE.filter(r => r.aBase > 0 && (r.aReal - r.aBase) < -2).length;
   const mediaReal  = total > 0 ? _CE.reduce((s, r) => s + r.aReal, 0) / total : 0;
@@ -975,7 +1136,7 @@ function doCopyConclusao() {
   copyTSV([hdr, ...rows].map(r => r.join('\t')).join('\n'), 'btnCopyConclusao');
 }
 
-// ─── Export Excel ─────────────────────────────────────────────────────────────
+// ─── Export Excel ──────────────────────────────────────────────────────────────
 async function exportarExcel() {
   if (typeof ExcelJS === 'undefined') { alert('ExcelJS não carregado. Verifique a conexão com a internet.'); return; }
   const btn = document.getElementById('btnExportarExcel');
@@ -983,7 +1144,6 @@ async function exportarExcel() {
   try {
     const wb = new ExcelJS.Workbook();
     wb.creator = 'Análise Física - Agilean';
-
     const navyArgb = 'FF1A2B45';
     const hStyle = {
       font: { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 },
@@ -1039,7 +1199,6 @@ async function exportarExcel() {
     numFmt(ws4, [6,7,8,9], '0.0"%"');
     colWidths(ws4, [14,22,30,40,10,10,10,10,10,14]);
 
-    // Download
     const buffer = await wb.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const url = URL.createObjectURL(blob);
@@ -1052,7 +1211,10 @@ async function exportarExcel() {
     console.error(e);
     alert('Erro ao gerar Excel: ' + e.message);
   } finally {
-    if (btn) { btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Exportar Excel (4 abas)'; btn.disabled = false; }
+    if (btn) {
+      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Exportar Excel (4 abas)';
+      btn.disabled = false;
+    }
   }
 }
 </script>
