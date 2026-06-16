@@ -592,11 +592,26 @@ function buildCurvaSAnalitico(f) {
              rAcum: idx <= S.cutoffIdx ? rAcum : null, isCutoff: idx === S.cutoffIdx };
   });
 }
+const NIVEL_LABELS  = { unidade: 'Unidade', local: 'Local', macro: 'Macro Etapa', etapa: 'Etapa' };
+const NIVEL_PLURAIS = { unidade: 'unidades', local: 'locais', macro: 'macro etapas', etapa: 'etapas' };
+
 function buildPrevistoRealAnalitico(f, nivel) {
   const cutSet = new Set(S.months.slice(0, S.cutoffIdx + 1).map(m => m.label));
   const baseRows = filterRowsBy(S.rows, f);
-  const keyFn   = nivel === 'macro' ? r => r.macroEtapa : r => (r.codigo || (r.macroEtapa + '||' + r.etapa));
-  const labelFn = nivel === 'macro' ? (key, rows) => key : (key, rows) => rows[0].macroEtapa + ' › ' + rows[0].etapa;
+  let keyFn, labelFn;
+  if (nivel === 'unidade') {
+    keyFn = r => r.unidade;
+    labelFn = (key) => key;
+  } else if (nivel === 'local') {
+    keyFn = r => r.unidade + '||' + r.local;
+    labelFn = (key, rows) => rows[0].unidade + ' › ' + rows[0].local;
+  } else if (nivel === 'etapa') {
+    keyFn = r => (r.codigo || (r.macroEtapa + '||' + r.etapa));
+    labelFn = (key, rows) => rows[0].macroEtapa + ' › ' + rows[0].etapa;
+  } else { // 'macro'
+    keyFn = r => r.macroEtapa;
+    labelFn = (key) => key;
+  }
   const groupMap = new Map();
   baseRows.forEach(r => {
     const k = keyFn(r);
@@ -1107,6 +1122,8 @@ function renderEtapasTabAnalitico() {
     <div class="filter-bar">
       <span class="config-label">Nível</span>
       <div class="toggle-group">
+        <button class="toggle-btn ${_ED_nivel==='unidade'?'active':''}" onclick="mudarNivelEtapas('unidade',this)">Unidade</button>
+        <button class="toggle-btn ${_ED_nivel==='local'?'active':''}" onclick="mudarNivelEtapas('local',this)">Local</button>
         <button class="toggle-btn ${_ED_nivel==='macro'?'active':''}" onclick="mudarNivelEtapas('macro',this)">Macro Etapa</button>
         <button class="toggle-btn ${_ED_nivel==='etapa'?'active':''}" onclick="mudarNivelEtapas('etapa',this)">Etapa</button>
       </div>
@@ -1121,7 +1138,8 @@ function renderEtapasContent() {
   const totRP  = _ED.reduce((s, r) => s + r.rpCut, 0);
   const totRC  = _ED.reduce((s, r) => s + r.rCut, 0);
   const totDev = totRC - totBC;
-  const nivel  = _ED_nivel === 'macro' ? 'Macro Etapa' : 'Etapa';
+  const nivel  = NIVEL_LABELS[_ED_nivel];
+  const plural = NIVEL_PLURAIS[_ED_nivel];
   const rows   = _ED.map(r => `
     <tr>
       <td>${r.label}</td>
@@ -1132,9 +1150,9 @@ function renderEtapasContent() {
     </tr>`).join('');
   return `
     <div class="kpi-row-3" style="margin-bottom:16px">
-      <div class="kpi"><div class="kpi-label">Adiantadas</div><div class="kpi-val pos">${ahead}</div><div class="kpi-sub">${_ED_nivel === 'macro' ? 'macro etapas' : 'etapas'}</div></div>
-      <div class="kpi"><div class="kpi-label">Em dia</div><div class="kpi-val zer">${ontrack}</div><div class="kpi-sub">${_ED_nivel === 'macro' ? 'macro etapas' : 'etapas'}</div></div>
-      <div class="kpi"><div class="kpi-label">Atrasadas</div><div class="kpi-val neg">${behind}</div><div class="kpi-sub">${_ED_nivel === 'macro' ? 'macro etapas' : 'etapas'}</div></div>
+      <div class="kpi"><div class="kpi-label">Adiantadas</div><div class="kpi-val pos">${ahead}</div><div class="kpi-sub">${plural}</div></div>
+      <div class="kpi"><div class="kpi-label">Em dia</div><div class="kpi-val zer">${ontrack}</div><div class="kpi-sub">${plural}</div></div>
+      <div class="kpi"><div class="kpi-label">Atrasadas</div><div class="kpi-val neg">${behind}</div><div class="kpi-sub">${plural}</div></div>
     </div>
     <div class="table-wrap"><table>
       <thead><tr>
@@ -1160,7 +1178,7 @@ function mudarNivelEtapas(nivel, el) {
   document.getElementById('etapas-content').innerHTML = renderEtapasContent();
 }
 function doCopyEtapas() {
-  const nivel = _ED_nivel === 'macro' ? 'Macro Etapa' : 'Etapa';
+  const nivel = NIVEL_LABELS[_ED_nivel];
   const hdr = [nivel,'Base até Corte (%)','Reprog até Corte (%)','Real até Corte (%)','Desvio (p.p.)','Status'];
   const rows = _ED.map(r => [r.label, px(r.bCut), px(r.rpCut), px(r.rCut), ppx(r.dev),
     r.dev > 0.005 ? 'Adiantado' : r.dev < -0.005 ? 'Atrasado' : 'Em dia']);
@@ -1205,7 +1223,7 @@ async function exportarExcel() {
     colWidths(ws1, [12,14,14,16,14,14,14,14]);
 
     // Aba 2: Previsto x Real — mesmo filtro + nível de agrupamento (Macro Etapa/Etapa) selecionado na tela
-    const nivelLbl = _ED_nivel === 'macro' ? 'Macro Etapa' : 'Etapa';
+    const nivelLbl = NIVEL_LABELS[_ED_nivel];
     const ws2 = wb.addWorksheet('Previsto x Real');
     escopoCell(ws2, `Escopo do filtro: ${anaScopeLabel()} · Nível: ${nivelLbl}`);
     ws2.addRow([nivelLbl,'Base até Corte','Reprog até Corte','Real até Corte','Desvio (R-B)','Status']);
