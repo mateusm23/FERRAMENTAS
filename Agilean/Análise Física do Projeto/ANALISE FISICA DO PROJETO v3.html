@@ -24,12 +24,14 @@
   --green-bg: #e6f7f2;
   --red-bg: #fdf0f0;
   --shadow: 0 2px 16px rgba(26,43,69,0.08);
+  --header-h: 64px;
+  --sidenav-w: 184px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-top: var(--header-h); }
 
-header { background: var(--navy); padding: 18px 32px; display: flex; align-items: center; gap: 14px; }
+header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: var(--navy); padding: 18px 32px; display: flex; align-items: center; gap: 14px; }
 .header-back {
   display: flex; align-items: center; gap: 6px;
   color: rgba(255,255,255,0.5); font-size: 12px;
@@ -40,20 +42,30 @@ header { background: var(--navy); padding: 18px 32px; display: flex; align-items
 header h1 { font-family: 'Sora', sans-serif; font-size: 17px; font-weight: 600; color: #fff; }
 header h1 span { font-size: 13px; color: rgba(255,255,255,0.45); font-weight: 400; }
 .container { max-width: 1200px; margin: 0 auto; padding: 28px 24px 60px; }
+.container.with-sidenav { max-width: none; margin: 0; padding-left: calc(var(--sidenav-w) + 32px); padding-right: 32px; }
 .steps { display: flex; flex-direction: column; gap: 16px; }
 
-/* ── Navegação lateral (resultado) ── */
-.analysis-layout { display: flex; gap: 20px; align-items: flex-start; }
-.side-nav { width: 220px; flex-shrink: 0; display: flex; flex-direction: column; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px; box-shadow: var(--shadow); position: sticky; top: 20px; }
-.side-nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; border: none; background: transparent; cursor: pointer; text-align: left; font-family: 'DM Sans', sans-serif; font-size: 12.5px; font-weight: 600; color: var(--text-muted); transition: all .15s; }
-.side-nav-item .side-nav-icon { font-size: 15px; flex-shrink: 0; }
-.side-nav-item:hover { background: var(--surface2); color: var(--text); }
-.side-nav-item.active { background: var(--blue-bright); color: #fff; }
-.side-content { flex: 1; min-width: 0; }
+/* ── Navegação lateral (resultado) — fixa na borda esquerda da viewport ── */
+.analysis-layout { display: block; }
+.side-nav { position: fixed; left: 0; top: var(--header-h); bottom: 0; width: var(--sidenav-w); display: flex; flex-direction: column; gap: 1px; padding: 16px 10px; background: #f7f9fc; border-right: 1px solid var(--border); overflow-y: auto; z-index: 30; }
+.side-nav-item { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 7px; border: none; background: transparent; cursor: pointer; text-align: left; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; color: var(--text-muted); transition: all .15s; }
+.side-nav-item .side-nav-icon { font-size: 13px; flex-shrink: 0; opacity: .8; }
+.side-nav-item:hover { background: #eef1f6; color: var(--text); }
+.side-nav-item.active { background: #eaf1fc; color: var(--blue-bright); font-weight: 700; }
+.side-nav-item.active .side-nav-icon { opacity: 1; }
+.side-content { min-width: 0; }
+
+.sidenav-corte { margin: 0 4px 14px; padding: 10px 12px; background: #eaf1fc; border: 1px solid #cfe0fb; border-radius: 8px; cursor: pointer; transition: all .15s; }
+.sidenav-corte:hover { background: #dde9fa; border-color: var(--blue-bright); }
+.sidenav-corte-label { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--blue-bright); margin-bottom: 3px; }
+.sidenav-corte-val { font-family: 'Sora', sans-serif; font-size: 14px; font-weight: 700; color: var(--navy); }
+
+.content-topbar { position: sticky; top: var(--header-h); z-index: 20; background: var(--bg); padding: 14px 0 12px; margin-bottom: 14px; border-bottom: 1px solid var(--border); }
+.content-topbar-title { font-family: 'Sora', sans-serif; font-size: 16px; font-weight: 700; color: var(--navy); }
 
 @media (max-width: 760px) {
-  .analysis-layout { flex-direction: column; }
-  .side-nav { width: 100%; flex-direction: row; overflow-x: auto; position: static; }
+  .container.with-sidenav { padding-left: 16px; padding-right: 16px; }
+  .side-nav { position: static; width: 100%; flex-direction: row; overflow-x: auto; border-right: none; border-bottom: 1px solid var(--border); }
 }
 
 .step-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); overflow: hidden; }
@@ -138,7 +150,6 @@ select:focus { border-color: var(--blue); background: #fff; }
 
 #resultado { margin-top: 24px; }
 .result-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; gap: 12px; flex-wrap: wrap; }
-.result-title { font-family: 'Sora', sans-serif; font-size: 15px; font-weight: 700; color: var(--navy); }
 .result-sub { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
 
 .table-wrap { border: 1px solid var(--border); border-radius: 10px; overflow: auto; box-shadow: var(--shadow); }
@@ -217,7 +228,7 @@ tfoot td:first-child { text-align: left; }
   </div>
 </header>
 
-<div class="container">
+<div class="container" id="mainContainer">
 
   <!-- ── Tela de introdução ──────────────────────────────────────────────── -->
   <div class="intro-screen" id="introScreen">
@@ -294,7 +305,7 @@ tfoot td:first-child { text-align: left; }
     <a href="#" class="btn-trocar-arquivo" onclick="voltarIntro(event)">↺ Trocar arquivo</a>
   </div>
 
-  <div class="steps">
+  <div class="steps" id="configCard">
 
     <div class="step-card">
       <div class="step-header">
@@ -615,7 +626,16 @@ function voltarIntro(e) {
   document.getElementById('mainFlow').style.display = 'none';
   document.getElementById('introScreen').style.display = '';
   document.getElementById('resultado').innerHTML = '';
+  document.getElementById('configCard').style.display = 'flex';
+  document.getElementById('mainContainer').classList.remove('with-sidenav');
 }
+
+// Mede a altura real do header pra sidebar fixa começar exatamente abaixo dele.
+function ajustarOffsetHeader() {
+  const h = document.querySelector('header').offsetHeight;
+  document.documentElement.style.setProperty('--header-h', h + 'px');
+}
+ajustarOffsetHeader();
 
 function onCorteChange() {
   const idx = parseInt(document.getElementById('selectCorte').value);
@@ -753,8 +773,15 @@ function gerarAnalise() {
   _CS = buildCurvaSAnalitico(_ANA_F);
   _ED = buildPrevistoRealAnalitico(_ANA_F, _ED_nivel);
   renderResultado(cutLabel);
+  document.getElementById('mainContainer').classList.add('with-sidenav');
   document.getElementById('num2').className = 'step-num done';
   document.getElementById('tag2').textContent = cutLabel;
+  document.getElementById('configCard').style.display = 'none';
+}
+
+function toggleConfigBar() {
+  document.getElementById('configCard').style.display = 'flex';
+  document.getElementById('sideContentWrap').style.display = 'none';
 }
 
 // ─── Formatting ────────────────────────────────────────────────────────────────
@@ -762,6 +789,37 @@ function p(v, d)  { d = d === undefined ? 2 : d; return v === null ? '—' : v.t
 function pp(v)    { return (v >= 0 ? '+' : '') + v.toFixed(2) + ' p.p.'; }
 function px(v)    { return v === null ? '' : v.toFixed(2).replace('.', ',') + '%'; }
 function ppx(v)   { return (v >= 0 ? '+' : '') + v.toFixed(2).replace('.', ',') + ' p.p.'; }
+
+// Arredondamento por "maior resto": garante que a SOMA dos valores arredondados
+// (ex: contribuição de cada mês) bata exatamente com a soma real arredondada —
+// arredondar cada valor isoladamente (toFixed) pode deixar a soma da coluna com
+// 1-2 centésimos de diferença, o que quebra validações estritas (Power BI trava
+// se a soma não for exatamente 100%). Quem tem o maior resto fracionário recebe
+// o centésimo que falta, um por um, até a soma fechar.
+function arredondarSomaExata(valores, decimais) {
+  const fator = Math.pow(10, decimais);
+  const limpos = valores.map(v => v || 0);
+  const somaReal = limpos.reduce((s, v) => s + v, 0);
+  const totalArred = Math.round(somaReal * fator);
+  const piso = limpos.map(v => Math.floor(v * fator));
+  const somaPiso = piso.reduce((s, v) => s + v, 0);
+  const faltam = totalArred - somaPiso;
+  const ordem = limpos
+    .map((v, i) => ({ i, frac: v * fator - piso[i] }))
+    .sort((a, b) => b.frac - a.frac);
+  const resultado = [...piso];
+  for (let k = 0; k < faltam && ordem.length; k++) resultado[ordem[k % ordem.length].i] += 1;
+  return resultado.map(v => v / fator);
+}
+// Mesma coisa, mas preserva null nas posições que não entram na soma (ex: meses futuros).
+function arredondarComNulos(valores, decimais) {
+  const idx = [], validos = [];
+  valores.forEach((v, i) => { if (v !== null) { idx.push(i); validos.push(v); } });
+  const ajustados = arredondarSomaExata(validos, decimais);
+  const resultado = valores.map(() => null);
+  idx.forEach((origI, k) => { resultado[origI] = ajustados[k]; });
+  return resultado;
+}
 function cls(v)   { if (v === null || Math.abs(v) < 0.005) return 'zer'; return v > 0 ? 'pos' : 'neg'; }
 function statusPill(v) {
   if (Math.abs(v) < 0.005) return '<span class="pill zer">Em dia</span>';
@@ -778,17 +836,20 @@ function copyFeedback(btnId) {
 function copyTSV(tsv, btnId) { navigator.clipboard.writeText(tsv).then(() => copyFeedback(btnId)).catch(() => {}); }
 
 // ─── Render principal ──────────────────────────────────────────────────────────
+const SECTION_TITLES = {
+  geral: 'Informações Gerais', curva: 'Curva S', previsto: 'Previsto x Realizado',
+  marcos: 'Datas Marcos', desvios: 'Desvios', semanal: 'Resumo Semanal', export: 'Exportar Resumo Geral'
+};
+
 function renderResultado(cutLabel) {
   const div = document.getElementById('resultado');
   div.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
-      <div>
-        <div style="font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:var(--navy)">Análise Física do Projeto</div>
-        <div style="font-size:12px;color:var(--text-muted);margin-top:2px">Corte em ${cutLabel}</div>
-      </div>
-    </div>
     <div class="analysis-layout">
       <nav class="side-nav">
+        <div class="sidenav-corte" onclick="toggleConfigBar()">
+          <div class="sidenav-corte-label">Mês de corte</div>
+          <div class="sidenav-corte-val">${cutLabel}</div>
+        </div>
         <button class="side-nav-item active" onclick="switchSection('geral',this)"><span class="side-nav-icon">📊</span>Informações Gerais</button>
         <button class="side-nav-item" onclick="switchSection('curva',this)"><span class="side-nav-icon">📈</span>Curva S</button>
         <button class="side-nav-item" onclick="switchSection('previsto',this)"><span class="side-nav-icon">📋</span>Previsto x Realizado</button>
@@ -797,16 +858,22 @@ function renderResultado(cutLabel) {
         <button class="side-nav-item" onclick="switchSection('semanal',this)"><span class="side-nav-icon">📅</span>Resumo Semanal</button>
         <button class="side-nav-item" onclick="switchSection('export',this)"><span class="side-nav-icon">📤</span>Exportar Resumo Geral</button>
       </nav>
-      <div class="side-content" id="sectionContent">${renderSection('geral')}</div>
+      <div class="side-content" id="sideContentWrap">
+        <div class="content-topbar"><span class="content-topbar-title" id="contentTitle">${SECTION_TITLES.geral}</span></div>
+        <div id="sectionContent">${renderSection('geral')}</div>
+      </div>
     </div>`;
   div.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function switchSection(id, el) {
+  document.getElementById('configCard').style.display = 'none';
+  document.getElementById('sideContentWrap').style.display = '';
   _ACTIVE_SECTION = id;
   document.querySelectorAll('.side-nav-item').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('sectionContent').innerHTML = renderSection(id);
+  document.getElementById('contentTitle').textContent = SECTION_TITLES[id] || '';
 }
 
 // ─── Despacho de seções ────────────────────────────────────────────────────────
@@ -821,11 +888,6 @@ function renderSection(id) {
   return '';
 }
 
-function renderSectionPlaceholder(title) {
-  return `
-    <div class="result-header"><div><div class="result-title">${title}</div><div class="result-sub">Em construção — chega na próxima etapa.</div></div></div>
-    <div style="padding:40px;text-align:center;color:var(--text-muted);border:2px dashed var(--border);border-radius:10px">🚧 Em breve</div>`;
-}
 
 // ─── Seção: Informações Gerais ─────────────────────────────────────────────────
 function renderSectionGeral() {
@@ -843,7 +905,7 @@ function renderSectionGeral() {
   const macros   = [...new Set(S.rows.map(r => r.macroEtapa))].filter(Boolean);
   return `
     <div class="result-header">
-      <div><div class="result-title">Informações Gerais</div><div class="result-sub">Resumo da base carregada e indicadores até o corte</div></div>
+      <div class="result-sub">Resumo da base carregada e indicadores até o corte</div>
     </div>
     <div class="kpi-row-4c">
       <div class="kpi"><div class="kpi-label">Registros</div><div class="kpi-val">${S.rows.length.toLocaleString('pt-BR')}</div><div class="kpi-sub">linhas da base</div></div>
@@ -896,7 +958,7 @@ function renderSectionGeral() {
 function renderSectionExport() {
   return `
     <div class="result-header">
-      <div><div class="result-title">Exportar Resumo Geral</div><div class="result-sub">Gera uma planilha Excel com Curva S e Previsto × Real, considerando o filtro atual: ${anaScopeLabel()}</div></div>
+      <div class="result-sub">Gera uma planilha Excel com Curva S e Previsto × Real, considerando o filtro atual: ${anaScopeLabel()}</div>
     </div>
     <button class="btn btn-green" id="btnExportarExcel" onclick="exportarExcel()">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -933,7 +995,7 @@ function renderSectionMarcos() {
   const nivel = NIVEL_LABELS[_ED_nivel];
   if (!S.hasDatas) {
     return `
-      <div class="result-header"><div><div class="result-title">Datas Marcos</div><div class="result-sub">${anaScopeLabel()}</div></div></div>
+      <div class="result-header"><div class="result-sub">${anaScopeLabel()}</div></div>
       <div style="padding:24px;text-align:center;color:var(--text-muted);border:1px solid var(--border);border-radius:10px;background:var(--surface2)">
         ℹ A base carregada não tem colunas de data (Início/Término Planejado e Real) — recarregue com essas colunas habilitadas no export do Agilean pra ver os marcos aqui.
       </div>`;
@@ -947,7 +1009,7 @@ function renderSectionMarcos() {
     </tr>`).join('');
   return `
     <div class="result-header">
-      <div><div class="result-title">Datas Marcos</div><div class="result-sub">${anaScopeLabel()} · Nível: ${nivel}</div></div>
+      <div class="result-sub">${anaScopeLabel()} · Nível: ${nivel}</div>
       <button class="btn btn-outline" id="btnCopyMarcos" onclick="doCopyMarcos()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         Copiar para Excel
@@ -993,7 +1055,7 @@ function renderSectionDesvios() {
     </tr>`).join('');
   return `
     <div class="result-header">
-      <div><div class="result-title">Desvios</div><div class="result-sub">${anaScopeLabel()} · Nível: ${nivel} · ordenado do maior atraso ao maior avanço</div></div>
+      <div class="result-sub">${anaScopeLabel()} · Nível: ${nivel} · ordenado do maior atraso ao maior avanço</div>
       <button class="btn btn-outline" id="btnCopyDesvios" onclick="doCopyDesvios()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         Copiar para Excel
@@ -1015,8 +1077,10 @@ function renderSectionDesvios() {
 function doCopyDesvios() {
   const nivel = NIVEL_LABELS[_ED_nivel];
   const sorted = [..._ED].sort((a, b) => a.dev - b.dev);
+  const bAj = arredondarComNulos(sorted.map(r => r.bCut), 2);
+  const rAj = arredondarComNulos(sorted.map(r => r.rCut), 2);
   const hdr = [nivel, 'Base até Corte (%)', 'Real até Corte (%)', 'Desvio (p.p.)', 'Status'];
-  const rows = sorted.map(r => [r.label, px(r.bCut), px(r.rCut), ppx(r.dev),
+  const rows = sorted.map((r, i) => [r.label, px(bAj[i]), px(rAj[i]), ppx(r.dev),
     r.dev > 0.005 ? 'Adiantado' : r.dev < -0.005 ? 'Atrasado' : 'Em dia']);
   copyTSV([hdr, ...rows].map(r => r.join('\t')).join('\n'), 'btnCopyDesvios');
 }
@@ -1111,7 +1175,7 @@ function renderSectionSemanal() {
     </tr>`).join('');
   return `
     <div class="result-header">
-      <div><div class="result-title">Resumo Semanal</div><div class="result-sub">${anaScopeLabel()} · estimativa por rateio diário da contribuição mensal</div></div>
+      <div class="result-sub">${anaScopeLabel()} · estimativa por rateio diário da contribuição mensal</div>
       <button class="btn btn-outline" id="btnCopySemanal" onclick="doCopySemanal()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         Copiar para Excel
@@ -1138,9 +1202,12 @@ function renderSectionSemanal() {
 }
 function doCopySemanal() {
   const semanal = buildResumoSemanal(_ANA_F);
+  const bAj  = arredondarComNulos(semanal.map(r => r.bSemana), 2);
+  const rpAj = arredondarComNulos(semanal.map(r => r.rpSemana), 2);
+  const rAj  = arredondarComNulos(semanal.map(r => r.rSemana), 2);
   const hdr = ['Semana','Base Semana (%)','Base Acum (%)','Reprog Semana (%)','Reprog Acum (%)','Real Semana (%)','Real Acum (%)','Desvio (p.p.)'];
-  const rows = semanal.map(r => [r.label, px(r.bSemana), px(r.bAcum), px(r.rpSemana), px(r.rpAcum),
-    r.rSemana !== null ? px(r.rSemana) : '', r.rAcum !== null ? px(r.rAcum) : '',
+  const rows = semanal.map((r, i) => [r.label, px(bAj[i]), px(r.bAcum), px(rpAj[i]), px(r.rpAcum),
+    rAj[i] !== null ? px(rAj[i]) : '', r.rAcum !== null ? px(r.rAcum) : '',
     r.rAcum !== null ? ppx(r.rAcum - r.bAcum) : '']);
   copyTSV([hdr, ...rows].map(r => r.join('\t')).join('\n'), 'btnCopySemanal');
 }
@@ -1202,7 +1269,7 @@ function renderCurvaSAnalitico() {
     </div>` : '';
   return `
     <div class="result-header">
-      <div><div class="result-title">Curva S — Evolução Mensal</div><div class="result-sub">${anaScopeLabel()}</div></div>
+      <div class="result-sub">Evolução Mensal — ${anaScopeLabel()}</div>
       <button class="btn btn-outline" id="btnCopyCurva" onclick="doCopyCurva()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         Copiar para Excel
@@ -1228,9 +1295,14 @@ function renderCurvaSAnalitico() {
     </table></div>`;
 }
 function doCopyCurva() {
+  // Ajusta Base/Reprog/Real Mensal pra soma exata — sem isso, somar a coluna no
+  // Excel/Power BI fecha em 99,98% em vez de 100% (cada mês arredondado isoladamente).
+  const bAj  = arredondarComNulos(_CS.map(r => r.bMes), 2);
+  const rpAj = arredondarComNulos(_CS.map(r => r.rpMes), 2);
+  const rAj  = arredondarComNulos(_CS.map(r => r.rMes), 2);
   const hdr = ['Mês','Base Mensal (%)','Base Acum (%)','Reprog Mensal (%)','Reprog Acum (%)','Real Mensal (%)','Real Acum (%)','Desvio (p.p.)'];
-  const rows = _CS.map(r => [r.label, px(r.bMes), px(r.bAcum), px(r.rpMes), px(r.rpAcum),
-    r.rMes !== null ? px(r.rMes) : '', r.rAcum !== null ? px(r.rAcum) : '',
+  const rows = _CS.map((r, i) => [r.label, px(bAj[i]), px(r.bAcum), px(rpAj[i]), px(r.rpAcum),
+    rAj[i] !== null ? px(rAj[i]) : '', r.rAcum !== null ? px(r.rAcum) : '',
     r.rAcum !== null ? ppx(r.rAcum - r.bAcum) : '']);
   copyTSV([hdr, ...rows].map(r => r.join('\t')).join('\n'), 'btnCopyCurva');
 }
@@ -1240,7 +1312,7 @@ function renderEtapasTabAnalitico() {
   const cutLabel = S.months[S.cutoffIdx].label;
   return `
     <div class="result-header">
-      <div><div class="result-title">Previsto × Real — Acumulado até ${cutLabel}</div><div class="result-sub">${anaScopeLabel()}</div></div>
+      <div class="result-sub">Acumulado até ${cutLabel} — ${anaScopeLabel()}</div>
       <button class="btn btn-outline" id="btnCopyEtapas" onclick="doCopyEtapas()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         Copiar para Excel
@@ -1296,8 +1368,11 @@ function mudarNivelEtapas(nivel) {
 }
 function doCopyEtapas() {
   const nivel = NIVEL_LABELS[_ED_nivel];
+  const bAj  = arredondarComNulos(_ED.map(r => r.bCut), 2);
+  const rpAj = arredondarComNulos(_ED.map(r => r.rpCut), 2);
+  const rAj  = arredondarComNulos(_ED.map(r => r.rCut), 2);
   const hdr = [nivel,'Base até Corte (%)','Reprog até Corte (%)','Real até Corte (%)','Desvio (p.p.)','Status'];
-  const rows = _ED.map(r => [r.label, px(r.bCut), px(r.rpCut), px(r.rCut), ppx(r.dev),
+  const rows = _ED.map((r, i) => [r.label, px(bAj[i]), px(rpAj[i]), px(rAj[i]), ppx(r.dev),
     r.dev > 0.005 ? 'Adiantado' : r.dev < -0.005 ? 'Atrasado' : 'Em dia']);
   copyTSV([hdr, ...rows].map(r => r.join('\t')).join('\n'), 'btnCopyEtapas');
 }
