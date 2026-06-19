@@ -1,0 +1,1374 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Análise Física do Projeto</title>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap');
+
+:root {
+  --navy: #1a2b45;
+  --blue: #1B6FBF;
+  --blue-bright: #1A6EE8;
+  --bg: #f0f4f9;
+  --surface: #ffffff;
+  --surface2: #f7fafd;
+  --border: #d4dfe8;
+  --text: #1a2b45;
+  --text-muted: #6b80a0;
+  --green: #0f9b6e;
+  --red: #d63a3a;
+  --green-bg: #e6f7f2;
+  --red-bg: #fdf0f0;
+  --shadow: 0 2px 16px rgba(26,43,69,0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+header { background: var(--navy); padding: 18px 32px; display: flex; align-items: center; gap: 14px; }
+.header-back {
+  display: flex; align-items: center; gap: 6px;
+  color: rgba(255,255,255,0.5); font-size: 12px;
+  text-decoration: none; padding: 5px 10px;
+  border-radius: 6px; border: 1px solid rgba(255,255,255,0.12); transition: all 0.15s; margin-right: 4px;
+}
+.header-back:hover { color: #fff; border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.07); }
+header h1 { font-family: 'Sora', sans-serif; font-size: 17px; font-weight: 600; color: #fff; }
+header h1 span { font-size: 13px; color: rgba(255,255,255,0.45); font-weight: 400; }
+.container { max-width: 1200px; margin: 0 auto; padding: 28px 24px 60px; }
+.steps { display: flex; flex-direction: column; gap: 16px; }
+
+/* ── Navegação lateral (resultado) ── */
+.analysis-layout { display: flex; gap: 20px; align-items: flex-start; }
+.side-nav { width: 220px; flex-shrink: 0; display: flex; flex-direction: column; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px; box-shadow: var(--shadow); position: sticky; top: 20px; }
+.side-nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; border: none; background: transparent; cursor: pointer; text-align: left; font-family: 'DM Sans', sans-serif; font-size: 12.5px; font-weight: 600; color: var(--text-muted); transition: all .15s; }
+.side-nav-item .side-nav-icon { font-size: 15px; flex-shrink: 0; }
+.side-nav-item:hover { background: var(--surface2); color: var(--text); }
+.side-nav-item.active { background: var(--blue-bright); color: #fff; }
+.side-content { flex: 1; min-width: 0; }
+
+@media (max-width: 760px) {
+  .analysis-layout { flex-direction: column; }
+  .side-nav { width: 100%; flex-direction: row; overflow-x: auto; position: static; }
+}
+
+.step-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); overflow: hidden; }
+.step-header { display: flex; align-items: center; gap: 12px; padding: 14px 20px; background: var(--surface2); border-bottom: 1px solid var(--border); }
+.step-num { width: 26px; height: 26px; border-radius: 50%; background: var(--navy); color: #fff; font-family: 'Sora', sans-serif; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.step-num.done { background: var(--green); }
+.step-num.active { background: var(--blue-bright); }
+.step-header h2 { font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 600; color: var(--text); }
+.step-header .hint { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.step-header .tag { margin-left: auto; font-size: 11px; padding: 3px 9px; border-radius: 20px; background: var(--border); color: var(--text-muted); font-weight: 500; white-space: nowrap; }
+.step-header .tag.ok { background: var(--green-bg); color: var(--green); }
+.step-body { padding: 16px 20px; }
+
+.upload-zone { border: 2px dashed var(--border); border-radius: 10px; padding: 32px 24px; text-align: center; cursor: pointer; transition: all 0.15s; background: var(--bg); display: block; }
+.upload-zone:hover, .upload-zone.drag-over { border-color: var(--blue-bright); background: #eef4fd; }
+.upload-zone input[type=file] { display: none; }
+.upload-icon { font-size: 32px; margin-bottom: 10px; }
+.upload-text { font-size: 14px; color: var(--text-muted); }
+.upload-text strong { color: var(--blue-bright); }
+
+/* ── Tela de introdução ── */
+.intro-screen { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); padding: 36px 40px; margin-bottom: 20px; }
+.intro-icon-wrap { width: 54px; height: 54px; border-radius: 14px; background: linear-gradient(135deg, var(--navy), var(--blue-bright)); display: flex; align-items: center; justify-content: center; font-size: 26px; margin-bottom: 16px; box-shadow: 0 6px 16px rgba(26,110,232,.25); }
+.intro-title { font-family: 'Sora', sans-serif; font-size: 20px; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+.intro-desc { font-size: 13.5px; color: var(--text-muted); line-height: 1.7; max-width: 660px; margin-bottom: 30px; }
+.intro-usage-title { font-family: 'Sora', sans-serif; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin-bottom: 20px; }
+
+/* Timeline visual do "Modo de uso" — horizontal */
+.timeline { position: relative; display: flex; align-items: flex-start; gap: 4px; margin-bottom: 24px; }
+.timeline::before { content: ''; position: absolute; top: 44px; left: 8.3%; right: 8.3%; height: 2px; background: var(--border); z-index: 0; }
+.timeline-item { position: relative; z-index: 1; flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; }
+.timeline-icon-circle { width: 88px; height: 88px; border-radius: 22px; background: #ffffff; border: 2px solid var(--border); box-shadow: 0 4px 14px rgba(26,43,69,.12); display: flex; align-items: center; justify-content: center; font-size: 36px; flex-shrink: 0; }
+.timeline-title { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 12.5px; color: var(--navy); line-height: 1.35; padding: 0 4px; }
+.timeline-sub { font-size: 11px; color: var(--text-muted); }
+.timeline-chips { display: flex; flex-direction: column; gap: 5px; align-items: center; }
+.timeline-chip { font-size: 10.5px; font-weight: 600; padding: 3px 10px; border-radius: 20px; background: #eef4fd; color: var(--blue-bright); border: 1px solid #cfe0fb; }
+
+@media (max-width: 860px) {
+  .timeline { flex-direction: column; align-items: stretch; gap: 22px; }
+  .timeline::before { display: none; }
+  .timeline-item { flex-direction: row; align-items: flex-start; text-align: left; gap: 16px; }
+  .timeline-title, .timeline-sub { padding: 0; }
+  .timeline-chips { flex-direction: row; flex-wrap: wrap; align-items: flex-start; }
+}
+
+.intro-warn { font-size: 11.5px; color: var(--text-muted); margin-bottom: 22px; }
+.intro-footer { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 12px; }
+.intro-footer-divider { width: 1px; height: 12px; background: var(--border); }
+.btn-trocar-arquivo { font-size: 11.5px; color: var(--text-muted); text-decoration: none; border: 1px solid var(--border); padding: 5px 10px; border-radius: 6px; transition: all .15s; }
+.btn-trocar-arquivo:hover { color: var(--blue-bright); border-color: var(--blue-bright); }
+
+.config-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.config-label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
+
+select { border: 1px solid var(--border); border-radius: 7px; padding: 9px 14px; font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--text); background: var(--bg); cursor: pointer; outline: none; transition: border .15s; min-width: 160px; }
+select:focus { border-color: var(--blue); background: #fff; }
+
+.btn { display: inline-flex; align-items: center; gap: 7px; padding: 9px 18px; border-radius: 7px; font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all .15s; }
+.btn-primary { background: var(--blue-bright); color: #fff; }
+.btn-primary:hover { background: var(--blue); }
+.btn-primary:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; }
+.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
+.btn-outline:hover { border-color: var(--blue); color: var(--blue); }
+.btn-green { background: var(--green); color: #fff; }
+.btn-green:hover { background: #0d8560; }
+.btn-green:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; }
+
+.parse-info { font-size: 12px; color: var(--text-muted); }
+.parse-info.ok { color: var(--green); }
+.parse-info.err { color: var(--red); }
+
+.toggle-group { display: inline-flex; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
+.toggle-btn { padding: 7px 16px; font-family: 'Sora', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; border: none; background: transparent; color: var(--text-muted); transition: all .15s; }
+.toggle-btn.active { background: var(--navy); color: #fff; }
+.toggle-btn:hover:not(.active) { background: var(--surface2); }
+
+.tabs-bar { display: flex; gap: 3px; margin-bottom: -1px; position: relative; z-index: 1; flex-wrap: wrap; }
+.tab-btn { padding: 10px 18px; border-radius: 8px 8px 0 0; font-family: 'Sora', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--surface2); color: var(--text-muted); transition: all 0.15s; border-bottom-color: transparent; }
+.tab-btn.active { background: var(--surface); color: var(--blue-bright); border-color: var(--border); border-bottom-color: var(--surface); }
+.tab-pane { display: none; background: var(--surface); border: 1px solid var(--border); border-radius: 0 10px 10px 10px; padding: 22px; box-shadow: var(--shadow); }
+.tab-pane.active { display: block; }
+
+#resultado { margin-top: 24px; }
+.result-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 16px; gap: 12px; flex-wrap: wrap; }
+.result-title { font-family: 'Sora', sans-serif; font-size: 15px; font-weight: 700; color: var(--navy); }
+.result-sub { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+
+.table-wrap { border: 1px solid var(--border); border-radius: 10px; overflow: auto; box-shadow: var(--shadow); }
+.table-wrap-scroll { border: 1px solid var(--border); border-radius: 10px; overflow-y: auto; max-height: 560px; box-shadow: var(--shadow); }
+table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+thead tr { background: var(--navy); }
+thead tr.subhead { background: #223357; }
+thead th { font-family: 'Sora', sans-serif; font-size: 10.5px; font-weight: 600; color: rgba(255,255,255,.85); text-transform: uppercase; letter-spacing: .5px; padding: 10px 12px; text-align: right; white-space: nowrap; }
+thead th:first-child { text-align: left; }
+thead th.grp { text-align: center; border-left: 1px solid rgba(255,255,255,0.1); border-right: 1px solid rgba(255,255,255,0.1); }
+thead th.grp-base { background: rgba(26,110,232,0.3); }
+thead th.grp-reprog { background: rgba(217,119,6,0.3); }
+thead th.grp-real { background: rgba(15,155,110,0.3); }
+thead th.sub-base { background: rgba(26,110,232,0.15); }
+thead th.sub-reprog { background: rgba(217,119,6,0.15); }
+thead th.sub-real { background: rgba(15,155,110,0.15); }
+.table-wrap-scroll thead th { position: sticky; top: 0; z-index: 2; }
+.table-wrap-scroll thead tr.subhead th { top: 37px; }
+tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+tbody tr:hover { background: var(--surface2); }
+tbody tr:last-child { border-bottom: none; }
+tbody tr.cutoff-row { background: #fef9e7; }
+tbody tr.cutoff-row:hover { background: #fef3c7; }
+tbody td { padding: 9px 12px; text-align: right; }
+tbody td:first-child { text-align: left; font-weight: 500; color: var(--navy); font-size: 12px; }
+.pos { color: var(--green); font-weight: 600; }
+.neg { color: var(--red); font-weight: 600; }
+.zer { color: var(--text-muted); }
+.muted { color: var(--text-muted); }
+.pill { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.pill.pos { background: var(--green-bg); color: var(--green); }
+.pill.neg { background: var(--red-bg); color: var(--red); }
+.pill.zer { background: var(--border); color: var(--text-muted); }
+tfoot tr { background: var(--navy); }
+tfoot td { padding: 10px 12px; text-align: right; font-family: 'Sora', sans-serif; font-size: 11.5px; font-weight: 700; color: #fff; }
+tfoot td:first-child { text-align: left; }
+
+.kpi-row   { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 12px; }
+.kpi-row-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 12px; }
+.kpi-row-4c { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 18px; }
+.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; box-shadow: var(--shadow); }
+.kpi-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); margin-bottom: 6px; }
+.kpi-val { font-family: 'Sora', sans-serif; font-size: 20px; font-weight: 700; color: var(--navy); }
+.kpi-val.pos { color: var(--green); }
+.kpi-val.neg { color: var(--red); }
+.kpi-val.zer { color: var(--text-muted); }
+.kpi-sub { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+
+.filter-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 12px 16px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 16px; }
+.filter-bar .config-label { font-size: 11px; }
+
+@media (max-width: 700px) {
+  .kpi-row { grid-template-columns: 1fr 1fr; }
+  .kpi-row-3 { grid-template-columns: 1fr 1fr; }
+  header { padding: 14px 16px; }
+  .container { padding: 16px 12px; }
+}
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-thumb { background: #c5cedd; border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="header-back" href="../../index.html">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+    Portal
+  </a>
+  <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+    <rect width="28" height="28" rx="7" fill="#1A6EE8"/>
+    <polyline points="4,21 9,14 14,17 19,10 24,6" stroke="white" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="24" cy="6" r="2" fill="white"/>
+  </svg>
+  <div>
+    <h1>Análise Física do Projeto <span>— Agilean</span></h1>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- ── Tela de introdução ──────────────────────────────────────────────── -->
+  <div class="intro-screen" id="introScreen">
+    <div class="intro-icon-wrap">📊</div>
+    <h2 class="intro-title">Análise Física do Projeto</h2>
+    <p class="intro-desc">Ferramenta de tratamento e análise de dados extraídos do Agilean para acompanhamento físico do cronograma da obra — Curva S, Previsto × Real e projeção de término.</p>
+
+    <div class="intro-usage-title">Modo de uso</div>
+    <div class="timeline">
+
+      <div class="timeline-item">
+        <div class="timeline-icon-circle">🌐</div>
+        <div class="timeline-title">Acessar Plataforma Agilean</div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-icon-circle">🏗️</div>
+        <div class="timeline-title">Selecionar a Obra</div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-icon-circle">📂</div>
+        <div class="timeline-title">Menu Lateral Superior Esquerdo</div>
+        <div class="timeline-chips"><span class="timeline-chip">Longo Prazo</span></div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-icon-circle">🚩</div>
+        <div class="timeline-title">Marcar Flags</div>
+        <div class="timeline-chips">
+          <span class="timeline-chip">% Percentual Financeiro</span>
+          <span class="timeline-chip">Remover Despesa Indireta Automática</span>
+        </div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-icon-circle">📋</div>
+        <div class="timeline-title">Botão "Colunas" na tabela</div>
+        <div class="timeline-chips"><span class="timeline-chip">Selecionar Todas as Colunas</span></div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-icon-circle">🖱️</div>
+        <div class="timeline-title">Botão Direito na Tabela</div>
+        <div class="timeline-sub">Exportar → Exportar Excel</div>
+      </div>
+
+    </div>
+    <div class="intro-warn">⚠ Apenas Excel (.xlsx/.xls) é aceito — o CSV do Agilean arredonda a contribuição em 2 casas decimais, o que distorce a curva acumulada em bases com muitas atividades.</div>
+
+    <label class="upload-zone" id="uploadZone"
+      ondragover="event.preventDefault();document.getElementById('uploadZone').classList.add('drag-over')"
+      ondragleave="document.getElementById('uploadZone').classList.remove('drag-over')"
+      ondrop="doDrop(event)">
+      <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="handleFile(this.files[0])">
+      <div class="upload-icon">📂</div>
+      <div class="upload-text"><strong>Arraste aqui</strong> ou clique para selecionar o arquivo</div>
+      <div class="upload-text" style="font-size:11px;margin-top:4px;color:var(--text-muted)">Formatos .xlsx ou .xls — exportação do Agilean</div>
+    </label>
+    <div style="margin-top:10px"><span class="parse-info" id="infoFile"></span></div>
+    <span id="tag1" style="display:none"></span><span id="num1" style="display:none"></span>
+
+    <div class="intro-footer">
+      <span>Desenvolvido por <strong>Mateus Monteiro</strong></span>
+      <div class="intro-footer-divider"></div>
+      <span>(62) 99156-3421</span>
+    </div>
+  </div>
+
+  <!-- ── Fluxo principal (após carregar o arquivo) ───────────────────────── -->
+  <div id="mainFlow" style="display:none">
+
+  <div style="text-align:right;margin-bottom:10px">
+    <a href="#" class="btn-trocar-arquivo" onclick="voltarIntro(event)">↺ Trocar arquivo</a>
+  </div>
+
+  <div class="steps">
+
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num" id="num2">1</div>
+        <div>
+          <h2>Configurar análise</h2>
+          <div class="hint">Mês de corte para o cálculo de avanço acumulado</div>
+        </div>
+        <span class="tag" id="tag2">Aguardando</span>
+      </div>
+      <div class="step-body">
+        <div class="config-row">
+          <span class="config-label">Mês de Corte</span>
+          <select id="selectCorte" disabled onchange="onCorteChange()">
+            <option value="">— carregue o arquivo primeiro —</option>
+          </select>
+          <button class="btn btn-primary" id="btnGerar" onclick="gerarAnalise()" disabled>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            Gerar Análise
+          </button>
+          <span class="parse-info" id="infoCorte" style="font-size:11px"></span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="resultado"></div>
+
+  </div>
+</div>
+
+<script>
+// ─── State ────────────────────────────────────────────────────────────────────
+const S = { rows: [], months: [], cutoffIdx: -1, hasDatas: false };
+let _CS = [], _ED = [], _ED_nivel = 'macro';
+let _ANA_F = { unidade: 'TODAS', local: 'TODAS', macroEtapa: 'TODAS', etapa: 'TODAS' };
+let _ACTIVE_SECTION = 'geral';
+
+// ─── Parse ────────────────────────────────────────────────────────────────────
+const MONTH_NUM = {
+  jan:1, feb:2, fev:2, mar:3, apr:4, abr:4, may:5, mai:5,
+  jun:6, jul:7, aug:8, ago:8, sep:9, set:9, oct:10, out:10, nov:11, dec:12, dez:12
+};
+const PT_MONTHS = {
+  jan:'Jan', feb:'Fev', fev:'Fev', mar:'Mar', apr:'Abr', abr:'Abr',
+  may:'Mai', mai:'Mai', jun:'Jun', jul:'Jul', aug:'Ago', ago:'Ago',
+  sep:'Set', set:'Set', oct:'Out', out:'Out', nov:'Nov', dec:'Dez', dez:'Dez'
+};
+
+function parseMonthStr(s) {
+  if (!s) return null;
+  s = s.trim();
+  const m = s.match(/^([A-Za-zç]+)[\/\-](\d{4})$/);
+  if (!m) return null;
+  const key = m[1].toLowerCase();
+  const mn = MONTH_NUM[key];
+  const yr = parseInt(m[2]);
+  if (!mn || isNaN(yr)) return null;
+  return { label: (PT_MONTHS[key] || m[1]) + '/' + m[2], sortKey: yr * 100 + mn };
+}
+
+function parsePct(v) {
+  if (!v && v !== 0) return 0;
+  const s = String(v).trim().replace(/%/g, '').replace(',', '.').trim();
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
+// ─── Datas opcionais (Início/Término Planejado/Real por etapa) ────────────────
+// O export padrão do Agilean usado aqui só tem granularidade de mês (coluna "Data").
+// Estes campos são opcionais: se a exportação não incluir essas colunas, a análise
+// funciona exatamente como antes — só não mostra datas no Previsto × Real.
+const DIACRITICS_RE = new RegExp('[\\u0300-\\u036f]', 'g');
+function normalizeHeader(h) {
+  return String(h ?? '').trim().toLowerCase().normalize('NFD').replace(DIACRITICS_RE, '');
+}
+
+// Cada campo exige DUAS palavras-chave no header (categoria temporal + natureza),
+// nunca uma isolada — evita confundir "Reprog" (%) com "Término Reprogramado" (data).
+// O Agilean pode exportar 3 pares de data por etapa: Planejado Base (baseline original),
+// Planejado (replanejamento/reprog atual) e Real. "exclude" evita que "Início Planejado
+// Base" seja capturado por engano pelo par "Planejado" (sem base) — e vice-versa.
+const DATE_FIELD_PATTERNS = {
+  iniPlanBase: { time: /in[ií]cio/,       kind: /base/ },
+  fimPlanBase: { time: /(term|fim|final)/, kind: /base/ },
+  iniPlan:     { time: /in[ií]cio/,       kind: /plan|prev/, exclude: /base/ },
+  fimPlan:     { time: /(term|fim|final)/, kind: /plan|prev/, exclude: /base/ },
+  iniReal:     { time: /in[ií]cio/,       kind: /real/ },
+  fimReal:     { time: /(term|fim|final)/, kind: /real/ }
+};
+
+// Confere se o valor da célula realmente parece uma data antes de aceitar o match
+// de header — protege contra um header ambíguo apontar pra coluna errada.
+function looksLikeDateValue(v) {
+  if (v === null || v === undefined || v === '') return false;
+  if (typeof v === 'number') return v > 25569 && v < 60000; // serial Excel ~1970–2064
+  const s = String(v).trim();
+  return /^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}$/.test(s) || /^\d{4}-\d{1,2}-\d{1,2}$/.test(s);
+}
+
+function detectDateColumns(headerRow, sampleDataRow) {
+  const found = {};
+  (headerRow || []).forEach((h, i) => {
+    const hn = normalizeHeader(h);
+    if (!hn) return;
+    for (const field in DATE_FIELD_PATTERNS) {
+      if (found[field] !== undefined) continue;
+      const pat = DATE_FIELD_PATTERNS[field];
+      if (pat.time.test(hn) && pat.kind.test(hn) && !(pat.exclude && pat.exclude.test(hn))) {
+        const sample = sampleDataRow ? sampleDataRow[i] : undefined;
+        if (looksLikeDateValue(sample)) found[field] = i;
+      }
+    }
+  });
+  return found;
+}
+
+// Colunas de % por texto de cabeçalho (não por posição fixa): a posição muda
+// sempre que colunas de data são inseridas antes delas no export do Agilean.
+// Contribuição (peso financeiro) usa o nome puro ("Real"); Avanço físico usa
+// o nome com "(%)" — isso distingue as duas seções que repetem Real/Reprog/Base,
+// e o "(%)" também exclui as colunas "(R$)" que aparecem ao lado.
+function detectPctColumns(headerRow) {
+  const found = {};
+  (headerRow || []).forEach((h, i) => {
+    const hn = normalizeHeader(h);
+    if (!hn) return;
+    if (found.aReal === undefined && hn.includes('real') && hn.includes('%')) found.aReal = i;
+    else if (found.aReprog === undefined && hn.includes('reprog') && hn.includes('%')) found.aReprog = i;
+    else if (found.aBase === undefined && hn.includes('base') && hn.includes('%')) found.aBase = i;
+    else if (found.cReal === undefined && hn === 'real') found.cReal = i;
+    else if (found.cReprog === undefined && hn === 'reprog') found.cReprog = i;
+    else if (found.cBase === undefined && hn === 'base') found.cBase = i;
+  });
+  return found;
+}
+
+// Trata os dois formatos que podem vir do Excel: serial numérico (célula formatada
+// como data) ou texto "dd/mm/aaaa" / "aaaa-mm-dd" (célula formatada como texto).
+function parseExcelDateCell(v) {
+  if (v === null || v === undefined || v === '') return null;
+  if (typeof v === 'number') {
+    if (v <= 25569 || v >= 60000) return null;
+    const ms = Math.round((v - 25569) * 86400 * 1000);
+    const d = new Date(ms);
+    return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  }
+  const s = String(v).trim();
+  let m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if (m) {
+    let yr = parseInt(m[3]); if (yr < 100) yr += 2000;
+    const d = new Date(yr, parseInt(m[2]) - 1, parseInt(m[1]));
+    return isNaN(d.getTime()) ? null : d;
+  }
+  m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (m) {
+    const d = new Date(parseInt(m[1]), parseInt(m[2]) - 1, parseInt(m[3]));
+    return isNaN(d.getTime()) ? null : d;
+  }
+  return null;
+}
+
+function minDate(arr) {
+  const valid = arr.filter(Boolean);
+  return valid.length ? new Date(Math.min(...valid.map(d => d.getTime()))) : null;
+}
+function maxDate(arr) {
+  const valid = arr.filter(Boolean);
+  return valid.length ? new Date(Math.max(...valid.map(d => d.getTime()))) : null;
+}
+function fmtDate(d) {
+  if (!d) return '—';
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  return `${dd}/${mm}/${d.getFullYear()}`;
+}
+
+// Recebe uma matriz (array de arrays de células já separadas em colunas) e monta
+// a estrutura { rows, months, hasDatas }. Usada pelo parser de XLSX/XLS — ler o Excel
+// direto (em vez de CSV) preserva a precisão decimal original da "Contribuição", que
+// o CSV do Agilean trunca em 2 casas e distorce a curva acumulada.
+function processMatrix(matrix) {
+  if (matrix.length < 4) throw new Error('Arquivo muito curto — esperado 3 linhas de cabeçalho + dados');
+  const COL = { codigo:0, unidade:1, local:2, macroEtapa:3, etapa:4, data:5,
+                cReal:6, cReprog:7, cBase:8, aReal:9, aReprog:10, aBase:11,
+                iniPlanBase:-1, fimPlanBase:-1, iniPlan:-1, fimPlan:-1, iniReal:-1, fimReal:-1 };
+  (matrix[2] || []).map(h => String(h ?? '').trim().toLowerCase()).forEach((h, i) => {
+    if (h === 'código' || h === 'codigo') COL.codigo = i;
+    else if (h === 'unidade') COL.unidade = i;
+    else if (h === 'local') COL.local = i;
+    else if (h.includes('macro')) COL.macroEtapa = i;
+    else if (h === 'etapa') COL.etapa = i;
+    else if (h === 'data') COL.data = i;
+  });
+  // Colunas de % detectadas por texto de cabeçalho — sobrepõem os defaults de posição
+  // acima apenas quando encontradas; se não encontradas, mantém a posição original
+  // (compatibilidade com exportações antigas que não tinham os headers padronizados).
+  Object.assign(COL, detectPctColumns(matrix[2]));
+  Object.assign(COL, detectDateColumns(matrix[2], matrix[3]));
+  const rows = [];
+  for (let i = 3; i < matrix.length; i++) {
+    const cols = matrix[i];
+    if (!cols || cols.length < 9) continue;
+    const dataStr = String(cols[COL.data] ?? '').trim();
+    if (!dataStr) continue;
+    const dataParsed = parseMonthStr(dataStr);
+    if (!dataParsed) continue;
+    const unidade    = String(cols[COL.unidade]    ?? '').trim();
+    const macroEtapa = String(cols[COL.macroEtapa] ?? '').trim();
+    if (!unidade && !macroEtapa) continue;
+    rows.push({
+      codigo:     String(cols[COL.codigo]    ?? '').trim(),
+      unidade:    unidade    || '(sem unidade)',
+      local:      String(cols[COL.local]     ?? '').trim(),
+      macroEtapa: macroEtapa || '(sem macro etapa)',
+      etapa:      String(cols[COL.etapa]     ?? '').trim(),
+      data:       dataParsed,
+      cReal:   parsePct(cols[COL.cReal]),
+      cReprog: parsePct(cols[COL.cReprog]),
+      cBase:   parsePct(cols[COL.cBase]),
+      aReal:   parsePct(cols[COL.aReal]),
+      aReprog: parsePct(cols[COL.aReprog]),
+      aBase:   parsePct(cols[COL.aBase]),
+      iniPlanBase: COL.iniPlanBase >= 0 ? parseExcelDateCell(cols[COL.iniPlanBase]) : null,
+      fimPlanBase: COL.fimPlanBase >= 0 ? parseExcelDateCell(cols[COL.fimPlanBase]) : null,
+      iniPlan: COL.iniPlan >= 0 ? parseExcelDateCell(cols[COL.iniPlan]) : null,
+      fimPlan: COL.fimPlan >= 0 ? parseExcelDateCell(cols[COL.fimPlan]) : null,
+      iniReal: COL.iniReal >= 0 ? parseExcelDateCell(cols[COL.iniReal]) : null,
+      fimReal: COL.fimReal >= 0 ? parseExcelDateCell(cols[COL.fimReal]) : null
+    });
+  }
+  if (rows.length === 0) throw new Error('Nenhum dado encontrado. Verifique o formato do arquivo.');
+
+  // Normaliza Base e Reprog independentemente para corrigir arredondamento do Agilean.
+  // Real não é normalizado: representa progresso parcial (não precisa somar 100%).
+  const sumBase   = rows.reduce((s, r) => s + r.cBase,   0);
+  const sumReprog = rows.reduce((s, r) => s + r.cReprog,  0);
+  if (sumBase   > 0 && Math.abs(sumBase   - 100) < 15) { const f = 100 / sumBase;   rows.forEach(r => { r.cBase   *= f; }); }
+  if (sumReprog > 0 && Math.abs(sumReprog - 100) < 15) { const f = 100 / sumReprog; rows.forEach(r => { r.cReprog *= f; }); }
+
+  const monthMap = new Map();
+  rows.forEach(r => { monthMap.set(r.data.label, r.data); });
+  const months = [...monthMap.values()].sort((a, b) => a.sortKey - b.sortKey);
+  const hasDatas = [COL.iniPlanBase, COL.fimPlanBase, COL.iniPlan, COL.fimPlan, COL.iniReal, COL.fimReal].some(c => c >= 0);
+  return { rows, months, hasDatas };
+}
+
+function parseXLSX(arrayBuffer) {
+  if (typeof XLSX === 'undefined') throw new Error('Biblioteca XLSX não carregada. Verifique a conexão com a internet.');
+  const wb = XLSX.read(arrayBuffer, { type: 'array' });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  if (!ws) throw new Error('Planilha vazia ou sem abas.');
+  // raw:true preserva o valor numérico original (sem arredondamento de exibição).
+  const rawMatrix = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: '' });
+  const matrix = rawMatrix.filter(row => row.some(c => String(c).trim() !== ''));
+  return processMatrix(matrix);
+}
+
+// ─── File handling ─────────────────────────────────────────────────────────────
+function doDrop(e) {
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.remove('drag-over');
+  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+}
+
+function handleFile(file) {
+  if (!file) return;
+  if (!/\.(xlsx|xls)$/i.test(file.name || '')) {
+    document.getElementById('infoFile').textContent = '✗ Formato não suportado — envie um arquivo .xlsx ou .xls (CSV não é aceito por causa do arredondamento)';
+    document.getElementById('infoFile').className = 'parse-info err';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const { rows, months, hasDatas } = parseXLSX(e.target.result);
+      S.rows = rows; S.months = months; S.hasDatas = hasDatas;
+      let lastIdx = -1;
+      months.forEach((m, idx) => {
+        if (rows.filter(r => r.data.label === m.label).reduce((s, r) => s + r.cReal, 0) > 0) lastIdx = idx;
+      });
+      S.cutoffIdx = lastIdx >= 0 ? lastIdx : months.length - 1;
+      const unidades = [...new Set(rows.map(r => r.unidade))].filter(Boolean);
+      const macros   = [...new Set(rows.map(r => r.macroEtapa))].filter(Boolean);
+      document.getElementById('infoFile').textContent = `✓ ${rows.length.toLocaleString('pt-BR')} registros — ${months.length} meses — ${unidades.length} unidades — ${macros.length} macro etapas${hasDatas ? ' — com datas de Previsto × Real' : ''}`;
+      document.getElementById('infoFile').className = 'parse-info ok';
+      document.getElementById('tag1').textContent = `${rows.length.toLocaleString('pt-BR')} reg.`;
+      document.getElementById('tag1').className = 'tag ok';
+      document.getElementById('num1').className = 'step-num done';
+      document.getElementById('num2').className = 'step-num active';
+      const sel = document.getElementById('selectCorte');
+      sel.innerHTML = '';
+      months.forEach((m, i) => {
+        const opt = document.createElement('option');
+        opt.value = i; opt.textContent = m.label;
+        if (i === S.cutoffIdx) opt.selected = true;
+        sel.appendChild(opt);
+      });
+      sel.disabled = false;
+      document.getElementById('btnGerar').disabled = false;
+      document.getElementById('tag2').textContent = 'Pronto';
+      document.getElementById('tag2').className = 'tag ok';
+      document.getElementById('infoCorte').textContent = `Auto-detectado: ${months[S.cutoffIdx].label}`;
+      document.getElementById('infoCorte').className = 'parse-info ok';
+      document.getElementById('introScreen').style.display = 'none';
+      document.getElementById('mainFlow').style.display = '';
+    } catch (err) {
+      document.getElementById('infoFile').textContent = '✗ ' + err.message;
+      document.getElementById('infoFile').className = 'parse-info err';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function voltarIntro(e) {
+  e.preventDefault();
+  document.getElementById('mainFlow').style.display = 'none';
+  document.getElementById('introScreen').style.display = '';
+  document.getElementById('resultado').innerHTML = '';
+}
+
+function onCorteChange() {
+  const idx = parseInt(document.getElementById('selectCorte').value);
+  if (!isNaN(idx)) {
+    document.getElementById('infoCorte').textContent = `Selecionado: ${S.months[idx].label}`;
+    document.getElementById('infoCorte').className = 'parse-info ok';
+  }
+}
+
+// ─── Filtro (Unidade/Local/Macro Etapa/Etapa, compartilhado por todas as seções) ──
+function filterRowsBy(rows, f) {
+  return rows.filter(r =>
+    (f.unidade    === 'TODAS' || r.unidade    === f.unidade) &&
+    (f.local      === 'TODAS' || r.local      === f.local) &&
+    (f.macroEtapa === 'TODAS' || r.macroEtapa === f.macroEtapa) &&
+    (f.etapa      === 'TODAS' || r.etapa      === f.etapa)
+  );
+}
+function isFiltroAnaVazio(f) {
+  return f.unidade === 'TODAS' && f.local === 'TODAS' && f.macroEtapa === 'TODAS' && f.etapa === 'TODAS';
+}
+function buildCurvaSAnalitico(f) {
+  const rows = filterRowsBy(S.rows, f);
+  const baseTotal = rows.reduce((s, r) => s + r.cBase, 0);
+  // Fora do escopo "todas", renormaliza para o filtro ir de 0 a 100% (igual à Curva S por Unidade do Sintético).
+  const fator = (!isFiltroAnaVazio(f) && baseTotal > 0) ? 100 / baseTotal : 1;
+  let bAcum = 0, rpAcum = 0, rAcum = 0;
+  return S.months.map((m, idx) => {
+    const mRows = rows.filter(r => r.data.label === m.label);
+    const bMes  = mRows.reduce((s, r) => s + r.cBase,   0) * fator;
+    const rpMes = mRows.reduce((s, r) => s + r.cReprog, 0) * fator;
+    const rMes  = idx <= S.cutoffIdx ? mRows.reduce((s, r) => s + r.cReal, 0) * fator : null;
+    bAcum += bMes; rpAcum += rpMes;
+    if (rMes !== null) rAcum += rMes;
+    return { label: m.label, bMes, bAcum, rpMes, rpAcum, rMes,
+             rAcum: idx <= S.cutoffIdx ? rAcum : null, isCutoff: idx === S.cutoffIdx };
+  });
+}
+const NIVEL_LABELS  = { unidade: 'Unidade', local: 'Local', macro: 'Macro Etapa', etapa: 'Etapa' };
+const NIVEL_PLURAIS = { unidade: 'unidades', local: 'locais', macro: 'macro etapas', etapa: 'etapas' };
+
+function buildPrevistoRealAnalitico(f, nivel) {
+  const cutSet = new Set(S.months.slice(0, S.cutoffIdx + 1).map(m => m.label));
+  const baseRows = filterRowsBy(S.rows, f);
+  let keyFn, labelFn;
+  if (nivel === 'unidade') {
+    keyFn = r => r.unidade;
+    labelFn = (key) => key;
+  } else if (nivel === 'local') {
+    keyFn = r => r.unidade + '||' + r.local;
+    labelFn = (key, rows) => rows[0].unidade + ' › ' + rows[0].local;
+  } else if (nivel === 'etapa') {
+    keyFn = r => (r.codigo || (r.macroEtapa + '||' + r.etapa));
+    labelFn = (key, rows) => rows[0].macroEtapa + ' › ' + rows[0].etapa;
+  } else { // 'macro'
+    keyFn = r => r.macroEtapa;
+    labelFn = (key) => key;
+  }
+  const groupMap = new Map();
+  baseRows.forEach(r => {
+    const k = keyFn(r);
+    if (!groupMap.has(k)) groupMap.set(k, []);
+    groupMap.get(k).push(r);
+  });
+  const result = [];
+  groupMap.forEach((gRows, key) => {
+    const label = labelFn(key, gRows);
+    let bTotal = 0, bCut = 0, rpCut = 0, rCut = 0;
+    gRows.forEach(r => {
+      bTotal += r.cBase;
+      if (cutSet.has(r.data.label)) { bCut += r.cBase; rpCut += r.cReprog; rCut += r.cReal; }
+    });
+    result.push({ label, bTotal, bCut, rpCut, rCut, dev: rCut - bCut,
+      iniPlanBase: minDate(gRows.map(r => r.iniPlanBase)), fimPlanBase: maxDate(gRows.map(r => r.fimPlanBase)),
+      iniPlan: minDate(gRows.map(r => r.iniPlan)), fimPlan: maxDate(gRows.map(r => r.fimPlan)),
+      iniReal: minDate(gRows.map(r => r.iniReal)), fimReal: maxDate(gRows.map(r => r.fimReal)) });
+  });
+  return result.sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'));
+}
+// Opções em cascata: cada campo só lista valores compatíveis com os filtros já escolhidos acima dele.
+function anaFieldOptions(field) {
+  const order = ['unidade', 'local', 'macroEtapa', 'etapa'];
+  const upstream = { unidade: 'TODAS', local: 'TODAS', macroEtapa: 'TODAS', etapa: 'TODAS' };
+  for (const k of order) {
+    if (k === field) break;
+    upstream[k] = _ANA_F[k];
+  }
+  const rows = filterRowsBy(S.rows, upstream);
+  return [...new Set(rows.map(r => r[field]))].filter(Boolean).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+}
+function anaScopeLabel() {
+  const parts = [];
+  if (_ANA_F.unidade    !== 'TODAS') parts.push('Unidade: ' + _ANA_F.unidade);
+  if (_ANA_F.local      !== 'TODAS') parts.push('Local: ' + _ANA_F.local);
+  if (_ANA_F.macroEtapa !== 'TODAS') parts.push('Macro Etapa: ' + _ANA_F.macroEtapa);
+  if (_ANA_F.etapa      !== 'TODAS') parts.push('Etapa: ' + _ANA_F.etapa);
+  return parts.length ? parts.join(' · ') : 'Todas as unidades, locais e etapas';
+}
+
+function projecaoTermino(curveData) {
+  const cutIdx = S.cutoffIdx;
+  if (cutIdx < 0 || !curveData.length) return null;
+  const cutRow  = curveData.find(r => r.isCutoff);
+  const realAcum = cutRow ? (cutRow.rAcum || 0) : 0;
+  if (realAcum >= 99.5) return { label: 'Concluído', avg: 0, months: 0 };
+  const n = Math.min(3, cutIdx + 1);
+  let sumReal = 0;
+  for (let i = cutIdx - n + 1; i <= cutIdx; i++) {
+    const lbl = S.months[i].label;
+    sumReal += S.rows.filter(r => r.data.label === lbl).reduce((s, r) => s + r.cReal, 0);
+  }
+  const avgMonthly = sumReal / n;
+  if (avgMonthly <= 0) return null;
+  const remaining  = 100 - realAcum;
+  const monthsToEnd = Math.ceil(remaining / avgMonthly);
+  return { label: addMonthsStr(S.months[cutIdx].sortKey, monthsToEnd), avg: avgMonthly, months: monthsToEnd };
+}
+
+function addMonthsStr(sortKey, n) {
+  let yr = Math.floor(sortKey / 100), mo = (sortKey % 100) + n;
+  while (mo > 12) { mo -= 12; yr++; }
+  const PT = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  return PT[mo] + '/' + yr;
+}
+
+// ─── Analysis entry ────────────────────────────────────────────────────────────
+function gerarAnalise() {
+  const cutoffIdx = parseInt(document.getElementById('selectCorte').value);
+  if (isNaN(cutoffIdx)) return;
+  S.cutoffIdx = cutoffIdx;
+  const cutLabel = S.months[cutoffIdx].label;
+  _ANA_F = { unidade: 'TODAS', local: 'TODAS', macroEtapa: 'TODAS', etapa: 'TODAS' };
+  _ED_nivel = 'macro';
+  _ACTIVE_SECTION = 'geral';
+  _CS = buildCurvaSAnalitico(_ANA_F);
+  _ED = buildPrevistoRealAnalitico(_ANA_F, _ED_nivel);
+  renderResultado(cutLabel);
+  document.getElementById('num2').className = 'step-num done';
+  document.getElementById('tag2').textContent = cutLabel;
+}
+
+// ─── Formatting ────────────────────────────────────────────────────────────────
+function p(v, d)  { d = d === undefined ? 2 : d; return v === null ? '—' : v.toFixed(d) + '%'; }
+function pp(v)    { return (v >= 0 ? '+' : '') + v.toFixed(2) + ' p.p.'; }
+function px(v)    { return v === null ? '' : v.toFixed(2).replace('.', ',') + '%'; }
+function ppx(v)   { return (v >= 0 ? '+' : '') + v.toFixed(2).replace('.', ',') + ' p.p.'; }
+function cls(v)   { if (v === null || Math.abs(v) < 0.005) return 'zer'; return v > 0 ? 'pos' : 'neg'; }
+function statusPill(v) {
+  if (Math.abs(v) < 0.005) return '<span class="pill zer">Em dia</span>';
+  return v > 0 ? '<span class="pill pos">Adiantado</span>' : '<span class="pill neg">Atrasado</span>';
+}
+function copyFeedback(btnId) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  const orig = btn.innerHTML;
+  btn.textContent = '✓ Copiado!';
+  btn.style.cssText = 'color:var(--green);border-color:var(--green);border:1px solid;padding:9px 18px;border-radius:7px;font-family:Sora,sans-serif;font-size:13px;font-weight:600;cursor:pointer;background:transparent';
+  setTimeout(() => { btn.innerHTML = orig; btn.style.cssText = ''; }, 2000);
+}
+function copyTSV(tsv, btnId) { navigator.clipboard.writeText(tsv).then(() => copyFeedback(btnId)).catch(() => {}); }
+
+// ─── Render principal ──────────────────────────────────────────────────────────
+function renderResultado(cutLabel) {
+  const div = document.getElementById('resultado');
+  div.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+      <div>
+        <div style="font-family:'Sora',sans-serif;font-size:16px;font-weight:700;color:var(--navy)">Análise Física do Projeto</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:2px">Corte em ${cutLabel}</div>
+      </div>
+    </div>
+    <div class="analysis-layout">
+      <nav class="side-nav">
+        <button class="side-nav-item active" onclick="switchSection('geral',this)"><span class="side-nav-icon">📊</span>Informações Gerais</button>
+        <button class="side-nav-item" onclick="switchSection('curva',this)"><span class="side-nav-icon">📈</span>Curva S</button>
+        <button class="side-nav-item" onclick="switchSection('previsto',this)"><span class="side-nav-icon">📋</span>Previsto x Realizado</button>
+        <button class="side-nav-item" onclick="switchSection('marcos',this)"><span class="side-nav-icon">🚩</span>Datas Marcos</button>
+        <button class="side-nav-item" onclick="switchSection('desvios',this)"><span class="side-nav-icon">⚠️</span>Desvios</button>
+        <button class="side-nav-item" onclick="switchSection('semanal',this)"><span class="side-nav-icon">📅</span>Resumo Semanal</button>
+        <button class="side-nav-item" onclick="switchSection('export',this)"><span class="side-nav-icon">📤</span>Exportar Resumo Geral</button>
+      </nav>
+      <div class="side-content" id="sectionContent">${renderSection('geral')}</div>
+    </div>`;
+  div.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function switchSection(id, el) {
+  _ACTIVE_SECTION = id;
+  document.querySelectorAll('.side-nav-item').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('sectionContent').innerHTML = renderSection(id);
+}
+
+// ─── Despacho de seções ────────────────────────────────────────────────────────
+function renderSection(id) {
+  if (id === 'geral')    return renderSectionGeral();
+  if (id === 'curva')    return renderAnaFilterBar() + renderCurvaSAnalitico();
+  if (id === 'previsto') return renderAnaFilterBar() + renderEtapasTabAnalitico();
+  if (id === 'marcos')   return renderAnaFilterBar() + renderSectionMarcos();
+  if (id === 'desvios')  return renderAnaFilterBar() + renderSectionDesvios();
+  if (id === 'semanal')  return renderAnaFilterBar() + renderSectionSemanal();
+  if (id === 'export')   return renderSectionExport();
+  return '';
+}
+
+function renderSectionPlaceholder(title) {
+  return `
+    <div class="result-header"><div><div class="result-title">${title}</div><div class="result-sub">Em construção — chega na próxima etapa.</div></div></div>
+    <div style="padding:40px;text-align:center;color:var(--text-muted);border:2px dashed var(--border);border-radius:10px">🚧 Em breve</div>`;
+}
+
+// ─── Seção: Informações Gerais ─────────────────────────────────────────────────
+function renderSectionGeral() {
+  // Sempre o projeto inteiro, sem filtro — independente do filtro ativo nas outras seções,
+  // já que esta tela não exibe a barra de filtro (seria confuso mostrar números filtrados aqui).
+  const curvaGlobal = buildCurvaSAnalitico({ unidade: 'TODAS', local: 'TODAS', macroEtapa: 'TODAS', etapa: 'TODAS' });
+  const cutLabel = S.months[S.cutoffIdx].label;
+  const cutRow   = curvaGlobal.find(r => r.isCutoff);
+  const bAcum    = cutRow ? cutRow.bAcum : 0;
+  const rAcum    = cutRow ? (cutRow.rAcum || 0) : 0;
+  const devGlob  = rAcum - bAcum;
+  const idp      = bAcum > 0 ? (rAcum / bAcum) : 0;
+  const proj     = projecaoTermino(curvaGlobal);
+  const unidades = [...new Set(S.rows.map(r => r.unidade))].filter(Boolean);
+  const macros   = [...new Set(S.rows.map(r => r.macroEtapa))].filter(Boolean);
+  return `
+    <div class="result-header">
+      <div><div class="result-title">Informações Gerais</div><div class="result-sub">Resumo da base carregada e indicadores até o corte</div></div>
+    </div>
+    <div class="kpi-row-4c">
+      <div class="kpi"><div class="kpi-label">Registros</div><div class="kpi-val">${S.rows.length.toLocaleString('pt-BR')}</div><div class="kpi-sub">linhas da base</div></div>
+      <div class="kpi"><div class="kpi-label">Meses</div><div class="kpi-val">${S.months.length}</div><div class="kpi-sub">${S.months[0].label} a ${S.months[S.months.length - 1].label}</div></div>
+      <div class="kpi"><div class="kpi-label">Unidades</div><div class="kpi-val">${unidades.length}</div><div class="kpi-sub">distintas na base</div></div>
+      <div class="kpi"><div class="kpi-label">Macro Etapas</div><div class="kpi-val">${macros.length}</div><div class="kpi-sub">distintas na base</div></div>
+    </div>
+    <div class="kpi-row" style="margin-bottom:12px">
+      <div class="kpi">
+        <div class="kpi-label">Mês de Corte</div>
+        <div class="kpi-val" style="font-size:17px">${cutLabel}</div>
+        <div class="kpi-sub">Referência de análise</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Base Acumulado</div>
+        <div class="kpi-val">${p(bAcum)}</div>
+        <div class="kpi-sub">Previsto até o corte</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Real Acumulado</div>
+        <div class="kpi-val ${cls(devGlob)}">${p(rAcum)}</div>
+        <div class="kpi-sub">Executado até o corte</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Desvio Global</div>
+        <div class="kpi-val ${cls(devGlob)}">${pp(devGlob)}</div>
+        <div class="kpi-sub">${devGlob > 0.005 ? '✓ Adiantada' : devGlob < -0.005 ? '⚠ Atrasada' : '= Em dia'}</div>
+      </div>
+    </div>
+    <div class="kpi-row" style="grid-template-columns:repeat(3,1fr)">
+      <div class="kpi">
+        <div class="kpi-label">IDP — Índice de Desempenho</div>
+        <div class="kpi-val ${idp >= 1 ? 'pos' : 'neg'}">${idp.toFixed(2)}</div>
+        <div class="kpi-sub">${idp >= 1.01 ? 'Adiantado' : idp <= 0.99 ? 'Atrasado' : 'Em dia'} • Real ÷ Base até corte</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Projeção de Término</div>
+        <div class="kpi-val" style="font-size:18px">${proj ? proj.label : '—'}</div>
+        <div class="kpi-sub">${proj ? `Ritmo médio: ${proj.avg.toFixed(2)}%/mês (últimos 3 meses)` : 'Dados insuficientes'}</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Meses p/ Conclusão</div>
+        <div class="kpi-val ${proj && proj.months > 0 ? '' : 'zer'}">${proj ? (proj.months > 0 ? proj.months : '—') : '—'}</div>
+        <div class="kpi-sub">A partir de ${cutLabel}</div>
+      </div>
+    </div>`;
+}
+
+// ─── Seção: Exportar Resumo Geral ──────────────────────────────────────────────
+function renderSectionExport() {
+  return `
+    <div class="result-header">
+      <div><div class="result-title">Exportar Resumo Geral</div><div class="result-sub">Gera uma planilha Excel com Curva S e Previsto × Real, considerando o filtro atual: ${anaScopeLabel()}</div></div>
+    </div>
+    <button class="btn btn-green" id="btnExportarExcel" onclick="exportarExcel()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Exportar Excel
+    </button>`;
+}
+
+// ─── Seção: Datas Marcos ────────────────────────────────────────────────────────
+function statusMarco(fimPlan, fimReal) {
+  if (!fimPlan) return '<span class="pill zer">—</span>';
+  const hoje = new Date();
+  if (fimReal) {
+    return fimReal.getTime() > fimPlan.getTime()
+      ? '<span class="pill neg">Concluído com atraso</span>'
+      : '<span class="pill pos">Concluído no prazo</span>';
+  }
+  return hoje.getTime() > fimPlan.getTime()
+    ? '<span class="pill neg">Atrasado</span>'
+    : '<span class="pill zer">Em andamento</span>';
+}
+function renderNivelToggle() {
+  return `
+    <div class="filter-bar">
+      <span class="config-label">Nível</span>
+      <div class="toggle-group">
+        <button class="toggle-btn ${_ED_nivel==='unidade'?'active':''}" onclick="mudarNivelEtapas('unidade')">Unidade</button>
+        <button class="toggle-btn ${_ED_nivel==='local'?'active':''}" onclick="mudarNivelEtapas('local')">Local</button>
+        <button class="toggle-btn ${_ED_nivel==='macro'?'active':''}" onclick="mudarNivelEtapas('macro')">Macro Etapa</button>
+        <button class="toggle-btn ${_ED_nivel==='etapa'?'active':''}" onclick="mudarNivelEtapas('etapa')">Etapa</button>
+      </div>
+    </div>`;
+}
+function renderSectionMarcos() {
+  const nivel = NIVEL_LABELS[_ED_nivel];
+  if (!S.hasDatas) {
+    return `
+      <div class="result-header"><div><div class="result-title">Datas Marcos</div><div class="result-sub">${anaScopeLabel()}</div></div></div>
+      <div style="padding:24px;text-align:center;color:var(--text-muted);border:1px solid var(--border);border-radius:10px;background:var(--surface2)">
+        ℹ A base carregada não tem colunas de data (Início/Término Planejado e Real) — recarregue com essas colunas habilitadas no export do Agilean pra ver os marcos aqui.
+      </div>`;
+  }
+  const rows = _ED.map(r => `
+    <tr>
+      <td>${r.label}</td>
+      <td>${fmtDate(r.iniPlan)}</td><td>${fmtDate(r.fimPlan)}</td>
+      <td>${fmtDate(r.iniReal)}</td><td>${fmtDate(r.fimReal)}</td>
+      <td>${statusMarco(r.fimPlan, r.fimReal)}</td>
+    </tr>`).join('');
+  return `
+    <div class="result-header">
+      <div><div class="result-title">Datas Marcos</div><div class="result-sub">${anaScopeLabel()} · Nível: ${nivel}</div></div>
+      <button class="btn btn-outline" id="btnCopyMarcos" onclick="doCopyMarcos()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copiar para Excel
+      </button>
+    </div>
+    ${renderNivelToggle()}
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>${nivel}</th>
+        <th>Início Prev.</th><th>Término Prev.</th>
+        <th>Início Real</th><th>Término Real</th>
+        <th>Status</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+}
+function doCopyMarcos() {
+  const nivel = NIVEL_LABELS[_ED_nivel];
+  const hdr = [nivel, 'Início Prev.', 'Término Prev.', 'Início Real', 'Término Real', 'Status'];
+  const rows = _ED.map(r => {
+    const status = !r.fimPlan ? '—'
+      : r.fimReal ? (r.fimReal.getTime() > r.fimPlan.getTime() ? 'Concluído com atraso' : 'Concluído no prazo')
+      : (new Date().getTime() > r.fimPlan.getTime() ? 'Atrasado' : 'Em andamento');
+    return [r.label, fmtDate(r.iniPlan), fmtDate(r.fimPlan), fmtDate(r.iniReal), fmtDate(r.fimReal), status];
+  });
+  copyTSV([hdr, ...rows].map(r => r.join('\t')).join('\n'), 'btnCopyMarcos');
+}
+
+// ─── Seção: Desvios ─────────────────────────────────────────────────────────────
+function renderSectionDesvios() {
+  const nivel   = NIVEL_LABELS[_ED_nivel];
+  const plural  = NIVEL_PLURAIS[_ED_nivel];
+  const sorted  = [..._ED].sort((a, b) => a.dev - b.dev); // maior atraso primeiro
+  const ahead   = _ED.filter(r => r.dev > 0.005).length;
+  const behind  = _ED.filter(r => r.dev < -0.005).length;
+  const ontrack = _ED.length - ahead - behind;
+  const rows = sorted.map(r => `
+    <tr>
+      <td>${r.label}</td>
+      <td>${p(r.bCut)}</td><td>${p(r.rCut)}</td>
+      <td><span class="pill ${cls(r.dev)}">${pp(r.dev)}</span></td>
+      <td>${statusPill(r.dev)}</td>
+    </tr>`).join('');
+  return `
+    <div class="result-header">
+      <div><div class="result-title">Desvios</div><div class="result-sub">${anaScopeLabel()} · Nível: ${nivel} · ordenado do maior atraso ao maior avanço</div></div>
+      <button class="btn btn-outline" id="btnCopyDesvios" onclick="doCopyDesvios()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copiar para Excel
+      </button>
+    </div>
+    ${renderNivelToggle()}
+    <div class="kpi-row-3" style="margin-bottom:16px">
+      <div class="kpi"><div class="kpi-label">Atrasadas</div><div class="kpi-val neg">${behind}</div><div class="kpi-sub">${plural}</div></div>
+      <div class="kpi"><div class="kpi-label">Em dia</div><div class="kpi-val zer">${ontrack}</div><div class="kpi-sub">${plural}</div></div>
+      <div class="kpi"><div class="kpi-label">Adiantadas</div><div class="kpi-val pos">${ahead}</div><div class="kpi-sub">${plural}</div></div>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>${nivel}</th><th>Base até Corte</th><th>Real até Corte</th><th>Desvio (R−B)</th><th>Status</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+}
+function doCopyDesvios() {
+  const nivel = NIVEL_LABELS[_ED_nivel];
+  const sorted = [..._ED].sort((a, b) => a.dev - b.dev);
+  const hdr = [nivel, 'Base até Corte (%)', 'Real até Corte (%)', 'Desvio (p.p.)', 'Status'];
+  const rows = sorted.map(r => [r.label, px(r.bCut), px(r.rCut), ppx(r.dev),
+    r.dev > 0.005 ? 'Adiantado' : r.dev < -0.005 ? 'Atrasado' : 'Em dia']);
+  copyTSV([hdr, ...rows].map(r => r.join('\t')).join('\n'), 'btnCopyDesvios');
+}
+
+// ─── Seção: Resumo Semanal (estimativa por rateio diário) ─────────────────────
+// A base do Agilean só tem granularidade de mês. Para estimar uma semana, dividimos
+// a contribuição do mês pelos seus dias (taxa diária) e multiplicamos pelos dias da
+// linha que caem dentro daquela semana — uma semana pode cair em até 2 meses.
+function diasNoMes(sortKey) {
+  const ano = Math.floor(sortKey / 100), mes = sortKey % 100;
+  return new Date(ano, mes, 0).getDate();
+}
+function primeiroDiaDoMes(sortKey) {
+  const ano = Math.floor(sortKey / 100), mes = sortKey % 100;
+  return new Date(ano, mes - 1, 1);
+}
+function ultimoDiaDoMes(sortKey) {
+  const ano = Math.floor(sortKey / 100), mes = sortKey % 100;
+  return new Date(ano, mes - 1, diasNoMes(sortKey));
+}
+function diasOverlap(iniA, fimA, iniB, fimB) {
+  const ini = iniA.getTime() > iniB.getTime() ? iniA : iniB;
+  const fim = fimA.getTime() < fimB.getTime() ? fimA : fimB;
+  const diffDias = Math.round((fim.getTime() - ini.getTime()) / 86400000) + 1;
+  return diffDias > 0 ? diffDias : 0;
+}
+// Gera as semanas (segunda a domingo) que cobrem do 1º dia do primeiro mês ao último
+// dia do último mês da base — independente do filtro, pra manter a grade de semanas estável.
+function gerarSemanas() {
+  if (!S.months.length) return [];
+  const inicioProjeto = primeiroDiaDoMes(S.months[0].sortKey);
+  const fimProjeto = ultimoDiaDoMes(S.months[S.months.length - 1].sortKey);
+  const d = new Date(inicioProjeto);
+  const diaSemana = d.getDay(); // 0=domingo .. 6=sábado
+  d.setDate(d.getDate() + (diaSemana === 0 ? -6 : 1 - diaSemana)); // volta pra segunda-feira da semana
+  const semanas = [];
+  while (d.getTime() <= fimProjeto.getTime()) {
+    const inicio = new Date(d);
+    const fim = new Date(d); fim.setDate(fim.getDate() + 6);
+    semanas.push({ inicio, fim, label: `${fmtDate(inicio)} a ${fmtDate(fim)}` });
+    d.setDate(d.getDate() + 7);
+  }
+  return semanas;
+}
+function buildResumoSemanal(f) {
+  const rows = filterRowsBy(S.rows, f);
+  const semanas = gerarSemanas();
+  const cutoffSortKey = S.months[S.cutoffIdx].sortKey;
+  const cutoffFim = ultimoDiaDoMes(cutoffSortKey);
+  const prep = rows.map(r => {
+    const dias = diasNoMes(r.data.sortKey);
+    return {
+      mesIni: primeiroDiaDoMes(r.data.sortKey),
+      mesFim: ultimoDiaDoMes(r.data.sortKey),
+      taxaBase:   r.cBase   / dias,
+      taxaReprog: r.cReprog / dias,
+      taxaReal:   r.cReal   / dias,
+      dentroDoCorte: r.data.sortKey <= cutoffSortKey
+    };
+  });
+  let bAcum = 0, rpAcum = 0, rAcum = 0;
+  return semanas.map(sem => {
+    let bSemana = 0, rpSemana = 0, rSemana = 0;
+    prep.forEach(r => {
+      const dias = diasOverlap(r.mesIni, r.mesFim, sem.inicio, sem.fim);
+      if (dias <= 0) return;
+      bSemana  += r.taxaBase   * dias;
+      rpSemana += r.taxaReprog * dias;
+      if (r.dentroDoCorte) rSemana += r.taxaReal * dias;
+    });
+    bAcum += bSemana; rpAcum += rpSemana;
+    const isFuturo = sem.inicio.getTime() > cutoffFim.getTime();
+    if (!isFuturo) rAcum += rSemana;
+    return {
+      label: sem.label, bSemana, bAcum, rpSemana, rpAcum,
+      rSemana: isFuturo ? null : rSemana,
+      rAcum: isFuturo ? null : rAcum,
+      isCutoff: sem.inicio.getTime() <= cutoffFim.getTime() && cutoffFim.getTime() <= sem.fim.getTime()
+    };
+  });
+}
+function renderSectionSemanal() {
+  const semanal = buildResumoSemanal(_ANA_F);
+  const rows = semanal.map(r => `
+    <tr class="${r.isCutoff ? 'cutoff-row' : ''}">
+      <td>${r.label}${r.isCutoff ? ' <span style="font-size:10px;color:var(--blue-bright);font-weight:600">◀ CORTE</span>' : ''}</td>
+      <td>${p(r.bSemana)}</td><td><strong>${p(r.bAcum)}</strong></td>
+      <td>${p(r.rpSemana)}</td><td><strong>${p(r.rpAcum)}</strong></td>
+      <td class="${r.rSemana !== null ? '' : 'muted'}">${p(r.rSemana)}</td>
+      <td class="${r.rAcum !== null ? cls(r.rAcum - r.bAcum) : 'muted'}"><strong>${p(r.rAcum)}</strong></td>
+      <td>${r.rAcum !== null ? '<span class="pill ' + cls(r.rAcum - r.bAcum) + '">' + pp(r.rAcum - r.bAcum) + '</span>' : '—'}</td>
+    </tr>`).join('');
+  return `
+    <div class="result-header">
+      <div><div class="result-title">Resumo Semanal</div><div class="result-sub">${anaScopeLabel()} · estimativa por rateio diário da contribuição mensal</div></div>
+      <button class="btn btn-outline" id="btnCopySemanal" onclick="doCopySemanal()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copiar para Excel
+      </button>
+    </div>
+    <div style="font-size:11.5px;color:var(--text-muted);margin-bottom:14px">⚠ Estimativa: a base do Agilean só tem granularidade mensal. Cada semana recebe uma fração proporcional aos dias do mês que ela cobre — não é o avanço real reportado semana a semana.</div>
+    <div class="table-wrap-scroll"><table>
+      <thead>
+        <tr>
+          <th rowspan="2" style="vertical-align:middle;min-width:150px">Semana</th>
+          <th colspan="2" class="grp grp-base">Base</th>
+          <th colspan="2" class="grp grp-reprog">Reprog</th>
+          <th colspan="2" class="grp grp-real">Real</th>
+          <th rowspan="2" style="vertical-align:middle">Desvio<br><span style="font-size:9px;opacity:.7">(Real − Base)</span></th>
+        </tr>
+        <tr class="subhead">
+          <th class="sub-base">Semana</th><th class="sub-base">Acum.</th>
+          <th class="sub-reprog">Semana</th><th class="sub-reprog">Acum.</th>
+          <th class="sub-real">Semana</th><th class="sub-real">Acum.</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+}
+function doCopySemanal() {
+  const semanal = buildResumoSemanal(_ANA_F);
+  const hdr = ['Semana','Base Semana (%)','Base Acum (%)','Reprog Semana (%)','Reprog Acum (%)','Real Semana (%)','Real Acum (%)','Desvio (p.p.)'];
+  const rows = semanal.map(r => [r.label, px(r.bSemana), px(r.bAcum), px(r.rpSemana), px(r.rpAcum),
+    r.rSemana !== null ? px(r.rSemana) : '', r.rAcum !== null ? px(r.rAcum) : '',
+    r.rAcum !== null ? ppx(r.rAcum - r.bAcum) : '']);
+  copyTSV([hdr, ...rows].map(r => r.join('\t')).join('\n'), 'btnCopySemanal');
+}
+
+// ─── Filtro compartilhado (Unidade/Local/Macro Etapa/Etapa) ───────────────────
+function anaSelectOptions(field) {
+  const opts = anaFieldOptions(field);
+  const all = `<option value="TODAS" ${_ANA_F[field] === 'TODAS' ? 'selected' : ''}>— todas —</option>`;
+  return all + opts.map(v => `<option value="${v}" ${v === _ANA_F[field] ? 'selected' : ''}>${v}</option>`).join('');
+}
+function renderAnaFilterBar() {
+  return `
+    <div class="filter-bar" id="anaFilterBar" style="margin-bottom:16px">
+      <span class="config-label">Unidade</span>
+      <select onchange="mudarFiltroAna('unidade', this.value)" style="min-width:160px">${anaSelectOptions('unidade')}</select>
+      <span class="config-label">Local</span>
+      <select onchange="mudarFiltroAna('local', this.value)" style="min-width:160px">${anaSelectOptions('local')}</select>
+      <span class="config-label">Macro Etapa</span>
+      <select onchange="mudarFiltroAna('macroEtapa', this.value)" style="min-width:180px">${anaSelectOptions('macroEtapa')}</select>
+      <span class="config-label">Etapa</span>
+      <select onchange="mudarFiltroAna('etapa', this.value)" style="min-width:180px">${anaSelectOptions('etapa')}</select>
+      <button class="btn btn-outline btn-sm" onclick="limparFiltroAna()">✕ Limpar filtros</button>
+    </div>`;
+}
+function mudarFiltroAna(field, value) {
+  _ANA_F[field] = value;
+  // Cascata: trocar um filtro de cima invalida os de baixo (ex: mudar Unidade reseta Local/Macro/Etapa).
+  const order = ['unidade', 'local', 'macroEtapa', 'etapa'];
+  order.slice(order.indexOf(field) + 1).forEach(f => { _ANA_F[f] = 'TODAS'; });
+  recomputeAnalitico();
+}
+function limparFiltroAna() {
+  _ANA_F = { unidade: 'TODAS', local: 'TODAS', macroEtapa: 'TODAS', etapa: 'TODAS' };
+  recomputeAnalitico();
+}
+function recomputeAnalitico() {
+  _CS = buildCurvaSAnalitico(_ANA_F);
+  _ED = buildPrevistoRealAnalitico(_ANA_F, _ED_nivel);
+  document.getElementById('sectionContent').innerHTML = renderSection(_ACTIVE_SECTION);
+}
+
+// ─── Curva S (filtrável) ────────────────────────────────────────────────────
+function renderCurvaSAnalitico() {
+  const cutRow = _CS.find(r => r.isCutoff);
+  const rows = _CS.map(r => `
+    <tr class="${r.isCutoff ? 'cutoff-row' : ''}">
+      <td>${r.label}${r.isCutoff ? ' <span style="font-size:10px;color:var(--blue-bright);font-weight:600">◀ CORTE</span>' : ''}</td>
+      <td>${p(r.bMes)}</td><td><strong>${p(r.bAcum)}</strong></td>
+      <td>${p(r.rpMes)}</td><td><strong>${p(r.rpAcum)}</strong></td>
+      <td class="${r.rMes !== null ? '' : 'muted'}">${p(r.rMes)}</td>
+      <td class="${r.rAcum !== null ? cls(r.rAcum - r.bAcum) : 'muted'}"><strong>${p(r.rAcum)}</strong></td>
+      <td>${r.rAcum !== null ? '<span class="pill ' + cls(r.rAcum - r.bAcum) + '">' + pp(r.rAcum - r.bAcum) + '</span>' : '—'}</td>
+    </tr>`).join('');
+  const kpis = cutRow ? `
+    <div class="kpi-row-3" style="margin-bottom:18px">
+      <div class="kpi"><div class="kpi-label">Base até Corte</div><div class="kpi-val">${p(cutRow.bAcum)}</div><div class="kpi-sub">Previsto acumulado no escopo filtrado</div></div>
+      <div class="kpi"><div class="kpi-label">Real até Corte</div><div class="kpi-val ${cls((cutRow.rAcum||0)-cutRow.bAcum)}">${p(cutRow.rAcum)}</div><div class="kpi-sub">Executado acumulado no escopo filtrado</div></div>
+      <div class="kpi"><div class="kpi-label">Desvio</div><div class="kpi-val ${cls((cutRow.rAcum||0)-cutRow.bAcum)}">${pp((cutRow.rAcum||0)-cutRow.bAcum)}</div><div class="kpi-sub">${(cutRow.rAcum||0)-cutRow.bAcum > 0.005 ? 'Adiantada' : (cutRow.rAcum||0)-cutRow.bAcum < -0.005 ? 'Atrasada' : 'Em dia'}</div></div>
+    </div>` : '';
+  return `
+    <div class="result-header">
+      <div><div class="result-title">Curva S — Evolução Mensal</div><div class="result-sub">${anaScopeLabel()}</div></div>
+      <button class="btn btn-outline" id="btnCopyCurva" onclick="doCopyCurva()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copiar para Excel
+      </button>
+    </div>
+    ${kpis}
+    <div class="table-wrap"><table>
+      <thead>
+        <tr>
+          <th rowspan="2" style="vertical-align:middle;min-width:110px">Mês</th>
+          <th colspan="2" class="grp grp-base">Base</th>
+          <th colspan="2" class="grp grp-reprog">Reprog</th>
+          <th colspan="2" class="grp grp-real">Real</th>
+          <th rowspan="2" style="vertical-align:middle">Desvio<br><span style="font-size:9px;opacity:.7">(Real − Base)</span></th>
+        </tr>
+        <tr class="subhead">
+          <th class="sub-base">Mensal</th><th class="sub-base">Acum.</th>
+          <th class="sub-reprog">Mensal</th><th class="sub-reprog">Acum.</th>
+          <th class="sub-real">Mensal</th><th class="sub-real">Acum.</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+}
+function doCopyCurva() {
+  const hdr = ['Mês','Base Mensal (%)','Base Acum (%)','Reprog Mensal (%)','Reprog Acum (%)','Real Mensal (%)','Real Acum (%)','Desvio (p.p.)'];
+  const rows = _CS.map(r => [r.label, px(r.bMes), px(r.bAcum), px(r.rpMes), px(r.rpAcum),
+    r.rMes !== null ? px(r.rMes) : '', r.rAcum !== null ? px(r.rAcum) : '',
+    r.rAcum !== null ? ppx(r.rAcum - r.bAcum) : '']);
+  copyTSV([hdr, ...rows].map(r => r.join('\t')).join('\n'), 'btnCopyCurva');
+}
+
+// ─── Tab Etapas — Analítico (com filtro + nível de agrupamento) ──────────────
+function renderEtapasTabAnalitico() {
+  const cutLabel = S.months[S.cutoffIdx].label;
+  return `
+    <div class="result-header">
+      <div><div class="result-title">Previsto × Real — Acumulado até ${cutLabel}</div><div class="result-sub">${anaScopeLabel()}</div></div>
+      <button class="btn btn-outline" id="btnCopyEtapas" onclick="doCopyEtapas()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copiar para Excel
+      </button>
+    </div>
+    ${renderNivelToggle()}
+    ${renderEtapasContent()}`;
+}
+function renderEtapasContent() {
+  const ahead   = _ED.filter(r => r.dev > 0.005).length;
+  const behind  = _ED.filter(r => r.dev < -0.005).length;
+  const ontrack = _ED.length - ahead - behind;
+  const totBC  = _ED.reduce((s, r) => s + r.bCut, 0);
+  const totRP  = _ED.reduce((s, r) => s + r.rpCut, 0);
+  const totRC  = _ED.reduce((s, r) => s + r.rCut, 0);
+  const totDev = totRC - totBC;
+  const nivel  = NIVEL_LABELS[_ED_nivel];
+  const plural = NIVEL_PLURAIS[_ED_nivel];
+  const rows   = _ED.map(r => `
+    <tr>
+      <td>${r.label}</td>
+      <td>${p(r.bCut)}</td><td>${p(r.rpCut)}</td>
+      <td class="${cls(r.dev)}">${p(r.rCut)}</td>
+      <td><span class="pill ${cls(r.dev)}">${pp(r.dev)}</span></td>
+      <td>${statusPill(r.dev)}</td>
+    </tr>`).join('');
+  return `
+    <div class="kpi-row-3" style="margin-bottom:16px">
+      <div class="kpi"><div class="kpi-label">Adiantadas</div><div class="kpi-val pos">${ahead}</div><div class="kpi-sub">${plural}</div></div>
+      <div class="kpi"><div class="kpi-label">Em dia</div><div class="kpi-val zer">${ontrack}</div><div class="kpi-sub">${plural}</div></div>
+      <div class="kpi"><div class="kpi-label">Atrasadas</div><div class="kpi-val neg">${behind}</div><div class="kpi-sub">${plural}</div></div>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>${nivel}</th>
+        <th>Base até Corte</th><th>Reprog até Corte</th><th>Real até Corte</th>
+        <th>Desvio (R−B)</th><th>Status</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr>
+        <td>TOTAL</td>
+        <td>${p(totBC)}</td><td>${p(totRP)}</td>
+        <td class="${cls(totDev)}">${p(totRC)}</td>
+        <td><span class="pill ${cls(totDev)}">${pp(totDev)}</span></td>
+        <td>—</td>
+      </tr></tfoot>
+    </table></div>`;
+}
+function mudarNivelEtapas(nivel) {
+  _ED_nivel = nivel;
+  _ED = buildPrevistoRealAnalitico(_ANA_F, _ED_nivel);
+  document.getElementById('sectionContent').innerHTML = renderSection(_ACTIVE_SECTION);
+}
+function doCopyEtapas() {
+  const nivel = NIVEL_LABELS[_ED_nivel];
+  const hdr = [nivel,'Base até Corte (%)','Reprog até Corte (%)','Real até Corte (%)','Desvio (p.p.)','Status'];
+  const rows = _ED.map(r => [r.label, px(r.bCut), px(r.rpCut), px(r.rCut), ppx(r.dev),
+    r.dev > 0.005 ? 'Adiantado' : r.dev < -0.005 ? 'Atrasado' : 'Em dia']);
+  copyTSV([hdr, ...rows].map(r => r.join('\t')).join('\n'), 'btnCopyEtapas');
+}
+
+// ─── Export Excel ──────────────────────────────────────────────────────────────
+async function exportarExcel() {
+  if (typeof ExcelJS === 'undefined') { alert('ExcelJS não carregado. Verifique a conexão com a internet.'); return; }
+  const btn = document.getElementById('btnExportarExcel');
+  if (btn) { btn.textContent = 'Gerando...'; btn.disabled = true; }
+  try {
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'Análise Física - Agilean';
+    const navyArgb = 'FF1A2B45';
+    const hStyle = {
+      font: { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 },
+      fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: navyArgb } },
+      alignment: { horizontal: 'center', vertical: 'middle' },
+      border: { bottom: { style: 'thin', color: { argb: 'FF4A6080' } } }
+    };
+    function styleHeader(ws, row) {
+      row = row || 1;
+      ws.getRow(row).eachCell(cell => { Object.assign(cell, { style: hStyle }); });
+      ws.getRow(row).height = 28;
+    }
+    function numFmt(ws, cols, fmt) { cols.forEach(c => { ws.getColumn(c).numFmt = fmt; }); }
+    function colWidths(ws, widths) { widths.forEach((w, i) => { ws.getColumn(i + 1).width = w; }); }
+    function escopoCell(ws, texto) {
+      ws.addRow([texto]);
+      ws.getRow(1).font = { italic: true, size: 9, color: { argb: 'FF6B80A0' } };
+    }
+
+    // Aba 1: Curva S — reflete o filtro (Unidade/Local/Macro Etapa/Etapa) selecionado nas telas
+    const ws1 = wb.addWorksheet('Curva S');
+    escopoCell(ws1, `Escopo do filtro: ${anaScopeLabel()}`);
+    ws1.addRow(['Mês','Base Mensal','Base Acum','Reprog Mensal','Reprog Acum','Real Mensal','Real Acum','Desvio (R-B)']);
+    styleHeader(ws1, 2);
+    _CS.forEach(r => ws1.addRow([r.label, r.bMes, r.bAcum, r.rpMes, r.rpAcum,
+      r.rMes ?? null, r.rAcum ?? null, r.rAcum !== null ? r.rAcum - r.bAcum : null]));
+    numFmt(ws1, [2,3,4,5,6,7,8], '0.00"%"');
+    colWidths(ws1, [12,14,14,16,14,14,14,14]);
+
+    // Aba 2: Previsto x Real — mesmo filtro + nível de agrupamento (Macro Etapa/Etapa) selecionado na tela
+    const nivelLbl = NIVEL_LABELS[_ED_nivel];
+    const ws2 = wb.addWorksheet('Previsto x Real');
+    escopoCell(ws2, `Escopo do filtro: ${anaScopeLabel()} · Nível: ${nivelLbl}`);
+    ws2.addRow([nivelLbl,'Base até Corte','Reprog até Corte','Real até Corte','Desvio (R-B)','Status']);
+    styleHeader(ws2, 2);
+    _ED.forEach(r => ws2.addRow([r.label, r.bCut, r.rpCut, r.rCut, r.dev,
+      r.dev > 0.005 ? 'Adiantado' : r.dev < -0.005 ? 'Atrasado' : 'Em dia']));
+    numFmt(ws2, [2,3,4,5], '0.00"%"');
+    colWidths(ws2, [40,16,18,16,14,12]);
+
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Analise Fisica ${S.months[S.cutoffIdx]?.label || 'Projeto'}.xlsx`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch(e) {
+    console.error(e);
+    alert('Erro ao gerar Excel: ' + e.message);
+  } finally {
+    if (btn) {
+      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Exportar Excel (filtro atual)';
+      btn.disabled = false;
+    }
+  }
+}
+</script>
+<script src="https://mateusm23.github.io/HUB/assets/tracker.js" data-tool="ferramentas"></script>
+</body>
+</html>
