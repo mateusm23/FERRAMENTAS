@@ -250,6 +250,14 @@ tfoot td:first-child { text-align: left; }
 }
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-thumb { background: #c5cedd; border-radius: 3px; }
+
+/* ── Painel de Exportação ── */
+.exp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(255px, 1fr)); gap: 10px; margin-bottom: 20px; }
+.exp-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px; padding: 14px 16px; cursor: pointer; transition: border-color .15s, background .15s; user-select: none; }
+.exp-card:hover:not(.exp-card-off) { border-color: var(--blue-bright); background: var(--blue-light); }
+.exp-card-on { border-color: var(--blue-bright) !important; background: var(--blue-light) !important; }
+.exp-card-off { opacity: .4; cursor: default; }
+.exp-footer { display: flex; justify-content: space-between; align-items: flex-end; padding-top: 16px; border-top: 1px solid var(--border); margin-top: 4px; flex-wrap: wrap; gap: 12px; }
 </style>
 </head>
 <body>
@@ -387,6 +395,10 @@ let _GROUP_PANEL_OPEN = false;
 // Filtro por Status Prazo (tela Desvios) — array de chaves selecionadas; vazio = todos.
 let _STATUS_PRAZO_FILTER = [];
 let _STATUS_PRAZO_PANEL_OPEN = false;
+let _SEM_INI = '';
+let _SEM_FIM = '';
+let _SEM_QUEBRAR = false;
+let _EXP_ABAS = { capa: true, kpis: true, curva: true, pesos: true, prazos: true, desvios: true };
 // Cada campo é um array de valores selecionados; array vazio = "todas" (sem filtro).
 let _ANA_F = { unidade: [], local: [], macroEtapa: [], etapa: [] };
 let _ACTIVE_SECTION = 'geral';
@@ -849,6 +861,10 @@ function gerarAnalise() {
   _GROUP_PANEL_OPEN = false;
   _STATUS_PRAZO_FILTER = [];
   _STATUS_PRAZO_PANEL_OPEN = false;
+  _SEM_INI = '';
+  _SEM_FIM = '';
+  _SEM_QUEBRAR = false;
+  _EXP_ABAS = { capa: true, kpis: true, curva: true, pesos: true, prazos: true, desvios: true };
   _ACTIVE_SECTION = 'geral';
   _CS = buildCurvaSAnalitico(_ANA_F);
   _ED = buildPrevistoRealAnalitico(_ANA_F, _GROUP_FIELDS);
@@ -938,7 +954,8 @@ function renderResultado(cutLabel) {
         <button class="side-nav-item" onclick="switchSection('previsto',this)"><span class="side-nav-icon">📋</span>Análise de Pesos</button>
         <button class="side-nav-item" onclick="switchSection('marcos',this)"><span class="side-nav-icon">🚩</span>Análise de Prazos</button>
         <button class="side-nav-item" onclick="switchSection('desvios',this)"><span class="side-nav-icon">⚠️</span>Análise de Desvios</button>
-        <button class="side-nav-item" onclick="switchSection('semanal',this)"><span class="side-nav-icon">📅</span>Resumo Semanal</button>
+        <!-- Resumo Semanal oculto — em revisão de conceito -->
+        <!-- <button class="side-nav-item" onclick="switchSection('semanal',this)"><span class="side-nav-icon">📅</span>Resumo Semanal</button> -->
         <button class="side-nav-item" onclick="switchSection('export',this)"><span class="side-nav-icon">📤</span>Exportar Resumo Geral</button>
 
         <div class="sidenav-divider"><span class="sd-label">Filtros</span><span class="sd-line"></span><button class="sf-clear-all" onclick="limparFiltroAna()">Limpar</button></div>
@@ -1052,16 +1069,69 @@ function renderSectionGeral() {
     </div>`;
 }
 
-// ─── Seção: Exportar Resumo Geral ──────────────────────────────────────────────
+// ─── Painel de Exportação ──────────────────────────────────────────────────────
+function toggleExpAba(key) {
+  _EXP_ABAS[key] = !_EXP_ABAS[key];
+  document.getElementById('sectionContent').innerHTML = renderSection('export');
+}
+function expSelectAll() {
+  Object.keys(_EXP_ABAS).forEach(k => { _EXP_ABAS[k] = true; });
+  document.getElementById('sectionContent').innerHTML = renderSection('export');
+}
+function expClearAll() {
+  Object.keys(_EXP_ABAS).forEach(k => { _EXP_ABAS[k] = false; });
+  document.getElementById('sectionContent').innerHTML = renderSection('export');
+}
 function renderSectionExport() {
+  const hoje = new Date();
+  const dtStr = `${String(hoje.getDate()).padStart(2,'0')}-${String(hoje.getMonth()+1).padStart(2,'0')}-${hoje.getFullYear()}`;
+  const nomeArq = `Analise Fisica ${S.months[S.cutoffIdx]?.label || 'Projeto'} · ${dtStr}.xlsx`;
+  const nivel = groupLabel();
+  const DEFS = [
+    { key: 'capa',    icon: '📋', label: 'Capa',              desc: 'Metadados, escopo e data de geração' },
+    { key: 'kpis',    icon: '📊', label: 'KPIs Gerais',        desc: 'IDP, desvio global e projeção de término' },
+    { key: 'curva',   icon: '📈', label: 'Curva S',            desc: 'Evolução mensal Base / Reprog / Real' },
+    { key: 'pesos',   icon: '📋', label: 'Análise de Pesos',   desc: `Previsto × Real · nível: ${nivel}` },
+    { key: 'prazos',  icon: '🚩', label: 'Análise de Prazos',  desc: S.hasDatas ? `Datas marco e desvio de prazo · ${nivel}` : 'Requer colunas de data no arquivo', disabled: !S.hasDatas },
+    { key: 'desvios', icon: '⚠️', label: 'Análise de Desvios', desc: `Ranking do maior atraso ao maior avanço · ${nivel}` },
+  ];
+  const cards = DEFS.map(a => {
+    const on = _EXP_ABAS[a.key] && !a.disabled;
+    return `
+    <div class="exp-card${on ? ' exp-card-on' : ''}${a.disabled ? ' exp-card-off' : ''}"
+         ${!a.disabled ? `onclick="toggleExpAba('${a.key}')"` : ''}>
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <span style="font-size:20px;line-height:1;flex-shrink:0;margin-top:1px">${a.icon}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:700;color:${a.disabled ? 'var(--text-muted)' : 'var(--navy)'};margin-bottom:3px">${a.label}</div>
+          <div style="font-size:11px;color:var(--text-muted);line-height:1.4">${a.desc}</div>
+        </div>
+        <div style="width:18px;height:18px;border-radius:4px;flex-shrink:0;margin-top:2px;border:2px solid ${on ? 'var(--blue-bright)' : 'var(--border)'};background:${on ? 'var(--blue-bright)' : '#fff'};display:flex;align-items:center;justify-content:center;transition:all .15s">
+          ${on ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  const qtd = Object.entries(_EXP_ABAS).filter(([k, v]) => v && !DEFS.find(d => d.key === k)?.disabled).length;
   return `
     <div class="result-header">
-      <div class="result-sub">Gera uma planilha Excel com Curva S e Previsto × Real, considerando o filtro atual: ${anaScopeLabel()}</div>
+      <div class="result-sub">${anaScopeLabel()} · agrupamento: ${nivel}</div>
     </div>
-    <button class="btn btn-green" id="btnExportarExcel" onclick="exportarExcel()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      Exportar Excel
-    </button>`;
+    <div class="exp-grid">${cards}</div>
+    <div class="exp-footer">
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-outline" onclick="expSelectAll()">Selecionar todas</button>
+        <button class="btn btn-outline" onclick="expClearAll()">Limpar</button>
+        <span style="font-size:11px;color:var(--text-muted);margin-left:4px">${qtd} aba${qtd !== 1 ? 's' : ''} selecionada${qtd !== 1 ? 's' : ''}</span>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;font-style:italic">📁 ${nomeArq}</div>
+        <button class="btn btn-green" id="btnExportarExcel" onclick="exportarExcel()" ${qtd === 0 ? 'disabled' : ''}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Gerar Excel${qtd > 0 ? ' (' + qtd + ' aba' + (qtd !== 1 ? 's' : '') + ')' : ''}
+        </button>
+      </div>
+    </div>`;
 }
 
 // ─── Seção: Datas Marcos ────────────────────────────────────────────────────────
@@ -1335,10 +1405,7 @@ function doCopyDesvios() {
   copyTSV([hdr, ...rows].map(r => r.join('\t')).join('\n'), 'btnCopyDesvios');
 }
 
-// ─── Seção: Resumo Semanal (estimativa por rateio diário) ─────────────────────
-// A base do Agilean só tem granularidade de mês. Para estimar uma semana, dividimos
-// a contribuição do mês pelos seus dias (taxa diária) e multiplicamos pelos dias da
-// linha que caem dentro daquela semana — uma semana pode cair em até 2 meses.
+// ─── Seção: Resumo Semanal — utilitários de datas/meses ──────────────────────
 function diasNoMes(sortKey) {
   const ano = Math.floor(sortKey / 100), mes = sortKey % 100;
   return new Date(ano, mes, 0).getDate();
@@ -1354,110 +1421,277 @@ function ultimoDiaDoMes(sortKey) {
 function diasOverlap(iniA, fimA, iniB, fimB) {
   const ini = iniA.getTime() > iniB.getTime() ? iniA : iniB;
   const fim = fimA.getTime() < fimB.getTime() ? fimA : fimB;
-  const diffDias = Math.round((fim.getTime() - ini.getTime()) / 86400000) + 1;
-  return diffDias > 0 ? diffDias : 0;
+  const d = Math.round((fim.getTime() - ini.getTime()) / 86400000) + 1;
+  return d > 0 ? d : 0;
 }
-// Gera as semanas (segunda a domingo) que cobrem do 1º dia do primeiro mês ao último
-// dia do último mês da base — independente do filtro, pra manter a grade de semanas estável.
-function gerarSemanas() {
-  if (!S.months.length) return [];
-  const inicioProjeto = primeiroDiaDoMes(S.months[0].sortKey);
-  const fimProjeto = ultimoDiaDoMes(S.months[S.months.length - 1].sortKey);
-  const d = new Date(inicioProjeto);
-  const diaSemana = d.getDay(); // 0=domingo .. 6=sábado
-  d.setDate(d.getDate() + (diaSemana === 0 ? -6 : 1 - diaSemana)); // volta pra segunda-feira da semana
+
+// ─── Estado e helpers do Resumo Semanal ───────────────────────────────────────
+function semDefaultIni() { return S.months.length ? primeiroDiaDoMes(S.months[0].sortKey) : new Date(); }
+function semDefaultFim() { return S.months.length ? ultimoDiaDoMes(S.months[S.months.length - 1].sortKey) : new Date(); }
+function semIniDate() { return _SEM_INI ? new Date(_SEM_INI) : semDefaultIni(); }
+function semFimDate() { return _SEM_FIM ? new Date(_SEM_FIM) : semDefaultFim(); }
+function toInputDate(d) {
+  if (!d) return '';
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function setSemINI(v) { _SEM_INI = v; document.getElementById('sectionContent').innerHTML = renderSection('semanal'); }
+function setSemFIM(v) { _SEM_FIM = v; document.getElementById('sectionContent').innerHTML = renderSection('semanal'); }
+function toggleSemQuebrar() { _SEM_QUEBRAR = !_SEM_QUEBRAR; document.getElementById('sectionContent').innerHTML = renderSection('semanal'); }
+
+// ─── Dados por atividade — denominador fixo = total do projeto ─────────────────
+function buildAtividadesSemanal(f, fields) {
+  const totalBase = S.rows.reduce((s, r) => s + r.cBase, 0) || 1;
+  const cutSet    = new Set(S.months.slice(0, S.cutoffIdx + 1).map(m => m.label));
+  const filteredRows = filterRowsBy(S.rows, f);
+  const useCodigo = fields.includes('etapa');
+  const keyFn   = r => fields.map(fl => r[fl]).join('||') + (useCodigo && r.codigo ? '||' + r.codigo : '');
+  const labelFn = rows => fields.map(fl => rows[0][fl]).join(' › ');
+  const groupMap = new Map();
+  filteredRows.forEach(r => {
+    const k = keyFn(r);
+    if (!groupMap.has(k)) groupMap.set(k, []);
+    groupMap.get(k).push(r);
+  });
+  const result = [];
+  groupMap.forEach(gRows => {
+    const pesoTotal = gRows.reduce((s, r) => s + r.cBase, 0) / totalBase * 100;
+    const realizado = gRows.filter(r => cutSet.has(r.data.label)).reduce((s, r) => s + r.cReal, 0) / totalBase * 100;
+    const iniPlanBase = minDate(gRows.map(r => r.iniPlanBase));
+    const fimPlanBase = maxDateStrict(gRows.map(r => r.fimPlanBase));
+    const iniPlan     = minDate(gRows.map(r => r.iniPlan));
+    const fimPlan     = maxDateStrict(gRows.map(r => r.fimPlan));
+    const iniReal     = minDate(gRows.map(r => r.iniReal));
+    const fimReal     = maxDateStrict(gRows.map(r => r.fimReal));
+    const terminoEfetivo = fimReal || fimPlan;
+    const desvioPrazoDias = (fimPlanBase && terminoEfetivo) ? diffDias(terminoEfetivo, fimPlanBase) : null;
+    result.push({ label: labelFn(gRows), pesoTotal, realizado, iniPlanBase, fimPlanBase, iniPlan, fimPlan, iniReal, fimReal, desvioPrazoDias });
+  });
+  return result.sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'));
+}
+
+// ─── Dados semanais agregados (modo Quebrar em semanas) ───────────────────────
+function gerarSemanasRange(ini, fim) {
+  const d = new Date(ini);
+  const dow = d.getDay();
+  d.setDate(d.getDate() + (dow === 0 ? -6 : 1 - dow));
   const semanas = [];
-  while (d.getTime() <= fimProjeto.getTime()) {
+  while (d.getTime() <= fim.getTime()) {
     const inicio = new Date(d);
-    const fim = new Date(d); fim.setDate(fim.getDate() + 6);
-    semanas.push({ inicio, fim, label: `${fmtDate(inicio)} a ${fmtDate(fim)}` });
+    const fimSem = new Date(d); fimSem.setDate(fimSem.getDate() + 6);
+    semanas.push({ inicio, fim: fimSem, label: `${fmtDate(inicio)} a ${fmtDate(fimSem)}` });
     d.setDate(d.getDate() + 7);
   }
   return semanas;
 }
-function buildResumoSemanal(f) {
-  const rows = filterRowsBy(S.rows, f);
-  const semanas = gerarSemanas();
+function buildSemanalPorSemana(f, rangeIni, rangeFim) {
+  const totalBase     = S.rows.reduce((s, r) => s + r.cBase, 0) || 1;
+  const rows          = filterRowsBy(S.rows, f);
   const cutoffSortKey = S.months[S.cutoffIdx].sortKey;
-  const cutoffFim = ultimoDiaDoMes(cutoffSortKey);
+  const cutoffFim     = ultimoDiaDoMes(cutoffSortKey);
+  const semanas       = gerarSemanasRange(rangeIni, rangeFim);
   const prep = rows.map(r => {
     const dias = diasNoMes(r.data.sortKey);
     return {
       mesIni: primeiroDiaDoMes(r.data.sortKey),
       mesFim: ultimoDiaDoMes(r.data.sortKey),
-      taxaBase:   r.cBase   / dias,
-      taxaReprog: r.cReprog / dias,
-      taxaReal:   r.cReal   / dias,
+      taxaBase: r.cBase / dias / totalBase * 100,
+      taxaReal: r.cReal / dias / totalBase * 100,
       dentroDoCorte: r.data.sortKey <= cutoffSortKey
     };
   });
-  let bAcum = 0, rpAcum = 0, rAcum = 0;
+  let bAcum = 0, rAcum = 0;
   return semanas.map(sem => {
-    let bSemana = 0, rpSemana = 0, rSemana = 0;
+    let bSemana = 0, rSemana = 0;
     prep.forEach(r => {
       const dias = diasOverlap(r.mesIni, r.mesFim, sem.inicio, sem.fim);
       if (dias <= 0) return;
-      bSemana  += r.taxaBase   * dias;
-      rpSemana += r.taxaReprog * dias;
+      bSemana += r.taxaBase * dias;
       if (r.dentroDoCorte) rSemana += r.taxaReal * dias;
     });
-    bAcum += bSemana; rpAcum += rpSemana;
+    bAcum += bSemana;
     const isFuturo = sem.inicio.getTime() > cutoffFim.getTime();
     if (!isFuturo) rAcum += rSemana;
     return {
-      label: sem.label, bSemana, bAcum, rpSemana, rpAcum,
+      label: sem.label, bSemana, bAcum,
       rSemana: isFuturo ? null : rSemana,
-      rAcum: isFuturo ? null : rAcum,
+      rAcum:   isFuturo ? null : rAcum,
       isCutoff: sem.inicio.getTime() <= cutoffFim.getTime() && cutoffFim.getTime() <= sem.fim.getTime()
     };
   });
 }
+
+// ─── Render principal do Resumo Semanal ───────────────────────────────────────
 function renderSectionSemanal() {
-  const semanal = buildResumoSemanal(_ANA_F);
+  const ini    = semIniDate();
+  const fim    = semFimDate();
+  const iniVal = toInputDate(ini);
+  const fimVal = toInputDate(fim);
+  const controlBar = `
+    <div class="filter-bar" style="gap:14px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
+      <span class="config-label">Período</span>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted)">
+        De
+        <input type="date" value="${iniVal}" onchange="setSemINI(this.value)"
+          style="border:1.5px solid var(--border);border-radius:7px;padding:6px 10px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text);background:#fff;cursor:pointer;outline:none;transition:border .15s"
+          onfocus="this.style.borderColor='var(--blue-bright)'" onblur="this.style.borderColor='var(--border)'">
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted)">
+        Até
+        <input type="date" value="${fimVal}" onchange="setSemFIM(this.value)"
+          style="border:1.5px solid var(--border);border-radius:7px;padding:6px 10px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text);background:#fff;cursor:pointer;outline:none;transition:border .15s"
+          onfocus="this.style.borderColor='var(--blue-bright)'" onblur="this.style.borderColor='var(--border)'">
+      </label>
+      <label onclick="toggleSemQuebrar()" style="display:flex;align-items:center;gap:9px;font-size:12px;font-weight:600;color:var(--navy);cursor:pointer;user-select:none;margin-left:6px">
+        <span style="position:relative;display:inline-block;width:38px;height:22px;flex-shrink:0">
+          <span style="position:absolute;inset:0;background:${_SEM_QUEBRAR ? 'var(--blue-bright)' : 'var(--border)'};border-radius:20px;transition:background .2s"></span>
+          <span style="position:absolute;top:4px;left:${_SEM_QUEBRAR ? '19px' : '4px'};width:14px;height:14px;background:#fff;border-radius:50%;transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.25)"></span>
+        </span>
+        Quebrar em semanas
+      </label>
+    </div>`;
+  return _SEM_QUEBRAR
+    ? renderSemanalSemanas(ini, fim, controlBar)
+    : renderSemanalAtividades(ini, fim, controlBar);
+}
+
+function renderSemanalAtividades(rangeIni, rangeFim, controlBar) {
+  const nivel = groupLabel();
+  const atividades = buildAtividadesSemanal(_ANA_F, _GROUP_FIELDS);
+  const filtradas = S.hasDatas
+    ? atividades.filter(a => {
+        const aIni = a.iniPlanBase || a.iniPlan;
+        const aFim = a.fimPlanBase || a.fimPlan;
+        if (!aIni && !aFim) return true;
+        if (aFim && aFim.getTime() < rangeIni.getTime()) return false;
+        if (aIni && aIni.getTime() > rangeFim.getTime()) return false;
+        return true;
+      })
+    : atividades;
+  const atrasadas  = filtradas.filter(a => a.desvioPrazoDias !== null && a.desvioPrazoDias > 0).length;
+  const adiantadas = filtradas.filter(a => a.desvioPrazoDias !== null && a.desvioPrazoDias < 0).length;
+  const emDia      = filtradas.length - atrasadas - adiantadas;
+  const rows = filtradas.map(a => {
+    const sp = statusPrazoInfo(a);
+    return `
+    <tr>
+      <td style="min-width:160px">${a.label}</td>
+      ${S.hasDatas ? `
+      <td style="white-space:nowrap">${fmtDate(a.iniPlanBase)}</td>
+      <td style="white-space:nowrap">${fmtDate(a.fimPlanBase)}</td>
+      <td style="white-space:nowrap">${fmtDate(a.iniPlan)}</td>
+      <td style="white-space:nowrap">${fmtDate(a.fimPlan)}</td>
+      <td style="white-space:nowrap">${fmtDate(a.iniReal)}</td>
+      <td style="white-space:nowrap">${fmtDate(a.fimReal)}</td>
+      <td class="${clsDias(a.desvioPrazoDias)}" style="white-space:nowrap">${fmtDias(a.desvioPrazoDias)}</td>
+      <td><span class="pill ${sp.cls}">${sp.label}</span></td>` : ''}
+      <td>${p(a.pesoTotal)}</td>
+      <td>${p(a.realizado)}</td>
+      <td><span class="pill ${cls(a.realizado - a.pesoTotal)}">${pp(a.realizado - a.pesoTotal)}</span></td>
+    </tr>`;
+  }).join('');
+  const kpisHtml = S.hasDatas ? `
+    <div class="kpi-row-3" style="margin-bottom:16px">
+      <div class="kpi"><div class="kpi-label">Atrasadas</div><div class="kpi-val neg">${atrasadas}</div><div class="kpi-sub">término previsto ultrapassado</div></div>
+      <div class="kpi"><div class="kpi-label">Em dia / Sem previsão</div><div class="kpi-val zer">${emDia}</div><div class="kpi-sub">dentro do prazo ou sem data base</div></div>
+      <div class="kpi"><div class="kpi-label">Adiantadas</div><div class="kpi-val pos">${adiantadas}</div><div class="kpi-sub">término antes do prazo base</div></div>
+    </div>` : '';
+  const emptyHtml = filtradas.length === 0
+    ? `<div style="padding:32px;text-align:center;color:var(--text-muted);border:1px solid var(--border);border-radius:10px;background:var(--surface2)">Nenhuma atividade encontrada no período selecionado.</div>`
+    : '';
+  return `
+    <div class="result-header">
+      <div class="result-sub">${anaScopeLabel()} · pesos relativos ao total do projeto</div>
+      <button class="btn btn-outline" id="btnCopySemanal" onclick="doCopySemanal()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copiar para Excel
+      </button>
+    </div>
+    ${controlBar}
+    ${renderGroupFieldsControl()}
+    ${kpisHtml}
+    ${emptyHtml || `
+    <div class="table-wrap-scroll"><table>
+      <thead><tr>
+        <th style="text-align:left">${nivel}</th>
+        ${S.hasDatas ? `
+        <th>Início Plan. Base</th><th>Término Plan. Base</th>
+        <th>Início Prev.</th><th>Término Prev.</th>
+        <th>Início Real</th><th>Término Real</th>
+        <th>Desvio Prazo</th><th>Status Prazo</th>` : ''}
+        <th>Peso % Projeto</th><th>Realizado %</th><th>Desvio Físico</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`}`;
+}
+
+function renderSemanalSemanas(rangeIni, rangeFim, controlBar) {
+  const semanal = buildSemanalPorSemana(_ANA_F, rangeIni, rangeFim);
   const rows = semanal.map(r => `
     <tr class="${r.isCutoff ? 'cutoff-row' : ''}">
       <td>${r.label}${r.isCutoff ? ' <span style="font-size:10px;color:var(--blue-bright);font-weight:600">◀ CORTE</span>' : ''}</td>
       <td>${p(r.bSemana)}</td><td><strong>${p(r.bAcum)}</strong></td>
-      <td>${p(r.rpSemana)}</td><td><strong>${p(r.rpAcum)}</strong></td>
       <td class="${r.rSemana !== null ? '' : 'muted'}">${p(r.rSemana)}</td>
       <td class="${r.rAcum !== null ? '' : 'muted'}"><strong>${p(r.rAcum)}</strong></td>
       <td>${r.rAcum !== null ? '<span class="pill ' + cls(r.rAcum - r.bAcum) + '">' + pp(r.rAcum - r.bAcum) + '</span>' : '—'}</td>
     </tr>`).join('');
   return `
     <div class="result-header">
-      <div class="result-sub">${anaScopeLabel()} · estimativa por rateio diário da contribuição mensal</div>
-      <button class="btn btn-outline" id="btnCopySemanal" onclick="doCopySemanal()">
+      <div class="result-sub">${anaScopeLabel()} · estimativa por rateio diário · pesos relativos ao total do projeto</div>
+      <button class="btn btn-outline" id="btnCopySemanal" onclick="doCopySemanasTabela()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         Copiar para Excel
       </button>
     </div>
-    <div style="font-size:11.5px;color:var(--text-muted);margin-bottom:14px">⚠ Estimativa: a base do Agilean só tem granularidade mensal. Cada semana recebe uma fração proporcional aos dias do mês que ela cobre — não é o avanço real reportado semana a semana.</div>
+    ${controlBar}
+    <div style="font-size:11.5px;color:var(--text-muted);margin-bottom:12px">⚠ Estimativa por rateio: a base do Agilean tem granularidade mensal — cada semana recebe fração proporcional aos dias cobertos no mês.</div>
     <div class="table-wrap-scroll"><table>
       <thead>
         <tr>
-          <th rowspan="2" style="vertical-align:middle;min-width:150px">Semana</th>
-          <th colspan="2" class="grp grp-base">Base</th>
-          <th colspan="2" class="grp grp-reprog">Reprog</th>
-          <th colspan="2" class="grp grp-real">Real</th>
+          <th rowspan="2" style="vertical-align:middle;min-width:170px">Semana</th>
+          <th colspan="2" class="grp grp-base">Base (% projeto)</th>
+          <th colspan="2" class="grp grp-real">Real (% projeto)</th>
           <th rowspan="2" style="vertical-align:middle">Desvio<br><span style="font-size:9px;opacity:.7">(Real − Base)</span></th>
         </tr>
         <tr class="subhead">
           <th class="sub-base">Semana</th><th class="sub-base">Acum.</th>
-          <th class="sub-reprog">Semana</th><th class="sub-reprog">Acum.</th>
           <th class="sub-real">Semana</th><th class="sub-real">Acum.</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
     </table></div>`;
 }
+
 function doCopySemanal() {
-  const semanal = buildResumoSemanal(_ANA_F);
-  const bAj  = arredondarComNulos(semanal.map(r => r.bSemana), 2);
-  const rpAj = arredondarComNulos(semanal.map(r => r.rpSemana), 2);
-  const rAj  = arredondarComNulos(semanal.map(r => r.rSemana), 2);
-  const hdr = ['Semana','Base Semana (%)','Base Acum (%)','Reprog Semana (%)','Reprog Acum (%)','Real Semana (%)','Real Acum (%)','Desvio (p.p.)'];
-  const rows = semanal.map((r, i) => [r.label, px(bAj[i]), px(r.bAcum), px(rpAj[i]), px(r.rpAcum),
-    rAj[i] !== null ? px(rAj[i]) : '', r.rAcum !== null ? px(r.rAcum) : '',
+  const nivel = groupLabel();
+  const atividades = buildAtividadesSemanal(_ANA_F, _GROUP_FIELDS);
+  const ini = semIniDate(), fim = semFimDate();
+  const filtradas = S.hasDatas
+    ? atividades.filter(a => {
+        const aIni = a.iniPlanBase || a.iniPlan;
+        const aFim = a.fimPlanBase || a.fimPlan;
+        if (!aIni && !aFim) return true;
+        if (aFim && aFim.getTime() < ini.getTime()) return false;
+        if (aIni && aIni.getTime() > fim.getTime()) return false;
+        return true;
+      })
+    : atividades;
+  const hdr = [nivel];
+  if (S.hasDatas) hdr.push('Início Plan. Base', 'Término Plan. Base', 'Início Prev.', 'Término Prev.', 'Início Real', 'Término Real', 'Desvio Prazo (dias)', 'Status Prazo');
+  hdr.push('Peso % Projeto', 'Realizado %', 'Desvio Físico (p.p.)');
+  const rows = filtradas.map(a => {
+    const row = [a.label];
+    if (S.hasDatas) row.push(fmtDate(a.iniPlanBase), fmtDate(a.fimPlanBase), fmtDate(a.iniPlan), fmtDate(a.fimPlan),
+      fmtDate(a.iniReal), fmtDate(a.fimReal), a.desvioPrazoDias !== null ? a.desvioPrazoDias : '', statusPrazoInfo(a).label);
+    row.push(px(a.pesoTotal), px(a.realizado), ppx(a.realizado - a.pesoTotal));
+    return row;
+  });
+  copyTSV([hdr, ...rows].map(r => r.join('\t')).join('\n'), 'btnCopySemanal');
+}
+function doCopySemanasTabela() {
+  const semanal = buildSemanalPorSemana(_ANA_F, semIniDate(), semFimDate());
+  const hdr = ['Semana', 'Base Semana (% proj.)', 'Base Acum. (% proj.)', 'Real Semana (% proj.)', 'Real Acum. (% proj.)', 'Desvio (p.p.)'];
+  const rows = semanal.map(r => [r.label, px(r.bSemana), px(r.bAcum),
+    r.rSemana !== null ? px(r.rSemana) : '', r.rAcum !== null ? px(r.rAcum) : '',
     r.rAcum !== null ? ppx(r.rAcum - r.bAcum) : '']);
   copyTSV([hdr, ...rows].map(r => r.join('\t')).join('\n'), 'btnCopySemanal');
 }
@@ -1691,60 +1925,284 @@ async function exportarExcel() {
   try {
     const wb = new ExcelJS.Workbook();
     wb.creator = 'Análise Física - Agilean';
-    const navyArgb = 'FF1A2B45';
-    const hStyle = {
-      font: { bold: true, color: { argb: 'FFFFFFFF' }, size: 10 },
-      fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: navyArgb } },
-      alignment: { horizontal: 'center', vertical: 'middle' },
-      border: { bottom: { style: 'thin', color: { argb: 'FF4A6080' } } }
+    wb.created = new Date();
+
+    // ── Paleta de cores ───────────────────────────────────────────────────────
+    const C = {
+      navy: 'FF1A2B45', navy2: 'FF1E3358', white: 'FFFFFFFF',
+      green: 'FF0F9B6E', red: 'FFD63A3A', muted: 'FF6B80A0',
+      border: 'FFD4DFE8', borderD: 'FF3A5070',
+      cutoff: 'FFFEF9E7', zebra: 'FFF7FAFD',
     };
-    function styleHeader(ws, row) {
-      row = row || 1;
-      ws.getRow(row).eachCell(cell => { Object.assign(cell, { style: hStyle }); });
-      ws.getRow(row).height = 28;
+    const bThin  = argb => ({ style: 'thin', color: { argb } });
+    const bHair  = argb => ({ style: 'hair', color: { argb } });
+    const bdrD   = { top: bThin(C.borderD), bottom: bThin(C.borderD), left: bThin(C.borderD), right: bThin(C.borderD) };
+    const bdrL   = { top: bHair(C.border),  bottom: bHair(C.border),  left: bThin(C.border),  right: bThin(C.border) };
+
+    // ── Helpers de estilo ─────────────────────────────────────────────────────
+    function noGrid(ws, ySplit) {
+      ws.views = ySplit
+        ? [{ state: 'frozen', ySplit, showGridLines: false }]
+        : [{ showGridLines: false }];
     }
-    function numFmt(ws, cols, fmt) { cols.forEach(c => { ws.getColumn(c).numFmt = fmt; }); }
-    function colWidths(ws, widths) { widths.forEach((w, i) => { ws.getColumn(i + 1).width = w; }); }
-    function escopoCell(ws, texto) {
-      ws.addRow([texto]);
-      ws.getRow(1).font = { italic: true, size: 9, color: { argb: 'FF6B80A0' } };
+    function scopeRow(ws) {
+      const hoje = new Date();
+      ws.addRow([`Escopo: ${anaScopeLabel()} · Corte: ${S.months[S.cutoffIdx].label} · Gerado em: ${hoje.toLocaleDateString('pt-BR')}`]);
+      const r = ws.getRow(ws.rowCount);
+      r.height = 15;
+      r.getCell(1).font = { italic: true, size: 9, color: { argb: C.muted }, name: 'Calibri' };
+    }
+    function hdrRow(ws, rowNum, numCols) {
+      const row = ws.getRow(rowNum);
+      row.height = 26;
+      for (let c = 1; c <= numCols; c++) {
+        const cell = row.getCell(c);
+        cell.font = { bold: true, color: { argb: C.white }, size: 10, name: 'Calibri' };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C.navy } };
+        cell.alignment = { horizontal: c === 1 ? 'left' : 'center', vertical: 'middle' };
+        cell.border = bdrD;
+      }
+    }
+    function dataRow(ws, rowNum, numCols, isCutoff, idx) {
+      const row = ws.getRow(rowNum);
+      row.height = 17;
+      const bg = isCutoff ? C.cutoff : idx % 2 === 1 ? C.zebra : C.white;
+      for (let c = 1; c <= numCols; c++) {
+        const cell = row.getCell(c);
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+        cell.border = bdrL;
+        cell.alignment = { horizontal: c === 1 ? 'left' : 'right', vertical: 'middle' };
+        cell.font = { size: 10, name: 'Calibri' };
+      }
+    }
+    function footRow(ws, rowNum, numCols) {
+      const row = ws.getRow(rowNum);
+      row.height = 22;
+      for (let c = 1; c <= numCols; c++) {
+        const cell = row.getCell(c);
+        cell.font = { bold: true, color: { argb: C.white }, size: 10, name: 'Calibri' };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C.navy } };
+        cell.alignment = { horizontal: c === 1 ? 'left' : 'right', vertical: 'middle' };
+        cell.border = bdrD;
+      }
+    }
+    function colorDesvio(cell, val) {
+      if (val === null || val === undefined) return;
+      if (Math.abs(val) < 0.005) { cell.font = { size: 10, name: 'Calibri', color: { argb: C.muted } }; return; }
+      cell.font = { bold: true, size: 10, name: 'Calibri', color: { argb: val > 0 ? C.green : C.red } };
+    }
+    function colorDias(cell, val) {
+      if (!val) return;
+      cell.font = { bold: true, size: 10, name: 'Calibri', color: { argb: val > 0 ? C.red : C.green } };
+    }
+    function colorStatus(cell, txt) {
+      const argb = txt.includes('diantado') ? C.green : txt.includes('trasado') ? C.red : C.muted;
+      cell.font = { size: 10, name: 'Calibri', color: { argb } };
+    }
+    function pct(ws, rowNum, cols) {
+      cols.forEach(c => { ws.getRow(rowNum).getCell(c).numFmt = '0.00"%"'; });
+    }
+    function pctDev(ws, rowNum, col) {
+      ws.getRow(rowNum).getCell(col).numFmt = '+0.00"%";-0.00"%";"0.00%"';
     }
 
-    // Aba 1: Curva S — reflete o filtro (Unidade/Local/Macro Etapa/Etapa) selecionado nas telas
-    const ws1 = wb.addWorksheet('Curva S');
-    escopoCell(ws1, `Escopo do filtro: ${anaScopeLabel()}`);
-    ws1.addRow(['Mês','Base Mensal','Base Acum','Reprog Mensal','Reprog Acum','Real Mensal','Real Acum','Desvio (R-B)']);
-    styleHeader(ws1, 2);
-    _CS.forEach(r => ws1.addRow([r.label, r.bMes, r.bAcum, r.rpMes, r.rpAcum,
-      r.rMes ?? null, r.rAcum ?? null, r.rAcum !== null ? r.rAcum - r.bAcum : null]));
-    numFmt(ws1, [2,3,4,5,6,7,8], '0.00"%"');
-    colWidths(ws1, [12,14,14,16,14,14,14,14]);
+    const nivel = groupLabel();
+    const cutLabel = S.months[S.cutoffIdx].label;
+    const hoje = new Date();
+    const dtStr = `${String(hoje.getDate()).padStart(2,'0')}-${String(hoje.getMonth()+1).padStart(2,'0')}-${hoje.getFullYear()}`;
 
-    // Aba 2: Previsto x Real — mesmo filtro + nível de agrupamento (Macro Etapa/Etapa) selecionado na tela
-    const nivelLbl = groupLabel();
-    const ws2 = wb.addWorksheet('Previsto x Real');
-    escopoCell(ws2, `Escopo do filtro: ${anaScopeLabel()} · Nível: ${nivelLbl}`);
-    ws2.addRow([nivelLbl,'Base até Corte','Reprog até Corte','Real até Corte','Desvio (R-B)','Status']);
-    styleHeader(ws2, 2);
-    _ED.forEach(r => ws2.addRow([r.label, r.bCut, r.rpCut, r.rCut, r.dev,
-      r.dev > 0.005 ? 'Adiantado' : r.dev < -0.005 ? 'Atrasado' : 'Em dia']));
-    numFmt(ws2, [2,3,4,5], '0.00"%"');
-    colWidths(ws2, [40,16,18,16,14,12]);
+    // ── Aba: Capa ─────────────────────────────────────────────────────────────
+    if (_EXP_ABAS.capa) {
+      const ws = wb.addWorksheet('Capa');
+      noGrid(ws, 0);
+      ws.columns = [{ width: 26 }, { width: 56 }];
+      ws.mergeCells('A1:B1');
+      const tc = ws.getRow(1).getCell(1);
+      tc.value = 'ANÁLISE FÍSICA DO PROJETO — AGILEAN';
+      tc.font  = { bold: true, size: 16, color: { argb: C.white }, name: 'Calibri' };
+      tc.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: C.navy } };
+      tc.alignment = { horizontal: 'center', vertical: 'middle' };
+      tc.border = bdrD;
+      ws.getRow(1).height = 44;
+      ws.addRow([]);
+      const abasNomes = { capa:'Capa', kpis:'KPIs Gerais', curva:'Curva S', pesos:'Análise de Pesos', prazos:'Análise de Prazos', desvios:'Análise de Desvios' };
+      const abasInc = Object.entries(_EXP_ABAS).filter(([,v]) => v).map(([k]) => abasNomes[k]).join(', ');
+      const meta = [
+        ['Mês de Corte',    cutLabel],
+        ['Escopo',          anaScopeLabel()],
+        ['Agrupamento',     nivel],
+        ['Data de Geração', `${String(hoje.getDate()).padStart(2,'0')}/${String(hoje.getMonth()+1).padStart(2,'0')}/${hoje.getFullYear()}`],
+        ['Abas incluídas',  abasInc],
+      ];
+      meta.forEach(([lbl, val], i) => {
+        ws.addRow([lbl, val]);
+        const r = ws.getRow(ws.rowCount);
+        r.height = 22;
+        const c1 = r.getCell(1), c2 = r.getCell(2);
+        c1.font = { bold: true, size: 10, name: 'Calibri', color: { argb: C.navy } };
+        c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: i % 2 === 0 ? C.zebra : C.white } };
+        c2.font = { size: 10, name: 'Calibri' };
+        c2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: i % 2 === 0 ? C.zebra : C.white } };
+        [c1, c2].forEach(c => { c.border = bdrL; c.alignment = { vertical: 'middle', wrapText: true }; });
+        c1.alignment = { horizontal: 'left', vertical: 'middle' };
+      });
+      ws.addRow([]);
+      ws.addRow(['Desenvolvido por Mateus Monteiro · (62) 99156-3421']);
+      ws.getRow(ws.rowCount).getCell(1).font = { italic: true, size: 9, color: { argb: C.muted }, name: 'Calibri' };
+    }
 
+    // ── Aba: KPIs Gerais ──────────────────────────────────────────────────────
+    if (_EXP_ABAS.kpis) {
+      const ws = wb.addWorksheet('KPIs Gerais');
+      noGrid(ws, 2);
+      ws.columns = [{ width: 28 }, { width: 18 }, { width: 46 }];
+      scopeRow(ws);
+      ws.addRow(['Indicador', 'Valor', 'Descrição']);
+      hdrRow(ws, ws.rowCount, 3);
+      const cg    = buildCurvaSAnalitico(_ANA_F);
+      const cutR  = cg.find(r => r.isCutoff);
+      const bAc   = cutR ? cutR.bAcum : 0;
+      const rAc   = cutR ? (cutR.rAcum || 0) : 0;
+      const dev   = rAc - bAc;
+      const idp   = bAc > 0 ? rAc / bAc : 0;
+      const proj  = projecaoTermino(cg);
+      const kpis = [
+        ['Mês de Corte',        cutLabel,                                              'Referência da análise'],
+        ['Base Acumulado',       bAc.toFixed(2) + '%',                                 'Previsto acumulado até o corte'],
+        ['Real Acumulado',       rAc.toFixed(2) + '%',                                 'Executado acumulado até o corte'],
+        ['Desvio Global',        (dev >= 0 ? '+' : '') + dev.toFixed(2) + ' p.p.',     dev > 0.005 ? 'Adiantada' : dev < -0.005 ? 'Atrasada' : 'Em dia'],
+        ['IDP',                  idp.toFixed(2),                                        'Índice de Desempenho · Real ÷ Base até corte'],
+        ['Projeção de Término',  proj ? proj.label : '—',                              proj ? `Ritmo médio: ${proj.avg.toFixed(2)}%/mês (últimos 3 meses)` : 'Dados insuficientes'],
+        ['Meses para Conclusão', proj && proj.months > 0 ? String(proj.months) : '—', `A partir de ${cutLabel}`],
+      ];
+      kpis.forEach(([ind, val, desc], i) => {
+        ws.addRow([ind, val, desc]);
+        dataRow(ws, ws.rowCount, 3, false, i);
+        if (ind === 'Desvio Global') colorDesvio(ws.getRow(ws.rowCount).getCell(2), dev);
+        if (ind === 'IDP') {
+          const cell = ws.getRow(ws.rowCount).getCell(2);
+          cell.font = { bold: true, size: 10, name: 'Calibri', color: { argb: idp >= 1 ? C.green : C.red } };
+        }
+      });
+    }
+
+    // ── Aba: Curva S ─────────────────────────────────────────────────────────
+    if (_EXP_ABAS.curva) {
+      const NC = 8;
+      const ws = wb.addWorksheet('Curva S');
+      noGrid(ws, 2);
+      ws.columns = [{ width: 12 },{ width: 14 },{ width: 14 },{ width: 16 },{ width: 14 },{ width: 14 },{ width: 14 },{ width: 16 }];
+      scopeRow(ws);
+      ws.addRow(['Mês','Base Mensal','Base Acum.','Reprog Mensal','Reprog Acum.','Real Mensal','Real Acum.','Desvio (R−B)']);
+      hdrRow(ws, ws.rowCount, NC);
+      _CS.forEach((r, i) => {
+        ws.addRow([r.label, r.bMes, r.bAcum, r.rpMes, r.rpAcum, r.rMes ?? null, r.rAcum ?? null, r.rAcum !== null ? r.rAcum - r.bAcum : null]);
+        const rn = ws.rowCount;
+        dataRow(ws, rn, NC, r.isCutoff, i);
+        pct(ws, rn, [2,3,4,5]);
+        if (r.rMes  !== null) pct(ws, rn, [6]);
+        if (r.rAcum !== null) { pct(ws, rn, [7]); pctDev(ws, rn, 8); colorDesvio(ws.getRow(rn).getCell(8), r.rAcum - r.bAcum); }
+      });
+    }
+
+    // ── Aba: Análise de Pesos ────────────────────────────────────────────────
+    if (_EXP_ABAS.pesos) {
+      const NC = 6;
+      const ws = wb.addWorksheet('Análise de Pesos');
+      noGrid(ws, 2);
+      ws.columns = [{ width: 42 },{ width: 16 },{ width: 18 },{ width: 16 },{ width: 16 },{ width: 14 }];
+      scopeRow(ws);
+      ws.addRow([nivel,'Base até Corte','Reprog até Corte','Real até Corte','Desvio (R−B)','Status']);
+      hdrRow(ws, ws.rowCount, NC);
+      let tBC = 0, tRP = 0, tRC = 0;
+      _ED.forEach((r, i) => {
+        tBC += r.bCut; tRP += r.rpCut; tRC += r.rCut;
+        const st = r.dev > 0.005 ? 'Adiantado' : r.dev < -0.005 ? 'Atrasado' : 'Em dia';
+        ws.addRow([r.label, r.bCut, r.rpCut, r.rCut, r.dev, st]);
+        const rn = ws.rowCount;
+        dataRow(ws, rn, NC, false, i);
+        pct(ws, rn, [2,3,4]); pctDev(ws, rn, 5);
+        colorDesvio(ws.getRow(rn).getCell(5), r.dev);
+        colorStatus(ws.getRow(rn).getCell(6), st);
+      });
+      ws.addRow(['TOTAL', tBC, tRP, tRC, tRC - tBC, '—']);
+      const rn = ws.rowCount;
+      footRow(ws, rn, NC);
+      pct(ws, rn, [2,3,4]); pctDev(ws, rn, 5);
+    }
+
+    // ── Aba: Análise de Prazos ────────────────────────────────────────────────
+    if (_EXP_ABAS.prazos && S.hasDatas) {
+      const NC = 9;
+      const ws = wb.addWorksheet('Análise de Prazos');
+      noGrid(ws, 2);
+      ws.columns = [{ width: 38 },{ width: 16 },{ width: 16 },{ width: 16 },{ width: 16 },{ width: 14 },{ width: 14 },{ width: 14 },{ width: 24 }];
+      scopeRow(ws);
+      ws.addRow([nivel,'Início Plan. Base','Término Plan. Base','Início Prev.','Término Prev.','Início Real','Término Real','Desvio Prazo','Status Prazo']);
+      hdrRow(ws, ws.rowCount, NC);
+      _ED.forEach((r, i) => {
+        const sp = statusPrazoInfo(r);
+        ws.addRow([r.label, fmtDate(r.iniPlanBase), fmtDate(r.fimPlanBase), fmtDate(r.iniPlan), fmtDate(r.fimPlan),
+          fmtDate(r.iniReal), fmtDate(r.fimReal), r.desvioPrazoDias ?? null, sp.label]);
+        const rn = ws.rowCount;
+        dataRow(ws, rn, NC, false, i);
+        colorDias(ws.getRow(rn).getCell(8), r.desvioPrazoDias);
+        colorStatus(ws.getRow(rn).getCell(9), sp.label);
+      });
+    }
+
+    // ── Aba: Análise de Desvios ───────────────────────────────────────────────
+    if (_EXP_ABAS.desvios) {
+      const extraCols = S.hasDatas ? 8 : 0;
+      const NC = 6 + extraCols;
+      const ws = wb.addWorksheet('Análise de Desvios');
+      noGrid(ws, 2);
+      const baseCols = [{ width: 38 },{ width: 16 },{ width: 18 },{ width: 16 },{ width: 16 },{ width: 14 }];
+      const dateCols = S.hasDatas ? [{ width: 16 },{ width: 16 },{ width: 16 },{ width: 16 },{ width: 14 },{ width: 14 },{ width: 14 },{ width: 24 }] : [];
+      ws.columns = [...baseCols, ...dateCols];
+      scopeRow(ws);
+      const hdr = [nivel,'Base até Corte','Reprog até Corte','Real até Corte','Desvio (R−B)','Status Físico'];
+      if (S.hasDatas) hdr.push('Início Plan. Base','Término Plan. Base','Início Prev.','Término Prev.','Início Real','Término Real','Desvio Prazo','Status Prazo');
+      ws.addRow(hdr);
+      hdrRow(ws, ws.rowCount, NC);
+      const sorted = [..._ED].sort((a, b) => a.dev - b.dev);
+      sorted.forEach((r, i) => {
+        const st = r.dev > 0.005 ? 'Adiantado' : r.dev < -0.005 ? 'Atrasado' : 'Em dia';
+        const row = [r.label, r.bCut, r.rpCut, r.rCut, r.dev, st];
+        if (S.hasDatas) {
+          const sp = statusPrazoInfo(r);
+          row.push(fmtDate(r.iniPlanBase), fmtDate(r.fimPlanBase), fmtDate(r.iniPlan), fmtDate(r.fimPlan),
+            fmtDate(r.iniReal), fmtDate(r.fimReal), r.desvioPrazoDias ?? null, sp.label);
+        }
+        ws.addRow(row);
+        const rn = ws.rowCount;
+        dataRow(ws, rn, NC, false, i);
+        pct(ws, rn, [2,3,4]); pctDev(ws, rn, 5);
+        colorDesvio(ws.getRow(rn).getCell(5), r.dev);
+        colorStatus(ws.getRow(rn).getCell(6), st);
+        if (S.hasDatas) {
+          colorDias(ws.getRow(rn).getCell(13), r.desvioPrazoDias);
+          colorStatus(ws.getRow(rn).getCell(14), statusPrazoInfo(r).label);
+        }
+      });
+    }
+
+    // ── Download ──────────────────────────────────────────────────────────────
     const buffer = await wb.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
     a.href = url;
-    a.download = `Analise Fisica ${S.months[S.cutoffIdx]?.label || 'Projeto'}.xlsx`;
+    a.download = `Analise Fisica ${cutLabel} · ${dtStr}.xlsx`;
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
+
   } catch(e) {
     console.error(e);
     alert('Erro ao gerar Excel: ' + e.message);
   } finally {
     if (btn) {
-      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Exportar Excel (filtro atual)';
+      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Gerar Excel';
       btn.disabled = false;
     }
   }
