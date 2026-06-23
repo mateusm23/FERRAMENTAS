@@ -1,0 +1,2390 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Análise Física do Projeto v4</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap');
+
+:root {
+  --navy: #1a2b45;
+  --blue: #1B6FBF;
+  --blue-bright: #1A6EE8;
+  --blue-light: #e8f1fc;
+  --bg: #f0f4f9;
+  --surface: #ffffff;
+  --surface2: #f7fafd;
+  --border: #d4dfe8;
+  --text: #1a2b45;
+  --text-muted: #6b80a0;
+  --green: #0f9b6e;
+  --red: #d63a3a;
+  --green-bg: #e6f7f2;
+  --red-bg: #fdf0f0;
+  --shadow: 0 2px 16px rgba(26,43,69,0.08);
+  --header-h: 64px;
+  --sidenav-w: 230px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-top: var(--header-h); }
+
+header { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: var(--navy); padding: 18px 32px; display: flex; align-items: center; gap: 14px; }
+.header-back {
+  display: flex; align-items: center; gap: 6px;
+  color: rgba(255,255,255,0.5); font-size: 12px;
+  text-decoration: none; padding: 5px 10px;
+  border-radius: 6px; border: 1px solid rgba(255,255,255,0.12); transition: all 0.15s; margin-right: 4px;
+}
+.header-back:hover { color: #fff; border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.07); }
+header h1 { font-family: 'Sora', sans-serif; font-size: 17px; font-weight: 600; color: #fff; }
+header h1 span { font-size: 13px; color: rgba(255,255,255,0.45); font-weight: 400; }
+.container { max-width: 1200px; margin: 0 auto; padding: 28px 24px 60px; }
+.container.with-sidenav { max-width: none; margin: 0; padding-left: calc(var(--sidenav-w) + 32px); padding-right: 32px; padding-top: 4px; }
+.steps { display: flex; flex-direction: column; gap: 16px; }
+
+/* ── Navegação lateral (resultado) — fixa na borda esquerda da viewport ── */
+.analysis-layout { display: block; }
+.side-nav { position: fixed; left: 0; top: var(--header-h); bottom: 0; width: var(--sidenav-w); display: flex; flex-direction: column; gap: 1px; padding: 16px 10px; background: #f7f9fc; border-right: 1px solid var(--border); overflow-y: auto; z-index: 30; }
+.side-nav-item { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 8px; border: none; background: transparent; cursor: pointer; text-align: left; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; color: var(--text-muted); transition: all .15s; }
+.side-nav-item .side-nav-icon { font-size: 13px; flex-shrink: 0; opacity: .8; }
+.side-nav-item:hover { background: #eef1f6; color: var(--text); }
+.side-nav-item.active { background: var(--blue-light); color: var(--blue-bright); font-weight: 700; }
+.side-nav-item.active .side-nav-icon { opacity: 1; }
+.side-content { min-width: 0; }
+
+.sidenav-corte { margin: 0 4px 14px; padding: 10px 12px; background: var(--blue-light); border: 1px solid #cfe0fb; border-radius: 10px; cursor: pointer; transition: all .15s; }
+.sidenav-corte:hover { background: #dde9fa; border-color: var(--blue-bright); }
+.sidenav-corte-label { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--blue-bright); margin-bottom: 3px; }
+.sidenav-corte-val { font-family: 'Sora', sans-serif; font-size: 14px; font-weight: 700; color: var(--navy); }
+
+/* ── Filtros fixos na sidebar (Unidade/Local/Macro Etapa/Etapa) ── */
+.sidenav-divider { display: flex; align-items: center; gap: 8px; margin: 16px 6px 12px; }
+.sidenav-divider .sd-line { flex: 1; height: 1px; background: var(--border); }
+.sidenav-divider .sd-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
+.sf-clear-all { font-size: 11px; font-weight: 700; color: var(--blue-bright); background: none; border: none; cursor: pointer; padding: 2px 4px; }
+.sidenav-filters { display: flex; flex-direction: column; gap: 12px; padding: 0 4px 14px; }
+.sf-field { display: flex; flex-direction: column; gap: 5px; }
+.sf-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-muted); }
+
+.popfilter { position: relative; }
+.sf-btn {
+  display: flex; align-items: center; gap: 7px; width: 100%; padding: 8px 10px;
+  background: #fff; border: 1.5px solid var(--border); border-radius: 8px; cursor: pointer;
+  font-size: 11.5px; font-family: 'DM Sans', sans-serif; color: var(--text-muted); overflow: hidden;
+}
+.sf-btn svg { flex-shrink: 0; color: var(--blue-bright); }
+.sf-btn:hover { border-color: var(--blue-bright); }
+.popfilter.has-sel .sf-btn { border-color: var(--blue-bright); background: var(--blue-light); }
+.sf-btn .chips { display: flex; gap: 4px; align-items: center; overflow: hidden; flex: 1; }
+.sf-btn .chips .lbl { color: var(--navy); font-weight: 500; }
+.sf-btn .mini-chip { background: var(--blue-bright); color: #fff; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 5px; white-space: nowrap; max-width: 90px; overflow: hidden; text-overflow: ellipsis; }
+.sf-btn .more { background: #fff; color: var(--blue-bright); font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 5px; flex-shrink: 0; }
+.sf-btn .arrow { margin-left: auto; opacity: .5; font-size: 9px; flex-shrink: 0; }
+
+.popfilter-panel {
+  width: 260px; background: #fff; border: 1px solid var(--border); border-radius: 12px;
+  box-shadow: 0 14px 36px rgba(26,43,69,0.22); z-index: 60; display: none; overflow: hidden;
+}
+.popfilter-panel.open { display: block; }
+.popfilter-list { max-height: 240px; overflow-y: auto; padding: 6px 0; }
+.popfilter-opt { display: flex; align-items: center; gap: 9px; padding: 8px 14px; font-size: 12.5px; cursor: pointer; }
+.popfilter-opt:hover { background: var(--blue-light); }
+.popfilter-opt input { accent-color: var(--blue-bright); width: 14px; height: 14px; }
+.popfilter-footer { display: flex; justify-content: space-between; padding: 9px 14px; border-top: 1px solid var(--border); background: var(--bg); }
+.popfilter-footer button { font-size: 11px; font-weight: 700; color: var(--blue-bright); background: none; border: none; cursor: pointer; padding: 4px 6px; }
+
+.content-topbar { position: sticky; top: var(--header-h); z-index: 20; background: var(--bg); padding: 6px 0; margin-bottom: 6px; border-bottom: 1px solid var(--border); }
+.content-topbar-title { font-family: 'Sora', sans-serif; font-size: 16px; font-weight: 700; color: var(--navy); }
+
+@media (max-width: 760px) {
+  .container.with-sidenav { padding-left: 16px; padding-right: 16px; }
+  /* Mantém a coluna (não vira linha horizontal) — virar linha aqui empurraria
+     a seção de Filtros (que tem altura própria) pra dentro do scroll dos botões
+     de navegação, cortando ela visualmente. */
+  .side-nav { position: static; width: 100%; flex-direction: column; border-right: none; border-bottom: 1px solid var(--border); max-height: none; }
+}
+
+.step-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); overflow: hidden; }
+.step-header { display: flex; align-items: center; gap: 12px; padding: 14px 20px; background: var(--surface2); border-bottom: 1px solid var(--border); }
+.step-num { width: 26px; height: 26px; border-radius: 50%; background: var(--navy); color: #fff; font-family: 'Sora', sans-serif; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.step-num.done { background: var(--green); }
+.step-num.active { background: var(--blue-bright); }
+.step-header h2 { font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 600; color: var(--text); }
+.step-header .hint { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.step-header .tag { margin-left: auto; font-size: 11px; padding: 3px 9px; border-radius: 20px; background: var(--border); color: var(--text-muted); font-weight: 500; white-space: nowrap; }
+.step-header .tag.ok { background: var(--green-bg); color: var(--green); }
+.step-body { padding: 16px 20px; }
+
+.upload-zone { border: 2px dashed var(--border); border-radius: 10px; padding: 32px 24px; text-align: center; cursor: pointer; transition: all 0.15s; background: var(--bg); display: block; }
+.upload-zone:hover, .upload-zone.drag-over { border-color: var(--blue-bright); background: #eef4fd; }
+.upload-zone input[type=file] { display: none; }
+.upload-icon { font-size: 32px; margin-bottom: 10px; }
+.upload-text { font-size: 14px; color: var(--text-muted); }
+.upload-text strong { color: var(--blue-bright); }
+
+/* ── Tela de introdução ── */
+.intro-screen { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); padding: 36px 40px; margin-bottom: 20px; }
+.intro-icon-wrap { width: 54px; height: 54px; border-radius: 14px; background: linear-gradient(135deg, var(--navy), var(--blue-bright)); display: flex; align-items: center; justify-content: center; font-size: 26px; margin-bottom: 16px; box-shadow: 0 6px 16px rgba(26,110,232,.25); }
+.intro-title { font-family: 'Sora', sans-serif; font-size: 20px; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+.intro-desc { font-size: 13.5px; color: var(--text-muted); line-height: 1.7; max-width: 660px; margin-bottom: 30px; }
+.intro-usage-title { font-family: 'Sora', sans-serif; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); margin-bottom: 20px; }
+
+/* Timeline visual do "Modo de uso" — horizontal */
+.timeline { position: relative; display: flex; align-items: flex-start; gap: 4px; margin-bottom: 24px; }
+.timeline::before { content: ''; position: absolute; top: 44px; left: 8.3%; right: 8.3%; height: 2px; background: var(--border); z-index: 0; }
+.timeline-item { position: relative; z-index: 1; flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; }
+.timeline-icon-circle { width: 88px; height: 88px; border-radius: 22px; background: #ffffff; border: 2px solid var(--border); box-shadow: 0 4px 14px rgba(26,43,69,.12); display: flex; align-items: center; justify-content: center; font-size: 36px; flex-shrink: 0; }
+.timeline-title { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 12.5px; color: var(--navy); line-height: 1.35; padding: 0 4px; }
+.timeline-sub { font-size: 11px; color: var(--text-muted); }
+.timeline-chips { display: flex; flex-direction: column; gap: 5px; align-items: center; }
+.timeline-chip { font-size: 10.5px; font-weight: 600; padding: 3px 10px; border-radius: 20px; background: #eef4fd; color: var(--blue-bright); border: 1px solid #cfe0fb; }
+
+@media (max-width: 860px) {
+  .timeline { flex-direction: column; align-items: stretch; gap: 22px; }
+  .timeline::before { display: none; }
+  .timeline-item { flex-direction: row; align-items: flex-start; text-align: left; gap: 16px; }
+  .timeline-title, .timeline-sub { padding: 0; }
+  .timeline-chips { flex-direction: row; flex-wrap: wrap; align-items: flex-start; }
+}
+
+.intro-warn { font-size: 11.5px; color: var(--text-muted); margin-bottom: 22px; }
+.intro-footer { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 28px; padding-top: 18px; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 12px; }
+.intro-footer-divider { width: 1px; height: 12px; background: var(--border); }
+.btn-trocar-arquivo { font-size: 11.5px; color: var(--text-muted); text-decoration: none; border: 1px solid var(--border); padding: 5px 10px; border-radius: 6px; transition: all .15s; }
+.btn-trocar-arquivo:hover { color: var(--blue-bright); border-color: var(--blue-bright); }
+
+.config-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.config-label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
+
+select { border: 1px solid var(--border); border-radius: 7px; padding: 9px 14px; font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--text); background: var(--bg); cursor: pointer; outline: none; transition: border .15s; min-width: 160px; }
+select:focus { border-color: var(--blue); background: #fff; }
+
+.btn { display: inline-flex; align-items: center; gap: 7px; padding: 9px 18px; border-radius: 7px; font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all .15s; }
+.btn-primary { background: var(--blue-bright); color: #fff; }
+.btn-primary:hover { background: var(--blue); }
+.btn-primary:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; }
+.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-muted); }
+.btn-outline:hover { border-color: var(--blue); color: var(--blue); }
+.btn-green { background: var(--green); color: #fff; }
+.btn-green:hover { background: #0d8560; }
+.btn-green:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; }
+
+.parse-info { font-size: 12px; color: var(--text-muted); }
+.parse-info.ok { color: var(--green); }
+.parse-info.err { color: var(--red); }
+
+.toggle-group { display: inline-flex; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
+.toggle-btn { padding: 7px 16px; font-family: 'Sora', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; border: none; background: transparent; color: var(--text-muted); transition: all .15s; }
+.toggle-btn.active { background: var(--navy); color: #fff; }
+.toggle-btn:hover:not(.active) { background: var(--surface2); }
+
+.tabs-bar { display: flex; gap: 3px; margin-bottom: -1px; position: relative; z-index: 1; flex-wrap: wrap; }
+.tab-btn { padding: 10px 18px; border-radius: 8px 8px 0 0; font-family: 'Sora', sans-serif; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--surface2); color: var(--text-muted); transition: all 0.15s; border-bottom-color: transparent; }
+.tab-btn.active { background: var(--surface); color: var(--blue-bright); border-color: var(--border); border-bottom-color: var(--surface); }
+.tab-pane { display: none; background: var(--surface); border: 1px solid var(--border); border-radius: 0 10px 10px 10px; padding: 22px; box-shadow: var(--shadow); }
+.tab-pane.active { display: block; }
+
+#resultado { margin-top: 24px; }
+.result-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 8px; gap: 12px; flex-wrap: wrap; }
+.result-sub { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+
+.table-wrap { border: 1px solid var(--border); border-radius: 10px; overflow: auto; box-shadow: var(--shadow); }
+.table-wrap-scroll { border: 1px solid var(--border); border-radius: 10px; overflow-y: auto; max-height: 560px; box-shadow: var(--shadow); }
+table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+thead tr { background: var(--navy); }
+thead tr.subhead { background: #223357; }
+thead th { font-family: 'Sora', sans-serif; font-size: 10.5px; font-weight: 600; color: rgba(255,255,255,.85); text-transform: uppercase; letter-spacing: .5px; padding: 10px 12px; text-align: right; white-space: nowrap; }
+thead th:first-child { text-align: left; }
+thead th.grp { text-align: center; border-left: 1px solid rgba(255,255,255,0.1); border-right: 1px solid rgba(255,255,255,0.1); }
+thead th.grp-base { background: rgba(26,110,232,0.3); }
+thead th.grp-reprog { background: rgba(217,119,6,0.3); }
+thead th.grp-real { background: rgba(15,155,110,0.3); }
+thead th.sub-base { background: rgba(26,110,232,0.15); }
+thead th.sub-reprog { background: rgba(217,119,6,0.15); }
+thead th.sub-real { background: rgba(15,155,110,0.15); }
+.table-wrap-scroll thead th { position: sticky; top: 0; z-index: 2; }
+.table-wrap-scroll thead tr.subhead th { top: 37px; }
+tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+tbody tr:hover { background: var(--surface2); }
+tbody tr:last-child { border-bottom: none; }
+tbody tr.cutoff-row { background: #fef9e7; }
+tbody tr.cutoff-row:hover { background: #fef3c7; }
+tbody td { padding: 9px 12px; text-align: right; }
+tbody td:first-child { text-align: left; font-weight: 500; color: var(--navy); font-size: 12px; }
+.pos { color: var(--green); font-weight: 600; }
+.neg { color: var(--red); font-weight: 600; }
+.zer { color: var(--text-muted); }
+.muted { color: var(--text-muted); }
+.pill { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+.pill.pos { background: var(--green-bg); color: var(--green); }
+.pill.neg { background: var(--red-bg); color: var(--red); }
+.pill.zer { background: var(--border); color: var(--text-muted); }
+tfoot tr { background: var(--navy); }
+tfoot td { padding: 10px 12px; text-align: right; font-family: 'Sora', sans-serif; font-size: 11.5px; font-weight: 700; color: #fff; }
+tfoot td:first-child { text-align: left; }
+
+.kpi-row   { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 12px; }
+.kpi-row-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 12px; }
+.kpi-row-4c { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 18px; }
+.kpi { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 18px; box-shadow: var(--shadow); }
+.kpi-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--text-muted); margin-bottom: 6px; }
+.kpi-val { font-family: 'Sora', sans-serif; font-size: 20px; font-weight: 700; color: var(--navy); }
+.kpi-val.pos { color: var(--green); }
+.kpi-val.neg { color: var(--red); }
+.kpi-val.zer { color: var(--text-muted); }
+.kpi-sub { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
+
+/* ── Barra do seletor de Nível (Unidade/Local/Macro Etapa/Etapa) — Análise de Pesos ── */
+.filter-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 7px 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; }
+
+@media (max-width: 700px) {
+  .kpi-row { grid-template-columns: 1fr 1fr; }
+  .kpi-row-3 { grid-template-columns: 1fr 1fr; }
+  header { padding: 14px 16px; }
+  .container { padding: 16px 12px; }
+}
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-thumb { background: #c5cedd; border-radius: 3px; }
+
+/* ── Painel de Exportação ── */
+.exp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(255px, 1fr)); gap: 10px; margin-bottom: 20px; }
+.toggle-group { display: inline-flex; border: 1.5px solid var(--border); border-radius: 8px; overflow: hidden; }
+.toggle-btn { background: var(--surface); color: var(--muted); border: none; padding: 6px 14px; font-size: 12px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: background .15s, color .15s; }
+.toggle-btn:not(:last-child) { border-right: 1.5px solid var(--border); }
+.toggle-btn.active { background: var(--navy); color: #fff; }
+.toggle-btn:hover:not(.active) { background: var(--blue-light); color: var(--navy); }
+.exp-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px; padding: 14px 16px; cursor: pointer; transition: border-color .15s, background .15s; user-select: none; }
+.exp-card:hover:not(.exp-card-off) { border-color: var(--blue-bright); background: var(--blue-light); }
+.exp-card-on { border-color: var(--blue-bright) !important; background: var(--blue-light) !important; }
+.exp-card-off { opacity: .4; cursor: default; }
+.exp-footer { display: flex; justify-content: space-between; align-items: flex-end; padding-top: 16px; border-top: 1px solid var(--border); margin-top: 4px; flex-wrap: wrap; gap: 12px; }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="header-back" href="../../index.html">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+    Portal
+  </a>
+  <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+    <rect width="28" height="28" rx="7" fill="#1A6EE8"/>
+    <polyline points="4,21 9,14 14,17 19,10 24,6" stroke="white" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="24" cy="6" r="2" fill="white"/>
+  </svg>
+  <div>
+    <h1>Análise Física do Projeto <span>— Agilean</span> <span style="font-size:10px;font-weight:700;color:#b39ddb;background:rgba(179,157,219,0.15);border:1px solid rgba(179,157,219,0.3);border-radius:20px;padding:2px 8px;margin-left:4px;vertical-align:middle;letter-spacing:.03em">v4 BETA</span></h1>
+  </div>
+</header>
+
+<div class="container" id="mainContainer">
+
+  <!-- ── Tela de introdução ──────────────────────────────────────────────── -->
+  <div class="intro-screen" id="introScreen">
+    <div class="intro-icon-wrap">📊</div>
+    <h2 class="intro-title">Análise Física do Projeto</h2>
+    <p class="intro-desc">Ferramenta de tratamento e análise de dados extraídos do Agilean para acompanhamento físico do cronograma da obra — Curva S, Previsto × Real e projeção de término.</p>
+
+    <div class="intro-usage-title">Modo de uso</div>
+    <div class="timeline">
+
+      <div class="timeline-item">
+        <div class="timeline-icon-circle">🌐</div>
+        <div class="timeline-title">Acessar Plataforma Agilean</div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-icon-circle">🏗️</div>
+        <div class="timeline-title">Selecionar a Obra</div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-icon-circle">📂</div>
+        <div class="timeline-title">Menu Lateral Superior Esquerdo</div>
+        <div class="timeline-chips"><span class="timeline-chip">Longo Prazo</span></div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-icon-circle">🚩</div>
+        <div class="timeline-title">Marcar Flags</div>
+        <div class="timeline-chips">
+          <span class="timeline-chip">% Percentual Financeiro</span>
+          <span class="timeline-chip">Remover Despesa Indireta Automática</span>
+        </div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-icon-circle">📋</div>
+        <div class="timeline-title">Botão "Colunas" na tabela</div>
+        <div class="timeline-chips"><span class="timeline-chip">Selecionar Todas as Colunas</span></div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-icon-circle">🖱️</div>
+        <div class="timeline-title">Botão Direito na Tabela</div>
+        <div class="timeline-sub">Exportar → Exportar Excel</div>
+      </div>
+
+    </div>
+    <div class="intro-warn">⚠ Apenas Excel (.xlsx/.xls) é aceito — o CSV do Agilean arredonda a contribuição em 2 casas decimais, o que distorce a curva acumulada em bases com muitas atividades.</div>
+
+    <label class="upload-zone" id="uploadZone"
+      ondragover="event.preventDefault();document.getElementById('uploadZone').classList.add('drag-over')"
+      ondragleave="document.getElementById('uploadZone').classList.remove('drag-over')"
+      ondrop="doDrop(event)">
+      <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="handleFile(this.files[0])">
+      <div class="upload-icon">📂</div>
+      <div class="upload-text"><strong>Arraste aqui</strong> ou clique para selecionar o arquivo</div>
+      <div class="upload-text" style="font-size:11px;margin-top:4px;color:var(--text-muted)">Formatos .xlsx ou .xls — exportação do Agilean</div>
+    </label>
+    <div style="margin-top:10px"><span class="parse-info" id="infoFile"></span></div>
+    <span id="tag1" style="display:none"></span><span id="num1" style="display:none"></span>
+
+    <div class="intro-footer">
+      <span>Desenvolvido por <strong>Mateus Monteiro</strong></span>
+      <div class="intro-footer-divider"></div>
+      <span>(62) 99156-3421</span>
+    </div>
+  </div>
+
+  <!-- ── Fluxo principal (após carregar o arquivo) ───────────────────────── -->
+  <div id="mainFlow" style="display:none">
+
+  <div class="steps" id="configCard">
+
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num" id="num2">1</div>
+        <div>
+          <h2>Configurar análise</h2>
+          <div class="hint">Mês de corte para o cálculo de avanço acumulado</div>
+        </div>
+        <span class="tag" id="tag2">Aguardando</span>
+      </div>
+      <div class="step-body">
+        <div class="config-row">
+          <span class="config-label">Mês de Corte</span>
+          <select id="selectCorte" disabled onchange="onCorteChange()">
+            <option value="">— carregue o arquivo primeiro —</option>
+          </select>
+          <button class="btn btn-primary" id="btnGerar" onclick="gerarAnalise()" disabled>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+            Gerar Análise
+          </button>
+          <span class="parse-info" id="infoCorte" style="font-size:11px"></span>
+          <a href="#" class="btn-trocar-arquivo" onclick="voltarIntro(event)" style="margin-left:auto">↺ Trocar arquivo</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div id="resultado"></div>
+
+  </div>
+</div>
+
+<script>
+// ─── State ────────────────────────────────────────────────────────────────────
+const S = { rows: [], months: [], cutoffIdx: -1, hasDatas: false };
+let _CS = [], _ED = [];
+// Agrupamento estilo "tabela dinâmica": array ORDENADO de campos — a ordem
+// define a ordem de concatenação no rótulo (ex: ['local','unidade'] → "Local › Unidade").
+let _GROUP_FIELDS = ['macroEtapa'];
+let _GROUP_PANEL_OPEN = false;
+// Filtro por Status Prazo (tela Desvios) — array de chaves selecionadas; vazio = todos.
+let _STATUS_PRAZO_FILTER = [];
+let _STATUS_PRAZO_PANEL_OPEN = false;
+let _SEM_INI = '';
+let _SEM_FIM = '';
+let _SEM_QUEBRAR = false;
+let _EXP_ABAS = { capa: true, kpis: true, curva: true, pesos: true, prazos: true, desvios: true };
+// Cada campo é um array de valores selecionados; array vazio = "todas" (sem filtro).
+let _ANA_F = { unidade: [], local: [], macroEtapa: [], etapa: [] };
+let _ACTIVE_SECTION = 'geral';
+
+// ─── Parse ────────────────────────────────────────────────────────────────────
+const MONTH_NUM = {
+  jan:1, feb:2, fev:2, mar:3, apr:4, abr:4, may:5, mai:5,
+  jun:6, jul:7, aug:8, ago:8, sep:9, set:9, oct:10, out:10, nov:11, dec:12, dez:12
+};
+const PT_MONTHS = {
+  jan:'Jan', feb:'Fev', fev:'Fev', mar:'Mar', apr:'Abr', abr:'Abr',
+  may:'Mai', mai:'Mai', jun:'Jun', jul:'Jul', aug:'Ago', ago:'Ago',
+  sep:'Set', set:'Set', oct:'Out', out:'Out', nov:'Nov', dec:'Dez', dez:'Dez'
+};
+
+function parseMonthStr(s) {
+  if (!s) return null;
+  s = s.trim();
+  const m = s.match(/^([A-Za-zç]+)[\/\-](\d{4})$/);
+  if (!m) return null;
+  const key = m[1].toLowerCase();
+  const mn = MONTH_NUM[key];
+  const yr = parseInt(m[2]);
+  if (!mn || isNaN(yr)) return null;
+  return { label: (PT_MONTHS[key] || m[1]) + '/' + m[2], sortKey: yr * 100 + mn };
+}
+
+function parsePct(v) {
+  if (!v && v !== 0) return 0;
+  const s = String(v).trim().replace(/%/g, '').replace(',', '.').trim();
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
+// ─── Datas opcionais (Início/Término Planejado/Real por etapa) ────────────────
+// O export padrão do Agilean usado aqui só tem granularidade de mês (coluna "Data").
+// Estes campos são opcionais: se a exportação não incluir essas colunas, a análise
+// funciona exatamente como antes — só não mostra datas no Previsto × Real.
+// Algumas células do Agilean trazem quebra de linha embutida no meio do texto
+// (texto longo "quebrado" dentro da própria célula no Excel original). Um \n
+// sobrevivendo dentro de um campo de identidade (Unidade/Local/Macro Etapa/
+// Etapa/Código) quebra a cópia TSV pro Excel — o \n do meio do texto é lido
+// como se fosse o \n que separa uma linha da tabela da próxima, duplicando a
+// linha. Por isso qualquer espaço em branco (inclusive quebra de linha) nesses
+// campos é colapsado num espaço único, nunca só "trim" nas pontas.
+function cleanText(v) {
+  return String(v ?? '').replace(/\s+/g, ' ').trim();
+}
+const DIACRITICS_RE = new RegExp('[\\u0300-\\u036f]', 'g');
+function normalizeHeader(h) {
+  return String(h ?? '').trim().toLowerCase().normalize('NFD').replace(DIACRITICS_RE, '');
+}
+
+// Cada campo exige DUAS palavras-chave no header (categoria temporal + natureza),
+// nunca uma isolada — evita confundir "Reprog" (%) com "Término Reprogramado" (data).
+// O Agilean pode exportar 3 pares de data por etapa: Planejado Base (baseline original),
+// Planejado (replanejamento/reprog atual) e Real. "exclude" evita que "Início Planejado
+// Base" seja capturado por engano pelo par "Planejado" (sem base) — e vice-versa.
+const DATE_FIELD_PATTERNS = {
+  iniPlanBase: { time: /in[ií]cio/,       kind: /base/ },
+  fimPlanBase: { time: /(term|fim|final)/, kind: /base/ },
+  iniPlan:     { time: /in[ií]cio/,       kind: /plan|prev/, exclude: /base/ },
+  fimPlan:     { time: /(term|fim|final)/, kind: /plan|prev/, exclude: /base/ },
+  iniReal:     { time: /in[ií]cio/,       kind: /real/ },
+  fimReal:     { time: /(term|fim|final)/, kind: /real/ }
+};
+
+// Confere se o valor da célula realmente parece uma data antes de aceitar o match
+// de header — protege contra um header ambíguo apontar pra coluna errada.
+function looksLikeDateValue(v) {
+  if (v === null || v === undefined || v === '') return false;
+  if (typeof v === 'number') return v > 25569 && v < 60000; // serial Excel ~1970–2064
+  const s = String(v).trim();
+  return /^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}$/.test(s) || /^\d{4}-\d{1,2}-\d{1,2}$/.test(s);
+}
+
+function detectDateColumns(headerRow, sampleDataRow) {
+  const found = {};
+  (headerRow || []).forEach((h, i) => {
+    const hn = normalizeHeader(h);
+    if (!hn) return;
+    for (const field in DATE_FIELD_PATTERNS) {
+      if (found[field] !== undefined) continue;
+      const pat = DATE_FIELD_PATTERNS[field];
+      if (pat.time.test(hn) && pat.kind.test(hn) && !(pat.exclude && pat.exclude.test(hn))) {
+        const sample = sampleDataRow ? sampleDataRow[i] : undefined;
+        if (looksLikeDateValue(sample)) found[field] = i;
+      }
+    }
+  });
+  return found;
+}
+
+// Colunas de % por texto de cabeçalho (não por posição fixa): a posição muda
+// sempre que colunas de data são inseridas antes delas no export do Agilean.
+// Contribuição (peso financeiro) usa o nome puro ("Real"); Avanço físico usa
+// o nome com "(%)" — isso distingue as duas seções que repetem Real/Reprog/Base,
+// e o "(%)" também exclui as colunas "(R$)" que aparecem ao lado.
+function detectPctColumns(headerRow) {
+  const found = {};
+  (headerRow || []).forEach((h, i) => {
+    const hn = normalizeHeader(h);
+    if (!hn) return;
+    if (found.aReal === undefined && hn.includes('real') && hn.includes('%')) found.aReal = i;
+    else if (found.aReprog === undefined && hn.includes('reprog') && hn.includes('%')) found.aReprog = i;
+    else if (found.aBase === undefined && hn.includes('base') && hn.includes('%')) found.aBase = i;
+    else if (found.cReal === undefined && hn === 'real') found.cReal = i;
+    else if (found.cReprog === undefined && hn === 'reprog') found.cReprog = i;
+    else if (found.cBase === undefined && hn === 'base') found.cBase = i;
+  });
+  return found;
+}
+
+// Trata os dois formatos que podem vir do Excel: serial numérico (célula formatada
+// como data) ou texto "dd/mm/aaaa" / "aaaa-mm-dd" (célula formatada como texto).
+function parseExcelDateCell(v) {
+  if (v === null || v === undefined || v === '') return null;
+  if (typeof v === 'number') {
+    if (v <= 25569 || v >= 60000) return null;
+    const ms = Math.round((v - 25569) * 86400 * 1000);
+    const d = new Date(ms);
+    return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  }
+  const s = String(v).trim();
+  let m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if (m) {
+    let yr = parseInt(m[3]); if (yr < 100) yr += 2000;
+    const d = new Date(yr, parseInt(m[2]) - 1, parseInt(m[1]));
+    return isNaN(d.getTime()) ? null : d;
+  }
+  m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (m) {
+    const d = new Date(parseInt(m[1]), parseInt(m[2]) - 1, parseInt(m[3]));
+    return isNaN(d.getTime()) ? null : d;
+  }
+  return null;
+}
+
+function minDate(arr) {
+  const valid = arr.filter(Boolean);
+  return valid.length ? new Date(Math.min(...valid.map(d => d.getTime()))) : null;
+}
+function maxDate(arr) {
+  const valid = arr.filter(Boolean);
+  return valid.length ? new Date(Math.max(...valid.map(d => d.getTime()))) : null;
+}
+// Pra término (fim) de um grupo que junta várias etapas: só faz sentido mostrar uma
+// data se TODAS as etapas do grupo já tiverem essa data preenchida — senão parece
+// que o grupo inteiro terminou quando só uma parte terminou. minDate/início continua
+// usando "a mais antiga entre as que existem" (começar não exige que tudo já comecou).
+function maxDateStrict(arr) {
+  return arr.some(d => !d) ? null : maxDate(arr);
+}
+function diffDias(a, b) { return Math.round((a.getTime() - b.getTime()) / 86400000); }
+function fmtDias(v) { return v === null ? '—' : (v >= 0 ? '+' : '') + v + ' dia' + (Math.abs(v) === 1 ? '' : 's'); }
+function fmtDate(d) {
+  if (!d) return '—';
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  return `${dd}/${mm}/${d.getFullYear()}`;
+}
+
+// Recebe uma matriz (array de arrays de células já separadas em colunas) e monta
+// a estrutura { rows, months, hasDatas }. Usada pelo parser de XLSX/XLS — ler o Excel
+// direto (em vez de CSV) preserva a precisão decimal original da "Contribuição", que
+// o CSV do Agilean trunca em 2 casas e distorce a curva acumulada.
+function processMatrix(matrix) {
+  if (matrix.length < 4) throw new Error('Arquivo muito curto — esperado 3 linhas de cabeçalho + dados');
+  const COL = { codigo:0, unidade:1, local:2, macroEtapa:3, etapa:4, data:5,
+                cReal:6, cReprog:7, cBase:8, aReal:9, aReprog:10, aBase:11,
+                iniPlanBase:-1, fimPlanBase:-1, iniPlan:-1, fimPlan:-1, iniReal:-1, fimReal:-1 };
+  (matrix[2] || []).map(h => String(h ?? '').trim().toLowerCase()).forEach((h, i) => {
+    if (h === 'código' || h === 'codigo') COL.codigo = i;
+    else if (h === 'unidade') COL.unidade = i;
+    else if (h === 'local') COL.local = i;
+    else if (h.includes('macro')) COL.macroEtapa = i;
+    else if (h === 'etapa') COL.etapa = i;
+    else if (h === 'data') COL.data = i;
+  });
+  // Colunas de % detectadas por texto de cabeçalho — sobrepõem os defaults de posição
+  // acima apenas quando encontradas; se não encontradas, mantém a posição original
+  // (compatibilidade com exportações antigas que não tinham os headers padronizados).
+  Object.assign(COL, detectPctColumns(matrix[2]));
+  Object.assign(COL, detectDateColumns(matrix[2], matrix[3]));
+  const rows = [];
+  for (let i = 3; i < matrix.length; i++) {
+    const cols = matrix[i];
+    if (!cols || cols.length < 9) continue;
+    const dataStr = String(cols[COL.data] ?? '').trim();
+    if (!dataStr) continue;
+    const dataParsed = parseMonthStr(dataStr);
+    if (!dataParsed) continue;
+    const unidade    = cleanText(cols[COL.unidade]);
+    const macroEtapa = cleanText(cols[COL.macroEtapa]);
+    if (!unidade && !macroEtapa) continue;
+    rows.push({
+      codigo:     cleanText(cols[COL.codigo]),
+      unidade:    unidade    || '(sem unidade)',
+      local:      cleanText(cols[COL.local]),
+      macroEtapa: macroEtapa || '(sem macro etapa)',
+      etapa:      cleanText(cols[COL.etapa]),
+      data:       dataParsed,
+      cReal:   parsePct(cols[COL.cReal]),
+      cReprog: parsePct(cols[COL.cReprog]),
+      cBase:   parsePct(cols[COL.cBase]),
+      aReal:   parsePct(cols[COL.aReal]),
+      aReprog: parsePct(cols[COL.aReprog]),
+      aBase:   parsePct(cols[COL.aBase]),
+      iniPlanBase: COL.iniPlanBase >= 0 ? parseExcelDateCell(cols[COL.iniPlanBase]) : null,
+      fimPlanBase: COL.fimPlanBase >= 0 ? parseExcelDateCell(cols[COL.fimPlanBase]) : null,
+      iniPlan: COL.iniPlan >= 0 ? parseExcelDateCell(cols[COL.iniPlan]) : null,
+      fimPlan: COL.fimPlan >= 0 ? parseExcelDateCell(cols[COL.fimPlan]) : null,
+      iniReal: COL.iniReal >= 0 ? parseExcelDateCell(cols[COL.iniReal]) : null,
+      fimReal: COL.fimReal >= 0 ? parseExcelDateCell(cols[COL.fimReal]) : null
+    });
+  }
+  if (rows.length === 0) throw new Error('Nenhum dado encontrado. Verifique o formato do arquivo.');
+
+  // Normaliza Base e Reprog independentemente para corrigir arredondamento do Agilean.
+  // Real não é normalizado: representa progresso parcial (não precisa somar 100%).
+  const sumBase   = rows.reduce((s, r) => s + r.cBase,   0);
+  const sumReprog = rows.reduce((s, r) => s + r.cReprog,  0);
+  if (sumBase   > 0 && Math.abs(sumBase   - 100) < 15) { const f = 100 / sumBase;   rows.forEach(r => { r.cBase   *= f; }); }
+  if (sumReprog > 0 && Math.abs(sumReprog - 100) < 15) { const f = 100 / sumReprog; rows.forEach(r => { r.cReprog *= f; }); }
+
+  const monthMap = new Map();
+  rows.forEach(r => { monthMap.set(r.data.label, r.data); });
+  const months = [...monthMap.values()].sort((a, b) => a.sortKey - b.sortKey);
+  const hasDatas = [COL.iniPlanBase, COL.fimPlanBase, COL.iniPlan, COL.fimPlan, COL.iniReal, COL.fimReal].some(c => c >= 0);
+  return { rows, months, hasDatas };
+}
+
+function parseXLSX(arrayBuffer) {
+  if (typeof XLSX === 'undefined') throw new Error('Biblioteca XLSX não carregada. Verifique a conexão com a internet.');
+  const wb = XLSX.read(arrayBuffer, { type: 'array' });
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  if (!ws) throw new Error('Planilha vazia ou sem abas.');
+  // raw:true preserva o valor numérico original (sem arredondamento de exibição).
+  const rawMatrix = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: '' });
+  const matrix = rawMatrix.filter(row => row.some(c => String(c).trim() !== ''));
+  return processMatrix(matrix);
+}
+
+// ─── File handling ─────────────────────────────────────────────────────────────
+function doDrop(e) {
+  e.preventDefault();
+  document.getElementById('uploadZone').classList.remove('drag-over');
+  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+}
+
+function handleFile(file) {
+  if (!file) return;
+  if (!/\.(xlsx|xls)$/i.test(file.name || '')) {
+    document.getElementById('infoFile').textContent = '✗ Formato não suportado — envie um arquivo .xlsx ou .xls (CSV não é aceito por causa do arredondamento)';
+    document.getElementById('infoFile').className = 'parse-info err';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const { rows, months, hasDatas } = parseXLSX(e.target.result);
+      S.rows = rows; S.months = months; S.hasDatas = hasDatas;
+      let lastIdx = -1;
+      months.forEach((m, idx) => {
+        if (rows.filter(r => r.data.label === m.label).reduce((s, r) => s + r.cReal, 0) > 0) lastIdx = idx;
+      });
+      S.cutoffIdx = lastIdx >= 0 ? lastIdx : months.length - 1;
+      const unidades = [...new Set(rows.map(r => r.unidade))].filter(Boolean);
+      const macros   = [...new Set(rows.map(r => r.macroEtapa))].filter(Boolean);
+      document.getElementById('infoFile').textContent = `✓ ${rows.length.toLocaleString('pt-BR')} registros — ${months.length} meses — ${unidades.length} unidades — ${macros.length} macro etapas${hasDatas ? ' — com datas de Previsto × Real' : ''}`;
+      document.getElementById('infoFile').className = 'parse-info ok';
+      document.getElementById('tag1').textContent = `${rows.length.toLocaleString('pt-BR')} reg.`;
+      document.getElementById('tag1').className = 'tag ok';
+      document.getElementById('num1').className = 'step-num done';
+      document.getElementById('num2').className = 'step-num active';
+      const sel = document.getElementById('selectCorte');
+      sel.innerHTML = '';
+      months.forEach((m, i) => {
+        const opt = document.createElement('option');
+        opt.value = i; opt.textContent = m.label;
+        if (i === S.cutoffIdx) opt.selected = true;
+        sel.appendChild(opt);
+      });
+      sel.disabled = false;
+      document.getElementById('btnGerar').disabled = false;
+      document.getElementById('tag2').textContent = 'Pronto';
+      document.getElementById('tag2').className = 'tag ok';
+      document.getElementById('infoCorte').textContent = `Auto-detectado: ${months[S.cutoffIdx].label}`;
+      document.getElementById('infoCorte').className = 'parse-info ok';
+      document.getElementById('introScreen').style.display = 'none';
+      document.getElementById('mainFlow').style.display = '';
+    } catch (err) {
+      document.getElementById('infoFile').textContent = '✗ ' + err.message;
+      document.getElementById('infoFile').className = 'parse-info err';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function voltarIntro(e) {
+  e.preventDefault();
+  document.getElementById('mainFlow').style.display = 'none';
+  document.getElementById('introScreen').style.display = '';
+  document.getElementById('resultado').innerHTML = '';
+  document.getElementById('configCard').style.display = 'flex';
+  document.getElementById('mainContainer').classList.remove('with-sidenav');
+}
+
+// Mede a altura real do header pra sidebar fixa começar exatamente abaixo dele.
+function ajustarOffsetHeader() {
+  const h = document.querySelector('header').offsetHeight;
+  document.documentElement.style.setProperty('--header-h', h + 'px');
+}
+ajustarOffsetHeader();
+
+function onCorteChange() {
+  const idx = parseInt(document.getElementById('selectCorte').value);
+  if (!isNaN(idx)) {
+    document.getElementById('infoCorte').textContent = `Selecionado: ${S.months[idx].label}`;
+    document.getElementById('infoCorte').className = 'parse-info ok';
+  }
+}
+
+// ─── Filtro (Unidade/Local/Macro Etapa/Etapa, compartilhado por todas as seções) ──
+function filterRowsBy(rows, f) {
+  return rows.filter(r =>
+    (!f.unidade.length    || f.unidade.includes(r.unidade)) &&
+    (!f.local.length      || f.local.includes(r.local)) &&
+    (!f.macroEtapa.length || f.macroEtapa.includes(r.macroEtapa)) &&
+    (!f.etapa.length      || f.etapa.includes(r.etapa))
+  );
+}
+function isFiltroAnaVazio(f) {
+  return !f.unidade.length && !f.local.length && !f.macroEtapa.length && !f.etapa.length;
+}
+function buildCurvaSAnalitico(f) {
+  const rows = filterRowsBy(S.rows, f);
+  const baseTotal = rows.reduce((s, r) => s + r.cBase, 0);
+  // Fora do escopo "todas", renormaliza para o filtro ir de 0 a 100% (igual à Curva S por Unidade do Sintético).
+  const fator = (!isFiltroAnaVazio(f) && baseTotal > 0) ? 100 / baseTotal : 1;
+  let bAcum = 0, rpAcum = 0, rAcum = 0;
+  return S.months.map((m, idx) => {
+    const mRows = rows.filter(r => r.data.label === m.label);
+    const bMes  = mRows.reduce((s, r) => s + r.cBase,   0) * fator;
+    const rpMes = mRows.reduce((s, r) => s + r.cReprog, 0) * fator;
+    const rMes  = idx <= S.cutoffIdx ? mRows.reduce((s, r) => s + r.cReal, 0) * fator : null;
+    bAcum += bMes; rpAcum += rpMes;
+    if (rMes !== null) rAcum += rMes;
+    return { label: m.label, bMes, bAcum, rpMes, rpAcum, rMes,
+             rAcum: idx <= S.cutoffIdx ? rAcum : null, isCutoff: idx === S.cutoffIdx };
+  });
+}
+// Agrupamento estilo "tabela dinâmica" — o usuário escolhe quais campos entram
+// e em que ordem (controle em renderGroupFieldsControl/toggleGroupField/moveGroupField).
+const FIELD_LABELS  = { unidade: 'Unidade', local: 'Local', macroEtapa: 'Macro Etapa', etapa: 'Etapa' };
+const FIELD_PLURALS = { unidade: 'unidades', local: 'locais', macroEtapa: 'macro etapas', etapa: 'etapas' };
+const GROUP_FIELD_DEFS = [
+  { key: 'unidade',    label: 'Unidade' },
+  { key: 'local',      label: 'Local' },
+  { key: 'macroEtapa', label: 'Macro Etapa' },
+  { key: 'etapa',      label: 'Etapa' }
+];
+function groupLabel()  { return _GROUP_FIELDS.map(f => FIELD_LABELS[f]).join(' › '); }
+function groupPlural() { return _GROUP_FIELDS.length === 1 ? FIELD_PLURALS[_GROUP_FIELDS[0]] : 'grupos'; }
+
+function buildPrevistoRealAnalitico(f, fields) {
+  const cutSet = new Set(S.months.slice(0, S.cutoffIdx + 1).map(m => m.label));
+  const baseRows = filterRowsBy(S.rows, f);
+  // "etapa" sozinho pode repetir nome entre atividades distintas — o código (quando
+  // existe) desambigua sem aparecer no rótulo, igual o antigo nível "Etapa" já fazia.
+  const useCodigo = fields.includes('etapa');
+  const keyFn = r => fields.map(fl => r[fl]).join('||') + (useCodigo && r.codigo ? '||' + r.codigo : '');
+  const labelFn = (rows) => fields.map(fl => rows[0][fl]).join(' › ');
+  const groupMap = new Map();
+  baseRows.forEach(r => {
+    const k = keyFn(r);
+    if (!groupMap.has(k)) groupMap.set(k, []);
+    groupMap.get(k).push(r);
+  });
+  const result = [];
+  groupMap.forEach((gRows) => {
+    const label = labelFn(gRows);
+    let bTotal = 0, bCut = 0, rpCut = 0, rCut = 0;
+    gRows.forEach(r => {
+      bTotal += r.cBase;
+      if (cutSet.has(r.data.label)) { bCut += r.cBase; rpCut += r.cReprog; rCut += r.cReal; }
+    });
+    const fimPlanBase = maxDateStrict(gRows.map(r => r.fimPlanBase));
+    const fimPlan      = maxDateStrict(gRows.map(r => r.fimPlan));
+    const fimReal       = maxDateStrict(gRows.map(r => r.fimReal));
+    // Desvio de prazo em dias: compara a baseline contra o término real (se já
+    // terminou) ou contra o planejado/reprogramado atual (se ainda não terminou,
+    // antecipando o atraso projetado). Sem baseline ou sem nenhum término pra
+    // comparar, fica null (exibido como "—") — nunca um número calculado a partir
+    // de data ausente.
+    const terminoEfetivo = fimReal || fimPlan;
+    const desvioPrazoDias = (fimPlanBase && terminoEfetivo) ? diffDias(terminoEfetivo, fimPlanBase) : null;
+    result.push({ label, bTotal, bCut, rpCut, rCut, dev: rCut - bCut,
+      iniPlanBase: minDate(gRows.map(r => r.iniPlanBase)), fimPlanBase,
+      iniPlan: minDate(gRows.map(r => r.iniPlan)), fimPlan,
+      iniReal: minDate(gRows.map(r => r.iniReal)), fimReal,
+      desvioPrazoDias });
+  });
+  return result.sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'));
+}
+// Opções em cascata: cada campo só lista valores compatíveis com os filtros já escolhidos acima dele.
+function anaFieldOptions(field) {
+  const order = ['unidade', 'local', 'macroEtapa', 'etapa'];
+  const upstream = { unidade: [], local: [], macroEtapa: [], etapa: [] };
+  for (const k of order) {
+    if (k === field) break;
+    upstream[k] = _ANA_F[k];
+  }
+  const rows = filterRowsBy(S.rows, upstream);
+  return [...new Set(rows.map(r => r[field]))].filter(Boolean).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+}
+function anaScopeLabel() {
+  const parts = [];
+  if (_ANA_F.unidade.length)    parts.push('Unidade: ' + _ANA_F.unidade.join(', '));
+  if (_ANA_F.local.length)      parts.push('Local: ' + _ANA_F.local.join(', '));
+  if (_ANA_F.macroEtapa.length) parts.push('Macro Etapa: ' + _ANA_F.macroEtapa.join(', '));
+  if (_ANA_F.etapa.length)      parts.push('Etapa: ' + _ANA_F.etapa.join(', '));
+  return parts.length ? parts.join(' · ') : 'Todas as unidades, locais e etapas';
+}
+
+function projecaoTermino(curveData) {
+  const cutIdx = S.cutoffIdx;
+  if (cutIdx < 0 || !curveData.length) return null;
+  const cutRow  = curveData.find(r => r.isCutoff);
+  const realAcum = cutRow ? (cutRow.rAcum || 0) : 0;
+  if (realAcum >= 99.5) return { label: 'Concluído', avg: 0, months: 0 };
+  const n = Math.min(3, cutIdx + 1);
+  // Usa o Real Mensal já calculado em curveData (respeita o filtro/renormalização
+  // aplicados em buildCurvaSAnalitico) em vez de recalcular a partir de S.rows —
+  // somar S.rows direto ignoraria o filtro ativo e desalinharia da Curva S exibida.
+  let sumReal = 0;
+  for (let i = cutIdx - n + 1; i <= cutIdx; i++) sumReal += curveData[i].rMes || 0;
+  const avgMonthly = sumReal / n;
+  if (avgMonthly <= 0) return null;
+  const remaining  = 100 - realAcum;
+  const monthsToEnd = Math.ceil(remaining / avgMonthly);
+  return { label: addMonthsStr(S.months[cutIdx].sortKey, monthsToEnd), avg: avgMonthly, months: monthsToEnd };
+}
+
+function addMonthsStr(sortKey, n) {
+  let yr = Math.floor(sortKey / 100), mo = (sortKey % 100) + n;
+  while (mo > 12) { mo -= 12; yr++; }
+  const PT = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  return PT[mo] + '/' + yr;
+}
+
+// ─── Analysis entry ────────────────────────────────────────────────────────────
+function gerarAnalise() {
+  const cutoffIdx = parseInt(document.getElementById('selectCorte').value);
+  if (isNaN(cutoffIdx)) return;
+  S.cutoffIdx = cutoffIdx;
+  const cutLabel = S.months[cutoffIdx].label;
+  _ANA_F = { unidade: [], local: [], macroEtapa: [], etapa: [] };
+  _GROUP_FIELDS = ['macroEtapa'];
+  _GROUP_PANEL_OPEN = false;
+  _STATUS_PRAZO_FILTER = [];
+  _STATUS_PRAZO_PANEL_OPEN = false;
+  _SEM_INI = '';
+  _SEM_FIM = '';
+  _SEM_QUEBRAR = false;
+  _EXP_ABAS = { capa: true, kpis: true, curva: true, pesos: true, prazos: true, desvios: true };
+  _ACTIVE_SECTION = 'geral';
+  _CS = buildCurvaSAnalitico(_ANA_F);
+  _ED = buildPrevistoRealAnalitico(_ANA_F, _GROUP_FIELDS);
+  renderResultado(cutLabel);
+  document.getElementById('mainContainer').classList.add('with-sidenav');
+  document.getElementById('num2').className = 'step-num done';
+  document.getElementById('tag2').textContent = cutLabel;
+  document.getElementById('configCard').style.display = 'none';
+}
+
+function toggleConfigBar() {
+  document.getElementById('configCard').style.display = 'flex';
+  document.getElementById('sideContentWrap').style.display = 'none';
+}
+
+// ─── Formatting ────────────────────────────────────────────────────────────────
+function p(v, d)  { d = d === undefined ? 2 : d; return v === null ? '—' : v.toFixed(d) + '%'; }
+function pp(v)    { return (v >= 0 ? '+' : '') + v.toFixed(2) + ' p.p.'; }
+function px(v)    { return v === null ? '' : v.toFixed(2).replace('.', ',') + '%'; }
+function ppx(v)   { return (v >= 0 ? '+' : '') + v.toFixed(2).replace('.', ',') + ' p.p.'; }
+
+// Arredondamento por "maior resto": garante que a SOMA dos valores arredondados
+// (ex: contribuição de cada mês) bata exatamente com a soma real arredondada —
+// arredondar cada valor isoladamente (toFixed) pode deixar a soma da coluna com
+// 1-2 centésimos de diferença, o que quebra validações estritas (Power BI trava
+// se a soma não for exatamente 100%). Quem tem o maior resto fracionário recebe
+// o centésimo que falta, um por um, até a soma fechar.
+function arredondarSomaExata(valores, decimais) {
+  const fator = Math.pow(10, decimais);
+  const limpos = valores.map(v => v || 0);
+  const somaReal = limpos.reduce((s, v) => s + v, 0);
+  const totalArred = Math.round(somaReal * fator);
+  const piso = limpos.map(v => Math.floor(v * fator));
+  const somaPiso = piso.reduce((s, v) => s + v, 0);
+  const faltam = totalArred - somaPiso;
+  const ordem = limpos
+    .map((v, i) => ({ i, frac: v * fator - piso[i] }))
+    .sort((a, b) => b.frac - a.frac);
+  const resultado = [...piso];
+  for (let k = 0; k < faltam && ordem.length; k++) resultado[ordem[k % ordem.length].i] += 1;
+  return resultado.map(v => v / fator);
+}
+// Mesma coisa, mas preserva null nas posições que não entram na soma (ex: meses futuros).
+function arredondarComNulos(valores, decimais) {
+  const idx = [], validos = [];
+  valores.forEach((v, i) => { if (v !== null) { idx.push(i); validos.push(v); } });
+  const ajustados = arredondarSomaExata(validos, decimais);
+  const resultado = valores.map(() => null);
+  idx.forEach((origI, k) => { resultado[origI] = ajustados[k]; });
+  return resultado;
+}
+function cls(v)   { if (v === null || Math.abs(v) < 0.005) return 'zer'; return v > 0 ? 'pos' : 'neg'; }
+// Sinal inverso de cls(): em prazo, positivo (terminou DEPOIS da base) é atraso (vermelho);
+// em % físico positivo é avanço (verde) — não dá pra reaproveitar cls() pros dois.
+function clsDias(v) { if (v === null) return 'muted'; if (v === 0) return 'zer'; return v > 0 ? 'neg' : 'pos'; }
+function statusPill(v) {
+  if (Math.abs(v) < 0.005) return '<span class="pill zer">Em dia</span>';
+  return v > 0 ? '<span class="pill pos">Adiantado</span>' : '<span class="pill neg">Atrasado</span>';
+}
+function copyFeedback(btnId) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  const orig = btn.innerHTML;
+  btn.textContent = '✓ Copiado!';
+  btn.style.cssText = 'color:var(--green);border-color:var(--green);border:1px solid;padding:9px 18px;border-radius:7px;font-family:Sora,sans-serif;font-size:13px;font-weight:600;cursor:pointer;background:transparent';
+  setTimeout(() => { btn.innerHTML = orig; btn.style.cssText = ''; }, 2000);
+}
+function copyTSV(tsv, btnId) { navigator.clipboard.writeText(tsv).then(() => copyFeedback(btnId)).catch(() => {}); }
+
+// ─── Render principal ──────────────────────────────────────────────────────────
+const SECTION_TITLES = {
+  geral: 'Informações Gerais', curva: 'Curva S', previsto: 'Análise de Pesos',
+  marcos: 'Análise de Prazos', desvios: 'Análise de Desvios', semanal: 'Resumo Semanal', export: 'Exportar Resumo Geral'
+};
+
+function renderResultado(cutLabel) {
+  const div = document.getElementById('resultado');
+  div.innerHTML = `
+    <div class="analysis-layout">
+      <nav class="side-nav">
+        <div class="sidenav-corte" onclick="toggleConfigBar()">
+          <div class="sidenav-corte-label">Mês de corte</div>
+          <div class="sidenav-corte-val">${cutLabel}</div>
+        </div>
+        <button class="side-nav-item active" onclick="switchSection('geral',this)"><span class="side-nav-icon">📊</span>Informações Gerais</button>
+        <button class="side-nav-item" onclick="switchSection('curva',this)"><span class="side-nav-icon">📈</span>Curva S</button>
+        <button class="side-nav-item" onclick="switchSection('previsto',this)"><span class="side-nav-icon">📋</span>Análise de Pesos</button>
+        <button class="side-nav-item" onclick="switchSection('marcos',this)"><span class="side-nav-icon">🚩</span>Análise de Prazos</button>
+        <button class="side-nav-item" onclick="switchSection('desvios',this)"><span class="side-nav-icon">⚠️</span>Análise de Desvios</button>
+        <!-- Resumo Semanal oculto — em revisão de conceito -->
+        <!-- <button class="side-nav-item" onclick="switchSection('semanal',this)"><span class="side-nav-icon">📅</span>Resumo Semanal</button> -->
+        <button class="side-nav-item" onclick="switchSection('export',this)"><span class="side-nav-icon">📤</span>Exportar Resumo Geral</button>
+
+        <div class="sidenav-divider"><span class="sd-label">Filtros</span><span class="sd-line"></span><button class="sf-clear-all" onclick="limparFiltroAna()">Limpar</button></div>
+        <div class="sidenav-filters">
+          <div class="sf-field"><span class="sf-label">Unidade</span><div class="popfilter" id="pfUnidade"></div></div>
+          <div class="sf-field"><span class="sf-label">Local</span><div class="popfilter" id="pfLocal"></div></div>
+          <div class="sf-field"><span class="sf-label">Macro Etapa</span><div class="popfilter" id="pfMacro"></div></div>
+          <div class="sf-field"><span class="sf-label">Etapa</span><div class="popfilter" id="pfEtapa"></div></div>
+        </div>
+      </nav>
+      <div class="side-content" id="sideContentWrap">
+        <div class="content-topbar"><span class="content-topbar-title" id="contentTitle">${SECTION_TITLES.geral}</span></div>
+        <div id="sectionContent">${renderSection('geral')}</div>
+      </div>
+    </div>`;
+  buildSidebarFilter('pfUnidade', 'unidade');
+  buildSidebarFilter('pfLocal', 'local');
+  buildSidebarFilter('pfMacro', 'macroEtapa');
+  buildSidebarFilter('pfEtapa', 'etapa');
+  div.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function switchSection(id, el) {
+  document.getElementById('configCard').style.display = 'none';
+  document.getElementById('sideContentWrap').style.display = '';
+  _ACTIVE_SECTION = id;
+  _GROUP_PANEL_OPEN = false;
+  _STATUS_PRAZO_PANEL_OPEN = false;
+  document.querySelectorAll('.side-nav-item').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  putSection(id);
+  document.getElementById('contentTitle').textContent = SECTION_TITLES[id] || '';
+}
+
+function putSection(id) {
+  document.getElementById('sectionContent').innerHTML = renderSection(id);
+  if (id === 'curva') afterRenderCurva();
+}
+
+// ─── Despacho de seções ────────────────────────────────────────────────────────
+function renderSection(id) {
+  if (id === 'geral')    return renderSectionGeral();
+  if (id === 'curva')    return renderCurvaSAnalitico();
+  if (id === 'previsto') return renderEtapasTabAnalitico();
+  if (id === 'marcos')   return renderSectionMarcos();
+  if (id === 'desvios')  return renderSectionDesvios();
+  if (id === 'semanal')  return renderSectionSemanal();
+  if (id === 'export')   return renderSectionExport();
+  return '';
+}
+
+
+// ─── Seção: Informações Gerais ─────────────────────────────────────────────────
+function renderSectionGeral() {
+  // Respeita o filtro global da sidebar (Unidade/Local/Macro Etapa/Etapa) —
+  // os KPIs e contagens abaixo refletem o escopo filtrado, igual às demais seções.
+  const filteredRows = filterRowsBy(S.rows, _ANA_F);
+  const curvaGlobal = buildCurvaSAnalitico(_ANA_F);
+  const cutLabel = S.months[S.cutoffIdx].label;
+  const cutRow   = curvaGlobal.find(r => r.isCutoff);
+  const bAcum    = cutRow ? cutRow.bAcum : 0;
+  const rAcum    = cutRow ? (cutRow.rAcum || 0) : 0;
+  const devGlob  = rAcum - bAcum;
+  const idp      = bAcum > 0 ? (rAcum / bAcum) : 0;
+  const proj     = projecaoTermino(curvaGlobal);
+  const unidades = [...new Set(filteredRows.map(r => r.unidade))].filter(Boolean);
+  const macros   = [...new Set(filteredRows.map(r => r.macroEtapa))].filter(Boolean);
+  return `
+    <div class="result-header">
+      <div class="result-sub">Resumo da base carregada e indicadores até o corte · ${anaScopeLabel()}</div>
+    </div>
+    <div class="kpi-row-4c">
+      <div class="kpi"><div class="kpi-label">Registros</div><div class="kpi-val">${filteredRows.length.toLocaleString('pt-BR')}</div><div class="kpi-sub">linhas no escopo filtrado</div></div>
+      <div class="kpi"><div class="kpi-label">Meses</div><div class="kpi-val">${S.months.length}</div><div class="kpi-sub">${S.months[0].label} a ${S.months[S.months.length - 1].label}</div></div>
+      <div class="kpi"><div class="kpi-label">Unidades</div><div class="kpi-val">${unidades.length}</div><div class="kpi-sub">no escopo filtrado</div></div>
+      <div class="kpi"><div class="kpi-label">Macro Etapas</div><div class="kpi-val">${macros.length}</div><div class="kpi-sub">no escopo filtrado</div></div>
+    </div>
+    <div class="kpi-row" style="margin-bottom:12px">
+      <div class="kpi">
+        <div class="kpi-label">Mês de Corte</div>
+        <div class="kpi-val" style="font-size:17px">${cutLabel}</div>
+        <div class="kpi-sub">Referência de análise</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Base Acumulado</div>
+        <div class="kpi-val">${p(bAcum)}</div>
+        <div class="kpi-sub">Previsto até o corte</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Real Acumulado</div>
+        <div class="kpi-val">${p(rAcum)}</div>
+        <div class="kpi-sub">Executado até o corte</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Desvio Global</div>
+        <div class="kpi-val ${cls(devGlob)}">${pp(devGlob)}</div>
+        <div class="kpi-sub">${devGlob > 0.005 ? '✓ Adiantada' : devGlob < -0.005 ? '⚠ Atrasada' : '= Em dia'}</div>
+      </div>
+    </div>
+    <div class="kpi-row" style="grid-template-columns:repeat(3,1fr)">
+      <div class="kpi">
+        <div class="kpi-label">IDP — Índice de Desempenho</div>
+        <div class="kpi-val ${idp >= 1 ? 'pos' : 'neg'}">${idp.toFixed(2)}</div>
+        <div class="kpi-sub">${idp >= 1.01 ? 'Adiantado' : idp <= 0.99 ? 'Atrasado' : 'Em dia'} • Real ÷ Base até corte</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Projeção de Término</div>
+        <div class="kpi-val" style="font-size:18px">${proj ? proj.label : '—'}</div>
+        <div class="kpi-sub">${proj ? `Ritmo médio: ${proj.avg.toFixed(2)}%/mês (últimos 3 meses)` : 'Dados insuficientes'}</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Meses p/ Conclusão</div>
+        <div class="kpi-val ${proj && proj.months > 0 ? '' : 'zer'}">${proj ? (proj.months > 0 ? proj.months : '—') : '—'}</div>
+        <div class="kpi-sub">A partir de ${cutLabel}</div>
+      </div>
+    </div>`;
+}
+
+// ─── Painel de Exportação ──────────────────────────────────────────────────────
+function toggleExpAba(key) {
+  _EXP_ABAS[key] = !_EXP_ABAS[key];
+  document.getElementById('sectionContent').innerHTML = renderSection('export');
+}
+function expSelectAll() {
+  Object.keys(_EXP_ABAS).forEach(k => { _EXP_ABAS[k] = true; });
+  document.getElementById('sectionContent').innerHTML = renderSection('export');
+}
+function expClearAll() {
+  Object.keys(_EXP_ABAS).forEach(k => { _EXP_ABAS[k] = false; });
+  document.getElementById('sectionContent').innerHTML = renderSection('export');
+}
+function renderSectionExport() {
+  const hoje = new Date();
+  const dtStr = `${String(hoje.getDate()).padStart(2,'0')}-${String(hoje.getMonth()+1).padStart(2,'0')}-${hoje.getFullYear()}`;
+  const nomeArq = `Analise Fisica ${S.months[S.cutoffIdx]?.label || 'Projeto'} · ${dtStr}.xlsx`;
+  const nivel = groupLabel();
+  const DEFS = [
+    { key: 'capa',    icon: '📋', label: 'Capa',              desc: 'Metadados, escopo e data de geração' },
+    { key: 'kpis',    icon: '📊', label: 'KPIs Gerais',        desc: 'IDP, desvio global e projeção de término' },
+    { key: 'curva',   icon: '📈', label: 'Curva S',            desc: 'Evolução mensal Base / Reprog / Real' },
+    { key: 'pesos',   icon: '📋', label: 'Análise de Pesos',   desc: `Previsto × Real · nível: ${nivel}` },
+    { key: 'prazos',  icon: '🚩', label: 'Análise de Prazos',  desc: S.hasDatas ? `Datas marco e desvio de prazo · ${nivel}` : 'Requer colunas de data no arquivo', disabled: !S.hasDatas },
+    { key: 'desvios', icon: '⚠️', label: 'Análise de Desvios', desc: `Ranking do maior atraso ao maior avanço · ${nivel}` },
+  ];
+  const cards = DEFS.map(a => {
+    const on = _EXP_ABAS[a.key] && !a.disabled;
+    return `
+    <div class="exp-card${on ? ' exp-card-on' : ''}${a.disabled ? ' exp-card-off' : ''}"
+         ${!a.disabled ? `onclick="toggleExpAba('${a.key}')"` : ''}>
+      <div style="display:flex;align-items:flex-start;gap:12px">
+        <span style="font-size:20px;line-height:1;flex-shrink:0;margin-top:1px">${a.icon}</span>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:700;color:${a.disabled ? 'var(--text-muted)' : 'var(--navy)'};margin-bottom:3px">${a.label}</div>
+          <div style="font-size:11px;color:var(--text-muted);line-height:1.4">${a.desc}</div>
+        </div>
+        <div style="width:18px;height:18px;border-radius:4px;flex-shrink:0;margin-top:2px;border:2px solid ${on ? 'var(--blue-bright)' : 'var(--border)'};background:${on ? 'var(--blue-bright)' : '#fff'};display:flex;align-items:center;justify-content:center;transition:all .15s">
+          ${on ? '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3.5"><polyline points="20 6 9 17 4 12"/></svg>' : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  const qtd = Object.entries(_EXP_ABAS).filter(([k, v]) => v && !DEFS.find(d => d.key === k)?.disabled).length;
+  return `
+    <div class="result-header">
+      <div class="result-sub">${anaScopeLabel()} · agrupamento: ${nivel}</div>
+    </div>
+    <div class="exp-grid">${cards}</div>
+    <div class="exp-footer">
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn btn-outline" onclick="expSelectAll()">Selecionar todas</button>
+        <button class="btn btn-outline" onclick="expClearAll()">Limpar</button>
+        <span style="font-size:11px;color:var(--text-muted);margin-left:4px">${qtd} aba${qtd !== 1 ? 's' : ''} selecionada${qtd !== 1 ? 's' : ''}</span>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;font-style:italic">📁 ${nomeArq}</div>
+        <button class="btn btn-green" id="btnExportarExcel" onclick="exportarExcel()" ${qtd === 0 ? 'disabled' : ''}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Gerar Excel${qtd > 0 ? ' (' + qtd + ' aba' + (qtd !== 1 ? 's' : '') + ')' : ''}
+        </button>
+      </div>
+    </div>`;
+}
+
+// ─── Seção: Datas Marcos ────────────────────────────────────────────────────────
+
+// ─── Status Prazo (compartilhado por Datas Marcos e Desvios) — baseado no desvio em dias vs. baseline ─────
+// 2 estados (já terminou ou não) × 3 direções (adiantado/no prazo/atrasado) =
+// vocabulário consistente, em vez de 6 frases soltas sem padrão.
+const STATUS_PRAZO_DEFS = [
+  { key: 'concluido_adiantado', label: 'Concluído adiantado' },
+  { key: 'concluido_no_prazo',  label: 'Concluído no prazo' },
+  { key: 'concluido_atrasado',  label: 'Concluído atrasado' },
+  { key: 'tendencia_adiantado', label: 'Tendência: adiantado' },
+  { key: 'tendencia_no_prazo',  label: 'Tendência: no prazo' },
+  { key: 'tendencia_atrasado',  label: 'Tendência: atrasado' },
+  { key: 'sem_previsao',        label: 'Sem previsão' }
+];
+function statusPrazoInfo(r) {
+  if (r.desvioPrazoDias === null) return { key: 'sem_previsao', label: 'Sem previsão', cls: 'muted' };
+  const concluido = !!r.fimReal;
+  const dir = r.desvioPrazoDias < 0 ? 'adiantado' : r.desvioPrazoDias > 0 ? 'atrasado' : 'no_prazo';
+  const key = (concluido ? 'concluido_' : 'tendencia_') + dir;
+  const label = STATUS_PRAZO_DEFS.find(d => d.key === key).label;
+  const cls = dir === 'adiantado' ? 'pos' : dir === 'atrasado' ? 'neg' : 'zer';
+  return { key, label, cls };
+}
+function renderStatusPrazoFilter() {
+  const checks = STATUS_PRAZO_DEFS.map(d => `
+    <label class="popfilter-opt">
+      <input type="checkbox" onchange="toggleStatusPrazoFilter('${d.key}')" ${_STATUS_PRAZO_FILTER.includes(d.key) ? 'checked' : ''}>
+      ${d.label}
+    </label>`).join('');
+  const count = _STATUS_PRAZO_FILTER.length;
+  return `
+    <div class="filter-bar">
+      <span class="config-label">Status Prazo</span>
+      <div class="popfilter${_STATUS_PRAZO_PANEL_OPEN ? ' open' : ''}" style="position:relative">
+        <button class="sf-btn" type="button" style="width:auto;min-width:190px" onclick="toggleStatusPrazoPanel()">
+          <span class="lbl">${count ? count + ' selecionado' + (count > 1 ? 's' : '') : 'Todos'}</span><span class="arrow">▾</span>
+        </button>
+        <div class="popfilter-panel" style="position:absolute;top:calc(100% + 6px);left:0;${_STATUS_PRAZO_PANEL_OPEN ? 'display:block' : ''}">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border)">
+            <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted)">Status Prazo</span>
+            <button type="button" onclick="closeStatusPrazoPanel()" style="border:none;background:none;cursor:pointer;color:var(--text-muted);font-size:14px;line-height:1;padding:2px 4px" title="Fechar">✕</button>
+          </div>
+          <div class="popfilter-list">${checks}</div>
+          <div class="popfilter-footer">
+            <button type="button" onclick="selectAllStatusPrazoFilter()">Selecionar todos</button>
+            <button type="button" onclick="clearStatusPrazoFilter()">Limpar</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+function toggleStatusPrazoPanel() {
+  _STATUS_PRAZO_PANEL_OPEN = !_STATUS_PRAZO_PANEL_OPEN;
+  putSection(_ACTIVE_SECTION);
+}
+function closeStatusPrazoPanel() {
+  _STATUS_PRAZO_PANEL_OPEN = false;
+  putSection(_ACTIVE_SECTION);
+}
+function toggleStatusPrazoFilter(key) {
+  _STATUS_PRAZO_FILTER = _STATUS_PRAZO_FILTER.includes(key) ? _STATUS_PRAZO_FILTER.filter(k => k !== key) : [..._STATUS_PRAZO_FILTER, key];
+  _STATUS_PRAZO_PANEL_OPEN = true;
+  putSection(_ACTIVE_SECTION);
+}
+function selectAllStatusPrazoFilter() {
+  _STATUS_PRAZO_FILTER = STATUS_PRAZO_DEFS.map(d => d.key);
+  _STATUS_PRAZO_PANEL_OPEN = true;
+  putSection(_ACTIVE_SECTION);
+}
+function clearStatusPrazoFilter() {
+  _STATUS_PRAZO_FILTER = [];
+  _STATUS_PRAZO_PANEL_OPEN = true;
+  putSection(_ACTIVE_SECTION);
+}
+
+// ─── Controle "Agrupar por" — tabela dinâmica (campos + ordem escolhidos pelo usuário) ──
+function renderGroupFieldsControl() {
+  const checks = GROUP_FIELD_DEFS.map(d => `
+    <label class="popfilter-opt">
+      <input type="checkbox" onchange="toggleGroupField('${d.key}')" ${_GROUP_FIELDS.includes(d.key) ? 'checked' : ''}>
+      ${d.label}
+    </label>`).join('');
+  const order = _GROUP_FIELDS.map((f, i) => `
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 14px;font-size:12px">
+      <span style="flex:1;color:var(--navy)">${i + 1}. ${FIELD_LABELS[f]}</span>
+      <button type="button" onclick="moveGroupField('${f}',-1)" ${i === 0 ? 'disabled' : ''} style="border:none;background:none;cursor:pointer;color:var(--blue-bright);font-size:11px;opacity:${i === 0 ? '.3' : '1'}">▲</button>
+      <button type="button" onclick="moveGroupField('${f}',1)" ${i === _GROUP_FIELDS.length - 1 ? 'disabled' : ''} style="border:none;background:none;cursor:pointer;color:var(--blue-bright);font-size:11px;opacity:${i === _GROUP_FIELDS.length - 1 ? '.3' : '1'}">▼</button>
+    </div>`).join('');
+  return `
+    <div class="filter-bar">
+      <span class="config-label">Agrupar por</span>
+      <div class="popfilter${_GROUP_PANEL_OPEN ? ' open' : ''}" style="position:relative">
+        <button class="sf-btn" type="button" style="width:auto;min-width:220px" onclick="toggleGroupPanel()">
+          <span class="lbl">${groupLabel()}</span><span class="arrow">▾</span>
+        </button>
+        <div class="popfilter-panel" style="position:absolute;top:calc(100% + 6px);left:0;${_GROUP_PANEL_OPEN ? 'display:block' : ''}">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border)">
+            <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted)">Campos</span>
+            <button type="button" onclick="closeGroupPanel()" style="border:none;background:none;cursor:pointer;color:var(--text-muted);font-size:14px;line-height:1;padding:2px 4px" title="Fechar">✕</button>
+          </div>
+          <div class="popfilter-list">${checks}</div>
+          <div style="border-top:1px solid var(--border);padding:6px 0;background:var(--bg)">
+            <div style="padding:4px 14px 2px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted)">Ordem da concatenação</div>
+            ${order}
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+function toggleGroupPanel() {
+  _GROUP_PANEL_OPEN = !_GROUP_PANEL_OPEN;
+  putSection(_ACTIVE_SECTION);
+}
+function closeGroupPanel() {
+  _GROUP_PANEL_OPEN = false;
+  putSection(_ACTIVE_SECTION);
+}
+function toggleGroupField(field) {
+  if (_GROUP_FIELDS.includes(field)) {
+    if (_GROUP_FIELDS.length > 1) _GROUP_FIELDS = _GROUP_FIELDS.filter(f => f !== field);
+    // mantém ao menos 1 campo selecionado — não dá pra ter tabela sem agrupamento.
+  } else {
+    _GROUP_FIELDS = [..._GROUP_FIELDS, field];
+  }
+  _GROUP_PANEL_OPEN = true;
+  recomputeGroupFields();
+}
+function moveGroupField(field, dir) {
+  const i = _GROUP_FIELDS.indexOf(field);
+  const j = i + dir;
+  if (j < 0 || j >= _GROUP_FIELDS.length) return;
+  const arr = [..._GROUP_FIELDS];
+  [arr[i], arr[j]] = [arr[j], arr[i]];
+  _GROUP_FIELDS = arr;
+  _GROUP_PANEL_OPEN = true;
+  recomputeGroupFields();
+}
+function recomputeGroupFields() {
+  _ED = buildPrevistoRealAnalitico(_ANA_F, _GROUP_FIELDS);
+  putSection(_ACTIVE_SECTION);
+}
+function renderSectionMarcos() {
+  const nivel = groupLabel();
+  if (!S.hasDatas) {
+    return `
+      <div class="result-header"><div class="result-sub">${anaScopeLabel()}</div></div>
+      <div style="padding:24px;text-align:center;color:var(--text-muted);border:1px solid var(--border);border-radius:10px;background:var(--surface2)">
+        ℹ A base carregada não tem colunas de data (Início/Término Planejado e Real) — recarregue com essas colunas habilitadas no export do Agilean pra ver os marcos aqui.
+      </div>`;
+  }
+  const rows = _ED.map(r => {
+    const sp = statusPrazoInfo(r);
+    return `
+    <tr>
+      <td>${r.label}</td>
+      <td>${fmtDate(r.iniPlanBase)}</td><td>${fmtDate(r.fimPlanBase)}</td>
+      <td>${fmtDate(r.iniPlan)}</td><td>${fmtDate(r.fimPlan)}</td>
+      <td>${fmtDate(r.iniReal)}</td><td>${fmtDate(r.fimReal)}</td>
+      <td class="${clsDias(r.desvioPrazoDias)}">${fmtDias(r.desvioPrazoDias)}</td>
+      <td><span class="pill ${sp.cls}">${sp.label}</span></td>
+    </tr>`;
+  }).join('');
+  return `
+    <div class="result-header">
+      <div class="result-sub">${anaScopeLabel()} · Nível: ${nivel}</div>
+      <button class="btn btn-outline" id="btnCopyMarcos" onclick="doCopyMarcos()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copiar para Excel
+      </button>
+    </div>
+    ${renderGroupFieldsControl()}
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>${nivel}</th>
+        <th>Início Plan. Base</th><th>Término Plan. Base</th>
+        <th>Início Prev.</th><th>Término Prev.</th>
+        <th>Início Real</th><th>Término Real</th>
+        <th>Desvio Prazo</th><th>Status</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+}
+function doCopyMarcos() {
+  const nivel = groupLabel();
+  const hdr = [nivel, 'Início Planejado Base', 'Término Planejado Base', 'Início Planejado', 'Término Planejado', 'Início Real', 'Término Real', 'Desvio Prazo (dias)', 'Status'];
+  const rows = _ED.map(r => [r.label, fmtDate(r.iniPlanBase), fmtDate(r.fimPlanBase), fmtDate(r.iniPlan), fmtDate(r.fimPlan), fmtDate(r.iniReal), fmtDate(r.fimReal),
+    r.desvioPrazoDias === null ? '' : r.desvioPrazoDias, statusPrazoInfo(r).label]);
+  copyTSV([hdr, ...rows].map(r => r.join('\t')).join('\n'), 'btnCopyMarcos');
+}
+
+// ─── Seção: Desvios ─────────────────────────────────────────────────────────────
+function renderSectionDesvios() {
+  const nivel   = groupLabel();
+  const plural  = groupPlural();
+  const sorted  = [..._ED].sort((a, b) => a.dev - b.dev); // maior atraso primeiro
+  const ahead   = _ED.filter(r => r.dev > 0.005).length;
+  const behind  = _ED.filter(r => r.dev < -0.005).length;
+  const ontrack = _ED.length - ahead - behind;
+  // Filtro por Status Prazo só existe com colunas de data carregadas, e só afeta
+  // quais linhas aparecem nesta tabela — os KPIs acima continuam sobre todo _ED
+  // (são sobre o desvio físico, conceito diferente do status de prazo).
+  const visiveis = (S.hasDatas && _STATUS_PRAZO_FILTER.length)
+    ? sorted.filter(r => _STATUS_PRAZO_FILTER.includes(statusPrazoInfo(r).key))
+    : sorted;
+  const rows = visiveis.map(r => {
+    const sp = S.hasDatas ? statusPrazoInfo(r) : null;
+    return `
+    <tr>
+      <td>${r.label}</td>
+      <td>${p(r.bCut)}</td><td>${p(r.rpCut)}</td><td>${p(r.rCut)}</td>
+      <td><span class="pill ${cls(r.dev)}">${pp(r.dev)}</span></td>
+      <td>${statusPill(r.dev)}</td>
+      ${S.hasDatas ? `
+      <td>${fmtDate(r.iniPlanBase)}</td><td>${fmtDate(r.fimPlanBase)}</td>
+      <td>${fmtDate(r.iniPlan)}</td><td>${fmtDate(r.fimPlan)}</td>
+      <td>${fmtDate(r.iniReal)}</td><td>${fmtDate(r.fimReal)}</td>
+      <td class="${clsDias(r.desvioPrazoDias)}">${fmtDias(r.desvioPrazoDias)}</td>
+      <td><span class="pill ${sp.cls}">${sp.label}</span></td>` : ''}
+    </tr>`;
+  }).join('');
+  return `
+    <div class="result-header">
+      <div class="result-sub">${anaScopeLabel()} · Nível: ${nivel} · ordenado do maior atraso físico ao maior avanço</div>
+      <button class="btn btn-outline" id="btnCopyDesvios" onclick="doCopyDesvios()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copiar para Excel
+      </button>
+    </div>
+    ${renderGroupFieldsControl()}
+    ${S.hasDatas ? renderStatusPrazoFilter() : ''}
+    <div class="kpi-row-3" style="margin-bottom:16px">
+      <div class="kpi"><div class="kpi-label">Atrasadas</div><div class="kpi-val neg">${behind}</div><div class="kpi-sub">${plural} · desvio físico</div></div>
+      <div class="kpi"><div class="kpi-label">Em dia</div><div class="kpi-val zer">${ontrack}</div><div class="kpi-sub">${plural} · desvio físico</div></div>
+      <div class="kpi"><div class="kpi-label">Adiantadas</div><div class="kpi-val pos">${ahead}</div><div class="kpi-sub">${plural} · desvio físico</div></div>
+    </div>
+    ${!S.hasDatas ? `<div style="font-size:11.5px;color:var(--text-muted);margin-bottom:12px">ℹ Sem colunas de data na base carregada — mostrando só o desvio físico (%). Recarregue com Início/Término Planejado e Real pra ver também a análise de prazo.</div>` : ''}
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>${nivel}</th><th>Base até Corte</th><th>Reprog até Corte</th><th>Real até Corte</th><th>Desvio (R−B)</th><th>Status</th>
+        ${S.hasDatas ? `
+        <th>Início Plan. Base</th><th>Término Plan. Base</th>
+        <th>Início Prev.</th><th>Término Prev.</th>
+        <th>Início Real</th><th>Término Real</th>
+        <th>Desvio Prazo</th><th>Status Prazo</th>` : ''}
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+}
+function doCopyDesvios() {
+  const nivel = groupLabel();
+  const sorted = [..._ED].sort((a, b) => a.dev - b.dev);
+  const visiveis = (S.hasDatas && _STATUS_PRAZO_FILTER.length)
+    ? sorted.filter(r => _STATUS_PRAZO_FILTER.includes(statusPrazoInfo(r).key))
+    : sorted;
+  const bAj  = arredondarComNulos(visiveis.map(r => r.bCut), 2);
+  const rpAj = arredondarComNulos(visiveis.map(r => r.rpCut), 2);
+  const rAj  = arredondarComNulos(visiveis.map(r => r.rCut), 2);
+  const hdr = [nivel, 'Base até Corte (%)', 'Reprog até Corte (%)', 'Real até Corte (%)', 'Desvio (p.p.)', 'Status'];
+  if (S.hasDatas) hdr.push('Início Planejado Base', 'Término Planejado Base', 'Início Planejado', 'Término Planejado', 'Início Real', 'Término Real', 'Desvio Prazo (dias)', 'Status Prazo');
+  const rows = visiveis.map((r, i) => {
+    const row = [r.label, px(bAj[i]), px(rpAj[i]), px(rAj[i]), ppx(r.dev),
+      r.dev > 0.005 ? 'Adiantado' : r.dev < -0.005 ? 'Atrasado' : 'Em dia'];
+    if (S.hasDatas) {
+      row.push(fmtDate(r.iniPlanBase), fmtDate(r.fimPlanBase), fmtDate(r.iniPlan), fmtDate(r.fimPlan), fmtDate(r.iniReal), fmtDate(r.fimReal),
+        r.desvioPrazoDias === null ? '' : r.desvioPrazoDias, statusPrazoInfo(r).label);
+    }
+    return row;
+  });
+  copyTSV([hdr, ...rows].map(r => r.join('\t')).join('\n'), 'btnCopyDesvios');
+}
+
+// ─── Seção: Resumo Semanal — utilitários de datas/meses ──────────────────────
+function diasNoMes(sortKey) {
+  const ano = Math.floor(sortKey / 100), mes = sortKey % 100;
+  return new Date(ano, mes, 0).getDate();
+}
+function primeiroDiaDoMes(sortKey) {
+  const ano = Math.floor(sortKey / 100), mes = sortKey % 100;
+  return new Date(ano, mes - 1, 1);
+}
+function ultimoDiaDoMes(sortKey) {
+  const ano = Math.floor(sortKey / 100), mes = sortKey % 100;
+  return new Date(ano, mes - 1, diasNoMes(sortKey));
+}
+function diasOverlap(iniA, fimA, iniB, fimB) {
+  const ini = iniA.getTime() > iniB.getTime() ? iniA : iniB;
+  const fim = fimA.getTime() < fimB.getTime() ? fimA : fimB;
+  const d = Math.round((fim.getTime() - ini.getTime()) / 86400000) + 1;
+  return d > 0 ? d : 0;
+}
+
+// ─── Estado e helpers do Resumo Semanal ───────────────────────────────────────
+function semDefaultIni() { return S.months.length ? primeiroDiaDoMes(S.months[0].sortKey) : new Date(); }
+function semDefaultFim() { return S.months.length ? ultimoDiaDoMes(S.months[S.months.length - 1].sortKey) : new Date(); }
+function semIniDate() { return _SEM_INI ? new Date(_SEM_INI) : semDefaultIni(); }
+function semFimDate() { return _SEM_FIM ? new Date(_SEM_FIM) : semDefaultFim(); }
+function toInputDate(d) {
+  if (!d) return '';
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function setSemINI(v) { _SEM_INI = v; document.getElementById('sectionContent').innerHTML = renderSection('semanal'); }
+function setSemFIM(v) { _SEM_FIM = v; document.getElementById('sectionContent').innerHTML = renderSection('semanal'); }
+function toggleSemQuebrar() { _SEM_QUEBRAR = !_SEM_QUEBRAR; document.getElementById('sectionContent').innerHTML = renderSection('semanal'); }
+
+// ─── Dados por atividade — denominador fixo = total do projeto ─────────────────
+function buildAtividadesSemanal(f, fields) {
+  const totalBase = S.rows.reduce((s, r) => s + r.cBase, 0) || 1;
+  const cutSet    = new Set(S.months.slice(0, S.cutoffIdx + 1).map(m => m.label));
+  const filteredRows = filterRowsBy(S.rows, f);
+  const useCodigo = fields.includes('etapa');
+  const keyFn   = r => fields.map(fl => r[fl]).join('||') + (useCodigo && r.codigo ? '||' + r.codigo : '');
+  const labelFn = rows => fields.map(fl => rows[0][fl]).join(' › ');
+  const groupMap = new Map();
+  filteredRows.forEach(r => {
+    const k = keyFn(r);
+    if (!groupMap.has(k)) groupMap.set(k, []);
+    groupMap.get(k).push(r);
+  });
+  const result = [];
+  groupMap.forEach(gRows => {
+    const pesoTotal = gRows.reduce((s, r) => s + r.cBase, 0) / totalBase * 100;
+    const realizado = gRows.filter(r => cutSet.has(r.data.label)).reduce((s, r) => s + r.cReal, 0) / totalBase * 100;
+    const iniPlanBase = minDate(gRows.map(r => r.iniPlanBase));
+    const fimPlanBase = maxDateStrict(gRows.map(r => r.fimPlanBase));
+    const iniPlan     = minDate(gRows.map(r => r.iniPlan));
+    const fimPlan     = maxDateStrict(gRows.map(r => r.fimPlan));
+    const iniReal     = minDate(gRows.map(r => r.iniReal));
+    const fimReal     = maxDateStrict(gRows.map(r => r.fimReal));
+    const terminoEfetivo = fimReal || fimPlan;
+    const desvioPrazoDias = (fimPlanBase && terminoEfetivo) ? diffDias(terminoEfetivo, fimPlanBase) : null;
+    result.push({ label: labelFn(gRows), pesoTotal, realizado, iniPlanBase, fimPlanBase, iniPlan, fimPlan, iniReal, fimReal, desvioPrazoDias });
+  });
+  return result.sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'));
+}
+
+// ─── Dados semanais agregados (modo Quebrar em semanas) ───────────────────────
+function gerarSemanasRange(ini, fim) {
+  const d = new Date(ini);
+  const dow = d.getDay();
+  d.setDate(d.getDate() + (dow === 0 ? -6 : 1 - dow));
+  const semanas = [];
+  while (d.getTime() <= fim.getTime()) {
+    const inicio = new Date(d);
+    const fimSem = new Date(d); fimSem.setDate(fimSem.getDate() + 6);
+    semanas.push({ inicio, fim: fimSem, label: `${fmtDate(inicio)} a ${fmtDate(fimSem)}` });
+    d.setDate(d.getDate() + 7);
+  }
+  return semanas;
+}
+function buildSemanalPorSemana(f, rangeIni, rangeFim) {
+  const totalBase     = S.rows.reduce((s, r) => s + r.cBase, 0) || 1;
+  const rows          = filterRowsBy(S.rows, f);
+  const cutoffSortKey = S.months[S.cutoffIdx].sortKey;
+  const cutoffFim     = ultimoDiaDoMes(cutoffSortKey);
+  const semanas       = gerarSemanasRange(rangeIni, rangeFim);
+  const prep = rows.map(r => {
+    const dias = diasNoMes(r.data.sortKey);
+    return {
+      mesIni: primeiroDiaDoMes(r.data.sortKey),
+      mesFim: ultimoDiaDoMes(r.data.sortKey),
+      taxaBase: r.cBase / dias / totalBase * 100,
+      taxaReal: r.cReal / dias / totalBase * 100,
+      dentroDoCorte: r.data.sortKey <= cutoffSortKey
+    };
+  });
+  let bAcum = 0, rAcum = 0;
+  return semanas.map(sem => {
+    let bSemana = 0, rSemana = 0;
+    prep.forEach(r => {
+      const dias = diasOverlap(r.mesIni, r.mesFim, sem.inicio, sem.fim);
+      if (dias <= 0) return;
+      bSemana += r.taxaBase * dias;
+      if (r.dentroDoCorte) rSemana += r.taxaReal * dias;
+    });
+    bAcum += bSemana;
+    const isFuturo = sem.inicio.getTime() > cutoffFim.getTime();
+    if (!isFuturo) rAcum += rSemana;
+    return {
+      label: sem.label, bSemana, bAcum,
+      rSemana: isFuturo ? null : rSemana,
+      rAcum:   isFuturo ? null : rAcum,
+      isCutoff: sem.inicio.getTime() <= cutoffFim.getTime() && cutoffFim.getTime() <= sem.fim.getTime()
+    };
+  });
+}
+
+// ─── Render principal do Resumo Semanal ───────────────────────────────────────
+function renderSectionSemanal() {
+  const ini    = semIniDate();
+  const fim    = semFimDate();
+  const iniVal = toInputDate(ini);
+  const fimVal = toInputDate(fim);
+  const controlBar = `
+    <div class="filter-bar" style="gap:14px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
+      <span class="config-label">Período</span>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted)">
+        De
+        <input type="date" value="${iniVal}" onchange="setSemINI(this.value)"
+          style="border:1.5px solid var(--border);border-radius:7px;padding:6px 10px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text);background:#fff;cursor:pointer;outline:none;transition:border .15s"
+          onfocus="this.style.borderColor='var(--blue-bright)'" onblur="this.style.borderColor='var(--border)'">
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted)">
+        Até
+        <input type="date" value="${fimVal}" onchange="setSemFIM(this.value)"
+          style="border:1.5px solid var(--border);border-radius:7px;padding:6px 10px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text);background:#fff;cursor:pointer;outline:none;transition:border .15s"
+          onfocus="this.style.borderColor='var(--blue-bright)'" onblur="this.style.borderColor='var(--border)'">
+      </label>
+      <label onclick="toggleSemQuebrar()" style="display:flex;align-items:center;gap:9px;font-size:12px;font-weight:600;color:var(--navy);cursor:pointer;user-select:none;margin-left:6px">
+        <span style="position:relative;display:inline-block;width:38px;height:22px;flex-shrink:0">
+          <span style="position:absolute;inset:0;background:${_SEM_QUEBRAR ? 'var(--blue-bright)' : 'var(--border)'};border-radius:20px;transition:background .2s"></span>
+          <span style="position:absolute;top:4px;left:${_SEM_QUEBRAR ? '19px' : '4px'};width:14px;height:14px;background:#fff;border-radius:50%;transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.25)"></span>
+        </span>
+        Quebrar em semanas
+      </label>
+    </div>`;
+  return _SEM_QUEBRAR
+    ? renderSemanalSemanas(ini, fim, controlBar)
+    : renderSemanalAtividades(ini, fim, controlBar);
+}
+
+function renderSemanalAtividades(rangeIni, rangeFim, controlBar) {
+  const nivel = groupLabel();
+  const atividades = buildAtividadesSemanal(_ANA_F, _GROUP_FIELDS);
+  const filtradas = S.hasDatas
+    ? atividades.filter(a => {
+        const aIni = a.iniPlanBase || a.iniPlan;
+        const aFim = a.fimPlanBase || a.fimPlan;
+        if (!aIni && !aFim) return true;
+        if (aFim && aFim.getTime() < rangeIni.getTime()) return false;
+        if (aIni && aIni.getTime() > rangeFim.getTime()) return false;
+        return true;
+      })
+    : atividades;
+  const atrasadas  = filtradas.filter(a => a.desvioPrazoDias !== null && a.desvioPrazoDias > 0).length;
+  const adiantadas = filtradas.filter(a => a.desvioPrazoDias !== null && a.desvioPrazoDias < 0).length;
+  const emDia      = filtradas.length - atrasadas - adiantadas;
+  const rows = filtradas.map(a => {
+    const sp = statusPrazoInfo(a);
+    return `
+    <tr>
+      <td style="min-width:160px">${a.label}</td>
+      ${S.hasDatas ? `
+      <td style="white-space:nowrap">${fmtDate(a.iniPlanBase)}</td>
+      <td style="white-space:nowrap">${fmtDate(a.fimPlanBase)}</td>
+      <td style="white-space:nowrap">${fmtDate(a.iniPlan)}</td>
+      <td style="white-space:nowrap">${fmtDate(a.fimPlan)}</td>
+      <td style="white-space:nowrap">${fmtDate(a.iniReal)}</td>
+      <td style="white-space:nowrap">${fmtDate(a.fimReal)}</td>
+      <td class="${clsDias(a.desvioPrazoDias)}" style="white-space:nowrap">${fmtDias(a.desvioPrazoDias)}</td>
+      <td><span class="pill ${sp.cls}">${sp.label}</span></td>` : ''}
+      <td>${p(a.pesoTotal)}</td>
+      <td>${p(a.realizado)}</td>
+      <td><span class="pill ${cls(a.realizado - a.pesoTotal)}">${pp(a.realizado - a.pesoTotal)}</span></td>
+    </tr>`;
+  }).join('');
+  const kpisHtml = S.hasDatas ? `
+    <div class="kpi-row-3" style="margin-bottom:16px">
+      <div class="kpi"><div class="kpi-label">Atrasadas</div><div class="kpi-val neg">${atrasadas}</div><div class="kpi-sub">término previsto ultrapassado</div></div>
+      <div class="kpi"><div class="kpi-label">Em dia / Sem previsão</div><div class="kpi-val zer">${emDia}</div><div class="kpi-sub">dentro do prazo ou sem data base</div></div>
+      <div class="kpi"><div class="kpi-label">Adiantadas</div><div class="kpi-val pos">${adiantadas}</div><div class="kpi-sub">término antes do prazo base</div></div>
+    </div>` : '';
+  const emptyHtml = filtradas.length === 0
+    ? `<div style="padding:32px;text-align:center;color:var(--text-muted);border:1px solid var(--border);border-radius:10px;background:var(--surface2)">Nenhuma atividade encontrada no período selecionado.</div>`
+    : '';
+  return `
+    <div class="result-header">
+      <div class="result-sub">${anaScopeLabel()} · pesos relativos ao total do projeto</div>
+      <button class="btn btn-outline" id="btnCopySemanal" onclick="doCopySemanal()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copiar para Excel
+      </button>
+    </div>
+    ${controlBar}
+    ${renderGroupFieldsControl()}
+    ${kpisHtml}
+    ${emptyHtml || `
+    <div class="table-wrap-scroll"><table>
+      <thead><tr>
+        <th style="text-align:left">${nivel}</th>
+        ${S.hasDatas ? `
+        <th>Início Plan. Base</th><th>Término Plan. Base</th>
+        <th>Início Prev.</th><th>Término Prev.</th>
+        <th>Início Real</th><th>Término Real</th>
+        <th>Desvio Prazo</th><th>Status Prazo</th>` : ''}
+        <th>Peso % Projeto</th><th>Realizado %</th><th>Desvio Físico</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`}`;
+}
+
+function renderSemanalSemanas(rangeIni, rangeFim, controlBar) {
+  const semanal = buildSemanalPorSemana(_ANA_F, rangeIni, rangeFim);
+  const rows = semanal.map(r => `
+    <tr class="${r.isCutoff ? 'cutoff-row' : ''}">
+      <td>${r.label}${r.isCutoff ? ' <span style="font-size:10px;color:var(--blue-bright);font-weight:600">◀ CORTE</span>' : ''}</td>
+      <td>${p(r.bSemana)}</td><td><strong>${p(r.bAcum)}</strong></td>
+      <td class="${r.rSemana !== null ? '' : 'muted'}">${p(r.rSemana)}</td>
+      <td class="${r.rAcum !== null ? '' : 'muted'}"><strong>${p(r.rAcum)}</strong></td>
+      <td>${r.rAcum !== null ? '<span class="pill ' + cls(r.rAcum - r.bAcum) + '">' + pp(r.rAcum - r.bAcum) + '</span>' : '—'}</td>
+    </tr>`).join('');
+  return `
+    <div class="result-header">
+      <div class="result-sub">${anaScopeLabel()} · estimativa por rateio diário · pesos relativos ao total do projeto</div>
+      <button class="btn btn-outline" id="btnCopySemanal" onclick="doCopySemanasTabela()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copiar para Excel
+      </button>
+    </div>
+    ${controlBar}
+    <div style="font-size:11.5px;color:var(--text-muted);margin-bottom:12px">⚠ Estimativa por rateio: a base do Agilean tem granularidade mensal — cada semana recebe fração proporcional aos dias cobertos no mês.</div>
+    <div class="table-wrap-scroll"><table>
+      <thead>
+        <tr>
+          <th rowspan="2" style="vertical-align:middle;min-width:170px">Semana</th>
+          <th colspan="2" class="grp grp-base">Base (% projeto)</th>
+          <th colspan="2" class="grp grp-real">Real (% projeto)</th>
+          <th rowspan="2" style="vertical-align:middle">Desvio<br><span style="font-size:9px;opacity:.7">(Real − Base)</span></th>
+        </tr>
+        <tr class="subhead">
+          <th class="sub-base">Semana</th><th class="sub-base">Acum.</th>
+          <th class="sub-real">Semana</th><th class="sub-real">Acum.</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+}
+
+function doCopySemanal() {
+  const nivel = groupLabel();
+  const atividades = buildAtividadesSemanal(_ANA_F, _GROUP_FIELDS);
+  const ini = semIniDate(), fim = semFimDate();
+  const filtradas = S.hasDatas
+    ? atividades.filter(a => {
+        const aIni = a.iniPlanBase || a.iniPlan;
+        const aFim = a.fimPlanBase || a.fimPlan;
+        if (!aIni && !aFim) return true;
+        if (aFim && aFim.getTime() < ini.getTime()) return false;
+        if (aIni && aIni.getTime() > fim.getTime()) return false;
+        return true;
+      })
+    : atividades;
+  const hdr = [nivel];
+  if (S.hasDatas) hdr.push('Início Plan. Base', 'Término Plan. Base', 'Início Prev.', 'Término Prev.', 'Início Real', 'Término Real', 'Desvio Prazo (dias)', 'Status Prazo');
+  hdr.push('Peso % Projeto', 'Realizado %', 'Desvio Físico (p.p.)');
+  const rows = filtradas.map(a => {
+    const row = [a.label];
+    if (S.hasDatas) row.push(fmtDate(a.iniPlanBase), fmtDate(a.fimPlanBase), fmtDate(a.iniPlan), fmtDate(a.fimPlan),
+      fmtDate(a.iniReal), fmtDate(a.fimReal), a.desvioPrazoDias !== null ? a.desvioPrazoDias : '', statusPrazoInfo(a).label);
+    row.push(px(a.pesoTotal), px(a.realizado), ppx(a.realizado - a.pesoTotal));
+    return row;
+  });
+  copyTSV([hdr, ...rows].map(r => r.join('\t')).join('\n'), 'btnCopySemanal');
+}
+function doCopySemanasTabela() {
+  const semanal = buildSemanalPorSemana(_ANA_F, semIniDate(), semFimDate());
+  const hdr = ['Semana', 'Base Semana (% proj.)', 'Base Acum. (% proj.)', 'Real Semana (% proj.)', 'Real Acum. (% proj.)', 'Desvio (p.p.)'];
+  const rows = semanal.map(r => [r.label, px(r.bSemana), px(r.bAcum),
+    r.rSemana !== null ? px(r.rSemana) : '', r.rAcum !== null ? px(r.rAcum) : '',
+    r.rAcum !== null ? ppx(r.rAcum - r.bAcum) : '']);
+  copyTSV([hdr, ...rows].map(r => r.join('\t')).join('\n'), 'btnCopySemanal');
+}
+
+// ─── Filtro compartilhado (Unidade/Local/Macro Etapa/Etapa) — fixo na sidebar ──
+// Cada campo é um botão com ícone + mini-chips dos valores escolhidos; o painel
+// (checklist com busca por "Selecionar todas"/"Limpar") é anexado direto no
+// <body> e posicionado via JS com "fixed" — não pode ficar como filho do
+// .side-nav porque ele tem overflow-y:auto, e isso faz o navegador tratar o
+// eixo X também como "auto" (regra do CSS quando só um eixo é 'visible'),
+// clipando/scrollando o painel em vez de deixá-lo flutuar livre.
+const FUNNEL_SVG = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>';
+const FIELD_ORDER = ['unidade', 'local', 'macroEtapa', 'etapa'];
+const _SF = {}; // registro dos widgets de filtro: field -> { refresh }
+
+function buildSidebarFilter(rootId, field) {
+  const root = document.getElementById(rootId);
+  root.innerHTML = `
+    <button class="sf-btn" type="button">
+      ${FUNNEL_SVG}
+      <span class="chips"><span class="lbl">Todas</span></span>
+      <span class="arrow">▾</span>
+    </button>`;
+  const btn = root.querySelector('.sf-btn');
+  const chipsWrap = root.querySelector('.chips');
+
+  const panel = document.createElement('div');
+  panel.className = 'popfilter-panel';
+  panel.innerHTML = `
+    <div class="popfilter-list"></div>
+    <div class="popfilter-footer">
+      <button type="button" class="act-all">Selecionar todas</button>
+      <button type="button" class="act-clear">Limpar</button>
+    </div>`;
+  document.body.appendChild(panel);
+  const list = panel.querySelector('.popfilter-list');
+
+  function positionPanel() {
+    const r = btn.getBoundingClientRect();
+    panel.style.position = 'fixed';
+    panel.style.top = Math.min(r.top, window.innerHeight - 320) + 'px';
+    panel.style.left = (r.right + 10) + 'px';
+  }
+  function renderList() {
+    const options = anaFieldOptions(field);
+    const selected = _ANA_F[field];
+    list.innerHTML = options.map(o => `
+      <label class="popfilter-opt">
+        <input type="checkbox" value="${o}" ${selected.includes(o) ? 'checked' : ''}>
+        ${o}
+      </label>`).join('');
+    list.querySelectorAll('input').forEach(cb => cb.addEventListener('change', () => {
+      const sel = [..._ANA_F[field]];
+      const next = cb.checked ? [...sel, cb.value] : sel.filter(x => x !== cb.value);
+      mudarFiltroAna(field, next);
+    }));
+  }
+  function updateButton() {
+    const sel = _ANA_F[field];
+    root.classList.toggle('has-sel', sel.length > 0);
+    if (!sel.length) {
+      chipsWrap.innerHTML = `<span class="lbl">Todas</span>`;
+    } else {
+      const shown = sel.slice(0, 2).map(v => `<span class="mini-chip" title="${v}">${v}</span>`).join('');
+      const extra = sel.length > 2 ? `<span class="more" title="${sel.slice(2).join(', ')}">+${sel.length - 2}</span>` : '';
+      chipsWrap.innerHTML = shown + extra;
+    }
+  }
+  renderList();
+  updateButton();
+  btn.addEventListener('click', () => {
+    const willOpen = !panel.classList.contains('open');
+    document.querySelectorAll('.popfilter-panel.open').forEach(p => p.classList.remove('open'));
+    if (willOpen) { positionPanel(); panel.classList.add('open'); }
+  });
+  panel.querySelector('.act-all').addEventListener('click', () => mudarFiltroAna(field, [...anaFieldOptions(field)]));
+  panel.querySelector('.act-clear').addEventListener('click', () => mudarFiltroAna(field, []));
+  document.addEventListener('click', e => { if (!btn.contains(e.target) && !panel.contains(e.target)) panel.classList.remove('open'); });
+  window.addEventListener('scroll', () => { if (panel.classList.contains('open')) positionPanel(); }, true);
+
+  _SF[field] = { refresh() { renderList(); updateButton(); } };
+}
+function refreshSidebarFilters() {
+  FIELD_ORDER.forEach(f => { if (_SF[f]) _SF[f].refresh(); });
+}
+function mudarFiltroAna(field, values) {
+  _ANA_F[field] = values;
+  // Cascata: trocar um filtro de cima invalida os de baixo (ex: mudar Unidade reseta Local/Macro/Etapa).
+  FIELD_ORDER.slice(FIELD_ORDER.indexOf(field) + 1).forEach(f => { _ANA_F[f] = []; });
+  recomputeAnalitico();
+}
+function limparFiltroAna() {
+  _ANA_F = { unidade: [], local: [], macroEtapa: [], etapa: [] };
+  recomputeAnalitico();
+}
+function recomputeAnalitico() {
+  _CS = buildCurvaSAnalitico(_ANA_F);
+  _ED = buildPrevistoRealAnalitico(_ANA_F, _GROUP_FIELDS);
+  putSection(_ACTIVE_SECTION);
+  refreshSidebarFilters();
+}
+
+// ─── Paleta de cores dos gráficos (padrão visual do cliente) ─────────────────
+const GC = {
+  baseline: { line: '#B0B8C4', fill: 'rgba(176,184,196,0.15)', point: '#B0B8C4' },
+  real:     { line: '#5BC8F5', fill: 'rgba(91,200,245,0.18)',  point: '#5BC8F5' },
+  reprog:   { line: '#1B3A7A', fill: 'rgba(27,58,122,0.12)',   point: '#1B3A7A' },
+};
+let _CURVA_MODO = 'acumulado'; // 'acumulado' | 'mensal'
+let _chartCurva = null;
+
+function setCurvaModo(modo) {
+  _CURVA_MODO = modo;
+  putSection('curva');
+}
+
+// ─── Curva S — com gráfico interativo (Acumulado / Mensal) ───────────────────
+function renderCurvaSAnalitico() {
+  const cutRow = _CS.find(r => r.isCutoff);
+  const bAcum  = cutRow ? cutRow.bAcum        : 0;
+  const rAcum  = cutRow ? (cutRow.rAcum || 0) : 0;
+  const dev    = rAcum - bAcum;
+
+  const kpis = cutRow ? `
+    <div class="kpi-row-3" style="margin-bottom:16px">
+      <div class="kpi"><div class="kpi-label">Base até Corte</div><div class="kpi-val">${p(bAcum)}</div><div class="kpi-sub">Previsto acumulado</div></div>
+      <div class="kpi"><div class="kpi-label">Real até Corte</div><div class="kpi-val">${p(rAcum)}</div><div class="kpi-sub">Executado acumulado</div></div>
+      <div class="kpi"><div class="kpi-label">Desvio</div><div class="kpi-val ${cls(dev)}">${pp(dev)}</div><div class="kpi-sub">${dev > 0.005 ? 'Adiantada' : dev < -0.005 ? 'Atrasada' : 'Em dia'}</div></div>
+    </div>` : '';
+
+  const rows = _CS.map(r => `
+    <tr class="${r.isCutoff ? 'cutoff-row' : ''}">
+      <td>${r.label}${r.isCutoff ? ' <span style="font-size:10px;color:var(--blue-bright);font-weight:600">◀ CORTE</span>' : ''}</td>
+      <td>${p(r.bMes)}</td><td><strong>${p(r.bAcum)}</strong></td>
+      <td>${p(r.rpMes)}</td><td><strong>${p(r.rpAcum)}</strong></td>
+      <td class="${r.rMes !== null ? '' : 'muted'}">${p(r.rMes)}</td>
+      <td class="${r.rAcum !== null ? '' : 'muted'}"><strong>${p(r.rAcum)}</strong></td>
+      <td>${r.rAcum !== null ? '<span class="pill ' + cls(r.rAcum - r.bAcum) + '">' + pp(r.rAcum - r.bAcum) + '</span>' : '—'}</td>
+    </tr>`).join('');
+
+  const modoAcum  = _CURVA_MODO === 'acumulado';
+  const btnAcum   = `toggle-btn${modoAcum ? ' active' : ''}`;
+  const btnMensal = `toggle-btn${!modoAcum ? ' active' : ''}`;
+
+  return `
+    <div class="result-header">
+      <div class="result-sub">${anaScopeLabel()}</div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div class="toggle-group">
+          <button class="${btnAcum}"  onclick="setCurvaModo('acumulado')">Acumulado</button>
+          <button class="${btnMensal}" onclick="setCurvaModo('mensal')">Mensal</button>
+        </div>
+        <button class="btn btn-outline" id="btnCopyCurva" onclick="doCopyCurva()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copiar para Excel
+        </button>
+      </div>
+    </div>
+    ${kpis}
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:16px;box-shadow:var(--shadow)">
+      <canvas id="canvasCurva" height="110"></canvas>
+    </div>
+    <div class="table-wrap"><table>
+      <thead>
+        <tr>
+          <th rowspan="2" style="vertical-align:middle;min-width:110px">Mês</th>
+          <th colspan="2" class="grp grp-base">Baseline</th>
+          <th colspan="2" class="grp grp-reprog">Reprogramado</th>
+          <th colspan="2" class="grp grp-real">Realizado</th>
+          <th rowspan="2" style="vertical-align:middle">Desvio<br><span style="font-size:9px;opacity:.7">(Real − Base)</span></th>
+        </tr>
+        <tr class="subhead">
+          <th class="sub-base">Mensal</th><th class="sub-base">Acum.</th>
+          <th class="sub-reprog">Mensal</th><th class="sub-reprog">Acum.</th>
+          <th class="sub-real">Mensal</th><th class="sub-real">Acum.</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+}
+
+function renderChartCurva() {
+  const canvas = document.getElementById('canvasCurva');
+  if (!canvas || typeof Chart === 'undefined') return;
+  if (_chartCurva) { _chartCurva.destroy(); _chartCurva = null; }
+
+  const labels   = _CS.map(r => r.label);
+  const cutoffIdx = _CS.findIndex(r => r.isCutoff);
+  const modoAcum  = _CURVA_MODO === 'acumulado';
+
+  if (modoAcum) {
+    // ── Modo Acumulado: linhas com área ──────────────────────────────────────
+    const realData = _CS.map(r => r.rAcum !== null ? parseFloat(r.rAcum.toFixed(2)) : null);
+    _chartCurva = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'BASELINE',
+            data: _CS.map(r => parseFloat(r.bAcum.toFixed(2))),
+            borderColor: GC.baseline.line, backgroundColor: GC.baseline.fill,
+            pointBackgroundColor: GC.baseline.point, pointRadius: 4, pointHoverRadius: 6,
+            borderWidth: 2, fill: false, tension: 0,
+          },
+          {
+            label: 'REPROGRAMADO',
+            data: _CS.map(r => parseFloat(r.rpAcum.toFixed(2))),
+            borderColor: GC.reprog.line, backgroundColor: GC.reprog.fill,
+            pointBackgroundColor: GC.reprog.point, pointRadius: 4, pointHoverRadius: 6,
+            borderWidth: 2, borderDash: [6, 3], fill: false, tension: 0,
+          },
+          {
+            label: 'REALIZADO',
+            data: realData,
+            borderColor: GC.real.line, backgroundColor: GC.real.fill,
+            pointBackgroundColor: GC.real.point, pointRadius: 4, pointHoverRadius: 6,
+            borderWidth: 2.5, fill: false, tension: 0,
+            spanGaps: false,
+          },
+        ],
+      },
+      options: chartOptions(true, cutoffIdx, labels),
+    });
+  } else {
+    // ── Modo Mensal: barras agrupadas ─────────────────────────────────────────
+    _chartCurva = new Chart(canvas, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'BASELINE',
+            data: _CS.map(r => parseFloat(r.bMes.toFixed(2))),
+            backgroundColor: GC.baseline.line, borderRadius: 3, barPercentage: 0.75,
+          },
+          {
+            label: 'REPROGRAMADO',
+            data: _CS.map(r => parseFloat(r.rpMes.toFixed(2))),
+            backgroundColor: GC.reprog.line, borderRadius: 3, barPercentage: 0.75,
+          },
+          {
+            label: 'REALIZADO',
+            data: _CS.map(r => r.rMes !== null ? parseFloat(r.rMes.toFixed(2)) : null),
+            backgroundColor: GC.real.line, borderRadius: 3, barPercentage: 0.75,
+          },
+        ],
+      },
+      options: chartOptions(false, cutoffIdx, labels),
+    });
+  }
+}
+
+function chartOptions(isLine, cutoffIdx, labels) {
+  return {
+    responsive: true,
+    animation: { duration: 400 },
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: {
+        position: 'top',
+        align: 'start',
+        labels: {
+          font: { family: 'DM Sans', size: 11, weight: '600' },
+          color: '#1a2b45',
+          boxWidth: 14, boxHeight: 14,
+          padding: 20,
+          usePointStyle: isLine,
+          pointStyle: isLine ? 'circle' : 'rect',
+        },
+      },
+      tooltip: {
+        backgroundColor: '#1a2b45',
+        titleFont: { family: 'Sora', size: 11, weight: '700' },
+        bodyFont: { family: 'DM Sans', size: 11 },
+        padding: 10, cornerRadius: 8,
+        callbacks: {
+          label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y !== null ? ctx.parsed.y.toFixed(2) + '%' : '—'}`,
+        },
+      },
+      annotation: cutoffIdx >= 0 ? {
+        annotations: {
+          corte: {
+            type: 'line', xMin: cutoffIdx, xMax: cutoffIdx,
+            borderColor: 'rgba(26,110,232,0.5)', borderWidth: 1.5,
+            borderDash: [4, 3],
+            label: { content: 'CORTE', display: true, position: 'start', backgroundColor: 'rgba(26,110,232,0.8)', color: '#fff', font: { size: 9, weight: '700' }, padding: { x: 5, y: 3 } },
+          },
+        },
+      } : {},
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: { font: { family: 'DM Sans', size: 10 }, color: '#6b80a0', maxRotation: 45, minRotation: 0 },
+        border: { color: '#d4dfe8' },
+      },
+      y: {
+        grid: { color: 'rgba(212,223,232,0.5)', drawBorder: false },
+        ticks: {
+          font: { family: 'DM Sans', size: 10 }, color: '#6b80a0',
+          callback: v => v.toFixed(1) + '%',
+        },
+        border: { display: false },
+      },
+    },
+  };
+}
+
+// Dispara o render do gráfico após o HTML ser inserido no DOM
+function afterRenderCurva() {
+  requestAnimationFrame(() => renderChartCurva());
+}
+function doCopyCurva() {
+  // Ajusta Base/Reprog/Real Mensal pra soma exata — sem isso, somar a coluna no
+  // Excel/Power BI fecha em 99,98% em vez de 100% (cada mês arredondado isoladamente).
+  const bAj  = arredondarComNulos(_CS.map(r => r.bMes), 2);
+  const rpAj = arredondarComNulos(_CS.map(r => r.rpMes), 2);
+  const rAj  = arredondarComNulos(_CS.map(r => r.rMes), 2);
+  const hdr = ['Mês','Base Mensal (%)','Base Acum (%)','Reprog Mensal (%)','Reprog Acum (%)','Real Mensal (%)','Real Acum (%)','Desvio (p.p.)'];
+  const rows = _CS.map((r, i) => [r.label, px(bAj[i]), px(r.bAcum), px(rpAj[i]), px(r.rpAcum),
+    rAj[i] !== null ? px(rAj[i]) : '', r.rAcum !== null ? px(r.rAcum) : '',
+    r.rAcum !== null ? ppx(r.rAcum - r.bAcum) : '']);
+  copyTSV([hdr, ...rows].map(r => r.join('\t')).join('\n'), 'btnCopyCurva');
+}
+
+// ─── Tab Etapas — Analítico (com filtro + nível de agrupamento) ──────────────
+function renderEtapasTabAnalitico() {
+  const cutLabel = S.months[S.cutoffIdx].label;
+  return `
+    <div class="result-header">
+      <div class="result-sub">Acumulado até ${cutLabel} — ${anaScopeLabel()}</div>
+      <button class="btn btn-outline" id="btnCopyEtapas" onclick="doCopyEtapas()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        Copiar para Excel
+      </button>
+    </div>
+    ${renderGroupFieldsControl()}
+    ${renderEtapasContent()}`;
+}
+function renderEtapasContent() {
+  const ahead   = _ED.filter(r => r.dev > 0.005).length;
+  const behind  = _ED.filter(r => r.dev < -0.005).length;
+  const ontrack = _ED.length - ahead - behind;
+  const totBC  = _ED.reduce((s, r) => s + r.bCut, 0);
+  const totRP  = _ED.reduce((s, r) => s + r.rpCut, 0);
+  const totRC  = _ED.reduce((s, r) => s + r.rCut, 0);
+  const totDev = totRC - totBC;
+  const nivel  = groupLabel();
+  const plural = groupPlural();
+  const rows   = _ED.map(r => `
+    <tr>
+      <td>${r.label}</td>
+      <td>${p(r.bCut)}</td><td>${p(r.rpCut)}</td>
+      <td>${p(r.rCut)}</td>
+      <td><span class="pill ${cls(r.dev)}">${pp(r.dev)}</span></td>
+      <td>${statusPill(r.dev)}</td>
+    </tr>`).join('');
+  return `
+    <div class="kpi-row-3" style="margin-bottom:16px">
+      <div class="kpi"><div class="kpi-label">Adiantadas</div><div class="kpi-val pos">${ahead}</div><div class="kpi-sub">${plural}</div></div>
+      <div class="kpi"><div class="kpi-label">Em dia</div><div class="kpi-val zer">${ontrack}</div><div class="kpi-sub">${plural}</div></div>
+      <div class="kpi"><div class="kpi-label">Atrasadas</div><div class="kpi-val neg">${behind}</div><div class="kpi-sub">${plural}</div></div>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>${nivel}</th>
+        <th>Base até Corte</th><th>Reprog até Corte</th><th>Real até Corte</th>
+        <th>Desvio (R−B)</th><th>Status</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+      <tfoot><tr>
+        <td>TOTAL</td>
+        <td>${p(totBC)}</td><td>${p(totRP)}</td>
+        <td>${p(totRC)}</td>
+        <td><span class="pill ${cls(totDev)}">${pp(totDev)}</span></td>
+        <td>—</td>
+      </tr></tfoot>
+    </table></div>`;
+}
+function doCopyEtapas() {
+  const nivel = groupLabel();
+  const bAj  = arredondarComNulos(_ED.map(r => r.bCut), 2);
+  const rpAj = arredondarComNulos(_ED.map(r => r.rpCut), 2);
+  const rAj  = arredondarComNulos(_ED.map(r => r.rCut), 2);
+  const hdr = [nivel,'Base até Corte (%)','Reprog até Corte (%)','Real até Corte (%)','Desvio (p.p.)','Status'];
+  const rows = _ED.map((r, i) => [r.label, px(bAj[i]), px(rpAj[i]), px(rAj[i]), ppx(r.dev),
+    r.dev > 0.005 ? 'Adiantado' : r.dev < -0.005 ? 'Atrasado' : 'Em dia']);
+  copyTSV([hdr, ...rows].map(r => r.join('\t')).join('\n'), 'btnCopyEtapas');
+}
+
+// ─── Export Excel ──────────────────────────────────────────────────────────────
+async function exportarExcel() {
+  if (typeof ExcelJS === 'undefined') { alert('ExcelJS não carregado. Verifique a conexão com a internet.'); return; }
+  const btn = document.getElementById('btnExportarExcel');
+  if (btn) { btn.textContent = 'Gerando...'; btn.disabled = true; }
+  try {
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'Análise Física - Agilean';
+    wb.created = new Date();
+
+    // ── Paleta de cores ───────────────────────────────────────────────────────
+    const C = {
+      navy: 'FF1A2B45', navy2: 'FF1E3358', white: 'FFFFFFFF',
+      green: 'FF0F9B6E', red: 'FFD63A3A', muted: 'FF6B80A0',
+      border: 'FFD4DFE8', borderD: 'FF3A5070',
+      cutoff: 'FFFEF9E7', zebra: 'FFF7FAFD',
+    };
+    const bThin  = argb => ({ style: 'thin', color: { argb } });
+    const bHair  = argb => ({ style: 'hair', color: { argb } });
+    const bdrD   = { top: bThin(C.borderD), bottom: bThin(C.borderD), left: bThin(C.borderD), right: bThin(C.borderD) };
+    const bdrL   = { top: bHair(C.border),  bottom: bHair(C.border),  left: bThin(C.border),  right: bThin(C.border) };
+
+    // ── Helpers de estilo ─────────────────────────────────────────────────────
+    function noGrid(ws, ySplit) {
+      ws.views = ySplit
+        ? [{ state: 'frozen', ySplit, showGridLines: false }]
+        : [{ showGridLines: false }];
+    }
+    function scopeRow(ws) {
+      const hoje = new Date();
+      ws.addRow([`Escopo: ${anaScopeLabel()} · Corte: ${S.months[S.cutoffIdx].label} · Gerado em: ${hoje.toLocaleDateString('pt-BR')}`]);
+      const r = ws.getRow(ws.rowCount);
+      r.height = 15;
+      r.getCell(1).font = { italic: true, size: 9, color: { argb: C.muted }, name: 'Calibri' };
+    }
+    function hdrRow(ws, rowNum, numCols) {
+      const row = ws.getRow(rowNum);
+      row.height = 26;
+      for (let c = 1; c <= numCols; c++) {
+        const cell = row.getCell(c);
+        cell.font = { bold: true, color: { argb: C.white }, size: 10, name: 'Calibri' };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C.navy } };
+        cell.alignment = { horizontal: c === 1 ? 'left' : 'center', vertical: 'middle' };
+        cell.border = bdrD;
+      }
+    }
+    function dataRow(ws, rowNum, numCols, isCutoff, idx) {
+      const row = ws.getRow(rowNum);
+      row.height = 17;
+      const bg = isCutoff ? C.cutoff : idx % 2 === 1 ? C.zebra : C.white;
+      for (let c = 1; c <= numCols; c++) {
+        const cell = row.getCell(c);
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+        cell.border = bdrL;
+        cell.alignment = { horizontal: c === 1 ? 'left' : 'right', vertical: 'middle' };
+        cell.font = { size: 10, name: 'Calibri' };
+      }
+    }
+    function footRow(ws, rowNum, numCols) {
+      const row = ws.getRow(rowNum);
+      row.height = 22;
+      for (let c = 1; c <= numCols; c++) {
+        const cell = row.getCell(c);
+        cell.font = { bold: true, color: { argb: C.white }, size: 10, name: 'Calibri' };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: C.navy } };
+        cell.alignment = { horizontal: c === 1 ? 'left' : 'right', vertical: 'middle' };
+        cell.border = bdrD;
+      }
+    }
+    function colorDesvio(cell, val) {
+      if (val === null || val === undefined) return;
+      if (Math.abs(val) < 0.005) { cell.font = { size: 10, name: 'Calibri', color: { argb: C.muted } }; return; }
+      cell.font = { bold: true, size: 10, name: 'Calibri', color: { argb: val > 0 ? C.green : C.red } };
+    }
+    function colorDias(cell, val) {
+      if (!val) return;
+      cell.font = { bold: true, size: 10, name: 'Calibri', color: { argb: val > 0 ? C.red : C.green } };
+    }
+    function colorStatus(cell, txt) {
+      const argb = txt.includes('diantado') ? C.green : txt.includes('trasado') ? C.red : C.muted;
+      cell.font = { size: 10, name: 'Calibri', color: { argb } };
+    }
+    function pct(ws, rowNum, cols) {
+      cols.forEach(c => { ws.getRow(rowNum).getCell(c).numFmt = '0.00"%"'; });
+    }
+    function pctDev(ws, rowNum, col) {
+      ws.getRow(rowNum).getCell(col).numFmt = '+0.00"%";-0.00"%";"0.00%"';
+    }
+
+    const nivel = groupLabel();
+    const cutLabel = S.months[S.cutoffIdx].label;
+    const hoje = new Date();
+    const dtStr = `${String(hoje.getDate()).padStart(2,'0')}-${String(hoje.getMonth()+1).padStart(2,'0')}-${hoje.getFullYear()}`;
+
+    // ── Aba: Capa ─────────────────────────────────────────────────────────────
+    if (_EXP_ABAS.capa) {
+      const ws = wb.addWorksheet('Capa');
+      noGrid(ws, 0);
+      ws.columns = [{ width: 26 }, { width: 56 }];
+      ws.mergeCells('A1:B1');
+      const tc = ws.getRow(1).getCell(1);
+      tc.value = 'ANÁLISE FÍSICA DO PROJETO — AGILEAN';
+      tc.font  = { bold: true, size: 16, color: { argb: C.white }, name: 'Calibri' };
+      tc.fill  = { type: 'pattern', pattern: 'solid', fgColor: { argb: C.navy } };
+      tc.alignment = { horizontal: 'center', vertical: 'middle' };
+      tc.border = bdrD;
+      ws.getRow(1).height = 44;
+      ws.addRow([]);
+      const abasNomes = { capa:'Capa', kpis:'KPIs Gerais', curva:'Curva S', pesos:'Análise de Pesos', prazos:'Análise de Prazos', desvios:'Análise de Desvios' };
+      const abasInc = Object.entries(_EXP_ABAS).filter(([,v]) => v).map(([k]) => abasNomes[k]).join(', ');
+      const meta = [
+        ['Mês de Corte',    cutLabel],
+        ['Escopo',          anaScopeLabel()],
+        ['Agrupamento',     nivel],
+        ['Data de Geração', `${String(hoje.getDate()).padStart(2,'0')}/${String(hoje.getMonth()+1).padStart(2,'0')}/${hoje.getFullYear()}`],
+        ['Abas incluídas',  abasInc],
+      ];
+      meta.forEach(([lbl, val], i) => {
+        ws.addRow([lbl, val]);
+        const r = ws.getRow(ws.rowCount);
+        r.height = 22;
+        const c1 = r.getCell(1), c2 = r.getCell(2);
+        c1.font = { bold: true, size: 10, name: 'Calibri', color: { argb: C.navy } };
+        c1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: i % 2 === 0 ? C.zebra : C.white } };
+        c2.font = { size: 10, name: 'Calibri' };
+        c2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: i % 2 === 0 ? C.zebra : C.white } };
+        [c1, c2].forEach(c => { c.border = bdrL; c.alignment = { vertical: 'middle', wrapText: true }; });
+        c1.alignment = { horizontal: 'left', vertical: 'middle' };
+      });
+      ws.addRow([]);
+      ws.addRow(['Desenvolvido por Mateus Monteiro · (62) 99156-3421']);
+      ws.getRow(ws.rowCount).getCell(1).font = { italic: true, size: 9, color: { argb: C.muted }, name: 'Calibri' };
+    }
+
+    // ── Aba: KPIs Gerais ──────────────────────────────────────────────────────
+    if (_EXP_ABAS.kpis) {
+      const ws = wb.addWorksheet('KPIs Gerais');
+      noGrid(ws, 2);
+      ws.columns = [{ width: 28 }, { width: 18 }, { width: 46 }];
+      scopeRow(ws);
+      ws.addRow(['Indicador', 'Valor', 'Descrição']);
+      hdrRow(ws, ws.rowCount, 3);
+      const cg    = buildCurvaSAnalitico(_ANA_F);
+      const cutR  = cg.find(r => r.isCutoff);
+      const bAc   = cutR ? cutR.bAcum : 0;
+      const rAc   = cutR ? (cutR.rAcum || 0) : 0;
+      const dev   = rAc - bAc;
+      const idp   = bAc > 0 ? rAc / bAc : 0;
+      const proj  = projecaoTermino(cg);
+      const kpis = [
+        ['Mês de Corte',        cutLabel,                                              'Referência da análise'],
+        ['Base Acumulado',       bAc.toFixed(2) + '%',                                 'Previsto acumulado até o corte'],
+        ['Real Acumulado',       rAc.toFixed(2) + '%',                                 'Executado acumulado até o corte'],
+        ['Desvio Global',        (dev >= 0 ? '+' : '') + dev.toFixed(2) + ' p.p.',     dev > 0.005 ? 'Adiantada' : dev < -0.005 ? 'Atrasada' : 'Em dia'],
+        ['IDP',                  idp.toFixed(2),                                        'Índice de Desempenho · Real ÷ Base até corte'],
+        ['Projeção de Término',  proj ? proj.label : '—',                              proj ? `Ritmo médio: ${proj.avg.toFixed(2)}%/mês (últimos 3 meses)` : 'Dados insuficientes'],
+        ['Meses para Conclusão', proj && proj.months > 0 ? String(proj.months) : '—', `A partir de ${cutLabel}`],
+      ];
+      kpis.forEach(([ind, val, desc], i) => {
+        ws.addRow([ind, val, desc]);
+        dataRow(ws, ws.rowCount, 3, false, i);
+        if (ind === 'Desvio Global') colorDesvio(ws.getRow(ws.rowCount).getCell(2), dev);
+        if (ind === 'IDP') {
+          const cell = ws.getRow(ws.rowCount).getCell(2);
+          cell.font = { bold: true, size: 10, name: 'Calibri', color: { argb: idp >= 1 ? C.green : C.red } };
+        }
+      });
+    }
+
+    // ── Aba: Curva S ─────────────────────────────────────────────────────────
+    if (_EXP_ABAS.curva) {
+      const NC = 8;
+      const ws = wb.addWorksheet('Curva S');
+      noGrid(ws, 2);
+      ws.columns = [{ width: 12 },{ width: 14 },{ width: 14 },{ width: 16 },{ width: 14 },{ width: 14 },{ width: 14 },{ width: 16 }];
+      scopeRow(ws);
+      ws.addRow(['Mês','Base Mensal','Base Acum.','Reprog Mensal','Reprog Acum.','Real Mensal','Real Acum.','Desvio (R−B)']);
+      hdrRow(ws, ws.rowCount, NC);
+      _CS.forEach((r, i) => {
+        ws.addRow([r.label, r.bMes, r.bAcum, r.rpMes, r.rpAcum, r.rMes ?? null, r.rAcum ?? null, r.rAcum !== null ? r.rAcum - r.bAcum : null]);
+        const rn = ws.rowCount;
+        dataRow(ws, rn, NC, r.isCutoff, i);
+        pct(ws, rn, [2,3,4,5]);
+        if (r.rMes  !== null) pct(ws, rn, [6]);
+        if (r.rAcum !== null) { pct(ws, rn, [7]); pctDev(ws, rn, 8); colorDesvio(ws.getRow(rn).getCell(8), r.rAcum - r.bAcum); }
+      });
+    }
+
+    // ── Aba: Análise de Pesos ────────────────────────────────────────────────
+    if (_EXP_ABAS.pesos) {
+      const NC = 6;
+      const ws = wb.addWorksheet('Análise de Pesos');
+      noGrid(ws, 2);
+      ws.columns = [{ width: 42 },{ width: 16 },{ width: 18 },{ width: 16 },{ width: 16 },{ width: 14 }];
+      scopeRow(ws);
+      ws.addRow([nivel,'Base até Corte','Reprog até Corte','Real até Corte','Desvio (R−B)','Status']);
+      hdrRow(ws, ws.rowCount, NC);
+      let tBC = 0, tRP = 0, tRC = 0;
+      _ED.forEach((r, i) => {
+        tBC += r.bCut; tRP += r.rpCut; tRC += r.rCut;
+        const st = r.dev > 0.005 ? 'Adiantado' : r.dev < -0.005 ? 'Atrasado' : 'Em dia';
+        ws.addRow([r.label, r.bCut, r.rpCut, r.rCut, r.dev, st]);
+        const rn = ws.rowCount;
+        dataRow(ws, rn, NC, false, i);
+        pct(ws, rn, [2,3,4]); pctDev(ws, rn, 5);
+        colorDesvio(ws.getRow(rn).getCell(5), r.dev);
+        colorStatus(ws.getRow(rn).getCell(6), st);
+      });
+      ws.addRow(['TOTAL', tBC, tRP, tRC, tRC - tBC, '—']);
+      const rn = ws.rowCount;
+      footRow(ws, rn, NC);
+      pct(ws, rn, [2,3,4]); pctDev(ws, rn, 5);
+    }
+
+    // ── Aba: Análise de Prazos ────────────────────────────────────────────────
+    if (_EXP_ABAS.prazos && S.hasDatas) {
+      const NC = 9;
+      const ws = wb.addWorksheet('Análise de Prazos');
+      noGrid(ws, 2);
+      ws.columns = [{ width: 38 },{ width: 16 },{ width: 16 },{ width: 16 },{ width: 16 },{ width: 14 },{ width: 14 },{ width: 14 },{ width: 24 }];
+      scopeRow(ws);
+      ws.addRow([nivel,'Início Plan. Base','Término Plan. Base','Início Prev.','Término Prev.','Início Real','Término Real','Desvio Prazo','Status Prazo']);
+      hdrRow(ws, ws.rowCount, NC);
+      _ED.forEach((r, i) => {
+        const sp = statusPrazoInfo(r);
+        ws.addRow([r.label, fmtDate(r.iniPlanBase), fmtDate(r.fimPlanBase), fmtDate(r.iniPlan), fmtDate(r.fimPlan),
+          fmtDate(r.iniReal), fmtDate(r.fimReal), r.desvioPrazoDias ?? null, sp.label]);
+        const rn = ws.rowCount;
+        dataRow(ws, rn, NC, false, i);
+        colorDias(ws.getRow(rn).getCell(8), r.desvioPrazoDias);
+        colorStatus(ws.getRow(rn).getCell(9), sp.label);
+      });
+    }
+
+    // ── Aba: Análise de Desvios ───────────────────────────────────────────────
+    if (_EXP_ABAS.desvios) {
+      const extraCols = S.hasDatas ? 8 : 0;
+      const NC = 6 + extraCols;
+      const ws = wb.addWorksheet('Análise de Desvios');
+      noGrid(ws, 2);
+      const baseCols = [{ width: 38 },{ width: 16 },{ width: 18 },{ width: 16 },{ width: 16 },{ width: 14 }];
+      const dateCols = S.hasDatas ? [{ width: 16 },{ width: 16 },{ width: 16 },{ width: 16 },{ width: 14 },{ width: 14 },{ width: 14 },{ width: 24 }] : [];
+      ws.columns = [...baseCols, ...dateCols];
+      scopeRow(ws);
+      const hdr = [nivel,'Base até Corte','Reprog até Corte','Real até Corte','Desvio (R−B)','Status Físico'];
+      if (S.hasDatas) hdr.push('Início Plan. Base','Término Plan. Base','Início Prev.','Término Prev.','Início Real','Término Real','Desvio Prazo','Status Prazo');
+      ws.addRow(hdr);
+      hdrRow(ws, ws.rowCount, NC);
+      const sorted = [..._ED].sort((a, b) => a.dev - b.dev);
+      sorted.forEach((r, i) => {
+        const st = r.dev > 0.005 ? 'Adiantado' : r.dev < -0.005 ? 'Atrasado' : 'Em dia';
+        const row = [r.label, r.bCut, r.rpCut, r.rCut, r.dev, st];
+        if (S.hasDatas) {
+          const sp = statusPrazoInfo(r);
+          row.push(fmtDate(r.iniPlanBase), fmtDate(r.fimPlanBase), fmtDate(r.iniPlan), fmtDate(r.fimPlan),
+            fmtDate(r.iniReal), fmtDate(r.fimReal), r.desvioPrazoDias ?? null, sp.label);
+        }
+        ws.addRow(row);
+        const rn = ws.rowCount;
+        dataRow(ws, rn, NC, false, i);
+        pct(ws, rn, [2,3,4]); pctDev(ws, rn, 5);
+        colorDesvio(ws.getRow(rn).getCell(5), r.dev);
+        colorStatus(ws.getRow(rn).getCell(6), st);
+        if (S.hasDatas) {
+          colorDias(ws.getRow(rn).getCell(13), r.desvioPrazoDias);
+          colorStatus(ws.getRow(rn).getCell(14), statusPrazoInfo(r).label);
+        }
+      });
+    }
+
+    // ── Download ──────────────────────────────────────────────────────────────
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url;
+    a.download = `Analise Fisica ${cutLabel} · ${dtStr}.xlsx`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+  } catch(e) {
+    console.error(e);
+    alert('Erro ao gerar Excel: ' + e.message);
+  } finally {
+    if (btn) {
+      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Gerar Excel';
+      btn.disabled = false;
+    }
+  }
+}
+</script>
+<script src="https://mateusm23.github.io/HUB/assets/tracker.js" data-tool="ferramentas"></script>
+</body>
+</html>
