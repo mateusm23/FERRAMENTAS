@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Análise Física do Projeto</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -238,7 +239,7 @@ tfoot td:first-child { text-align: left; }
 .kpi-val.zer { color: var(--text-muted); }
 .kpi-sub { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
 
-/* ── Barra do seletor de Nível (Unidade/Local/Macro Etapa/Etapa) — Previsto x Realizado ── */
+/* ── Barra do seletor de Nível (Unidade/Local/Macro Etapa/Etapa) — Análise de Pesos ── */
 .filter-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 7px 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; }
 
 @media (max-width: 700px) {
@@ -378,7 +379,14 @@ tfoot td:first-child { text-align: left; }
 <script>
 // ─── State ────────────────────────────────────────────────────────────────────
 const S = { rows: [], months: [], cutoffIdx: -1, hasDatas: false };
-let _CS = [], _ED = [], _ED_nivel = 'macro';
+let _CS = [], _ED = [];
+// Agrupamento estilo "tabela dinâmica": array ORDENADO de campos — a ordem
+// define a ordem de concatenação no rótulo (ex: ['local','unidade'] → "Local › Unidade").
+let _GROUP_FIELDS = ['macroEtapa'];
+let _GROUP_PANEL_OPEN = false;
+// Filtro por Status Prazo (tela Desvios) — array de chaves selecionadas; vazio = todos.
+let _STATUS_PRAZO_FILTER = [];
+let _STATUS_PRAZO_PANEL_OPEN = false;
 // Cada campo é um array de valores selecionados; array vazio = "todas" (sem filtro).
 let _ANA_F = { unidade: [], local: [], macroEtapa: [], etapa: [] };
 let _ACTIVE_SECTION = 'geral';
@@ -417,6 +425,16 @@ function parsePct(v) {
 // O export padrão do Agilean usado aqui só tem granularidade de mês (coluna "Data").
 // Estes campos são opcionais: se a exportação não incluir essas colunas, a análise
 // funciona exatamente como antes — só não mostra datas no Previsto × Real.
+// Algumas células do Agilean trazem quebra de linha embutida no meio do texto
+// (texto longo "quebrado" dentro da própria célula no Excel original). Um \n
+// sobrevivendo dentro de um campo de identidade (Unidade/Local/Macro Etapa/
+// Etapa/Código) quebra a cópia TSV pro Excel — o \n do meio do texto é lido
+// como se fosse o \n que separa uma linha da tabela da próxima, duplicando a
+// linha. Por isso qualquer espaço em branco (inclusive quebra de linha) nesses
+// campos é colapsado num espaço único, nunca só "trim" nas pontas.
+function cleanText(v) {
+  return String(v ?? '').replace(/\s+/g, ' ').trim();
+}
 const DIACRITICS_RE = new RegExp('[\\u0300-\\u036f]', 'g');
 function normalizeHeader(h) {
   return String(h ?? '').trim().toLowerCase().normalize('NFD').replace(DIACRITICS_RE, '');
@@ -515,6 +533,15 @@ function maxDate(arr) {
   const valid = arr.filter(Boolean);
   return valid.length ? new Date(Math.max(...valid.map(d => d.getTime()))) : null;
 }
+// Pra término (fim) de um grupo que junta várias etapas: só faz sentido mostrar uma
+// data se TODAS as etapas do grupo já tiverem essa data preenchida — senão parece
+// que o grupo inteiro terminou quando só uma parte terminou. minDate/início continua
+// usando "a mais antiga entre as que existem" (começar não exige que tudo já comecou).
+function maxDateStrict(arr) {
+  return arr.some(d => !d) ? null : maxDate(arr);
+}
+function diffDias(a, b) { return Math.round((a.getTime() - b.getTime()) / 86400000); }
+function fmtDias(v) { return v === null ? '—' : (v >= 0 ? '+' : '') + v + ' dia' + (Math.abs(v) === 1 ? '' : 's'); }
 function fmtDate(d) {
   if (!d) return '—';
   const dd = String(d.getDate()).padStart(2, '0');
@@ -552,15 +579,15 @@ function processMatrix(matrix) {
     if (!dataStr) continue;
     const dataParsed = parseMonthStr(dataStr);
     if (!dataParsed) continue;
-    const unidade    = String(cols[COL.unidade]    ?? '').trim();
-    const macroEtapa = String(cols[COL.macroEtapa] ?? '').trim();
+    const unidade    = cleanText(cols[COL.unidade]);
+    const macroEtapa = cleanText(cols[COL.macroEtapa]);
     if (!unidade && !macroEtapa) continue;
     rows.push({
-      codigo:     String(cols[COL.codigo]    ?? '').trim(),
+      codigo:     cleanText(cols[COL.codigo]),
       unidade:    unidade    || '(sem unidade)',
-      local:      String(cols[COL.local]     ?? '').trim(),
+      local:      cleanText(cols[COL.local]),
       macroEtapa: macroEtapa || '(sem macro etapa)',
-      etapa:      String(cols[COL.etapa]     ?? '').trim(),
+      etapa:      cleanText(cols[COL.etapa]),
       data:       dataParsed,
       cReal:   parsePct(cols[COL.cReal]),
       cReprog: parsePct(cols[COL.cReprog]),
@@ -712,26 +739,27 @@ function buildCurvaSAnalitico(f) {
              rAcum: idx <= S.cutoffIdx ? rAcum : null, isCutoff: idx === S.cutoffIdx };
   });
 }
-const NIVEL_LABELS  = { unidade: 'Unidade', local: 'Local', macro: 'Macro Etapa', etapa: 'Etapa' };
-const NIVEL_PLURAIS = { unidade: 'unidades', local: 'locais', macro: 'macro etapas', etapa: 'etapas' };
+// Agrupamento estilo "tabela dinâmica" — o usuário escolhe quais campos entram
+// e em que ordem (controle em renderGroupFieldsControl/toggleGroupField/moveGroupField).
+const FIELD_LABELS  = { unidade: 'Unidade', local: 'Local', macroEtapa: 'Macro Etapa', etapa: 'Etapa' };
+const FIELD_PLURALS = { unidade: 'unidades', local: 'locais', macroEtapa: 'macro etapas', etapa: 'etapas' };
+const GROUP_FIELD_DEFS = [
+  { key: 'unidade',    label: 'Unidade' },
+  { key: 'local',      label: 'Local' },
+  { key: 'macroEtapa', label: 'Macro Etapa' },
+  { key: 'etapa',      label: 'Etapa' }
+];
+function groupLabel()  { return _GROUP_FIELDS.map(f => FIELD_LABELS[f]).join(' › '); }
+function groupPlural() { return _GROUP_FIELDS.length === 1 ? FIELD_PLURALS[_GROUP_FIELDS[0]] : 'grupos'; }
 
-function buildPrevistoRealAnalitico(f, nivel) {
+function buildPrevistoRealAnalitico(f, fields) {
   const cutSet = new Set(S.months.slice(0, S.cutoffIdx + 1).map(m => m.label));
   const baseRows = filterRowsBy(S.rows, f);
-  let keyFn, labelFn;
-  if (nivel === 'unidade') {
-    keyFn = r => r.unidade;
-    labelFn = (key) => key;
-  } else if (nivel === 'local') {
-    keyFn = r => r.unidade + '||' + r.local;
-    labelFn = (key, rows) => rows[0].unidade + ' › ' + rows[0].local;
-  } else if (nivel === 'etapa') {
-    keyFn = r => (r.codigo || (r.macroEtapa + '||' + r.etapa));
-    labelFn = (key, rows) => rows[0].macroEtapa + ' › ' + rows[0].etapa;
-  } else { // 'macro'
-    keyFn = r => r.macroEtapa;
-    labelFn = (key) => key;
-  }
+  // "etapa" sozinho pode repetir nome entre atividades distintas — o código (quando
+  // existe) desambigua sem aparecer no rótulo, igual o antigo nível "Etapa" já fazia.
+  const useCodigo = fields.includes('etapa');
+  const keyFn = r => fields.map(fl => r[fl]).join('||') + (useCodigo && r.codigo ? '||' + r.codigo : '');
+  const labelFn = (rows) => fields.map(fl => rows[0][fl]).join(' › ');
   const groupMap = new Map();
   baseRows.forEach(r => {
     const k = keyFn(r);
@@ -739,17 +767,28 @@ function buildPrevistoRealAnalitico(f, nivel) {
     groupMap.get(k).push(r);
   });
   const result = [];
-  groupMap.forEach((gRows, key) => {
-    const label = labelFn(key, gRows);
+  groupMap.forEach((gRows) => {
+    const label = labelFn(gRows);
     let bTotal = 0, bCut = 0, rpCut = 0, rCut = 0;
     gRows.forEach(r => {
       bTotal += r.cBase;
       if (cutSet.has(r.data.label)) { bCut += r.cBase; rpCut += r.cReprog; rCut += r.cReal; }
     });
+    const fimPlanBase = maxDateStrict(gRows.map(r => r.fimPlanBase));
+    const fimPlan      = maxDateStrict(gRows.map(r => r.fimPlan));
+    const fimReal       = maxDateStrict(gRows.map(r => r.fimReal));
+    // Desvio de prazo em dias: compara a baseline contra o término real (se já
+    // terminou) ou contra o planejado/reprogramado atual (se ainda não terminou,
+    // antecipando o atraso projetado). Sem baseline ou sem nenhum término pra
+    // comparar, fica null (exibido como "—") — nunca um número calculado a partir
+    // de data ausente.
+    const terminoEfetivo = fimReal || fimPlan;
+    const desvioPrazoDias = (fimPlanBase && terminoEfetivo) ? diffDias(terminoEfetivo, fimPlanBase) : null;
     result.push({ label, bTotal, bCut, rpCut, rCut, dev: rCut - bCut,
-      iniPlanBase: minDate(gRows.map(r => r.iniPlanBase)), fimPlanBase: maxDate(gRows.map(r => r.fimPlanBase)),
-      iniPlan: minDate(gRows.map(r => r.iniPlan)), fimPlan: maxDate(gRows.map(r => r.fimPlan)),
-      iniReal: minDate(gRows.map(r => r.iniReal)), fimReal: maxDate(gRows.map(r => r.fimReal)) });
+      iniPlanBase: minDate(gRows.map(r => r.iniPlanBase)), fimPlanBase,
+      iniPlan: minDate(gRows.map(r => r.iniPlan)), fimPlan,
+      iniReal: minDate(gRows.map(r => r.iniReal)), fimReal,
+      desvioPrazoDias });
   });
   return result.sort((a, b) => a.label.localeCompare(b.label, 'pt-BR'));
 }
@@ -806,10 +845,13 @@ function gerarAnalise() {
   S.cutoffIdx = cutoffIdx;
   const cutLabel = S.months[cutoffIdx].label;
   _ANA_F = { unidade: [], local: [], macroEtapa: [], etapa: [] };
-  _ED_nivel = 'macro';
+  _GROUP_FIELDS = ['macroEtapa'];
+  _GROUP_PANEL_OPEN = false;
+  _STATUS_PRAZO_FILTER = [];
+  _STATUS_PRAZO_PANEL_OPEN = false;
   _ACTIVE_SECTION = 'geral';
   _CS = buildCurvaSAnalitico(_ANA_F);
-  _ED = buildPrevistoRealAnalitico(_ANA_F, _ED_nivel);
+  _ED = buildPrevistoRealAnalitico(_ANA_F, _GROUP_FIELDS);
   renderResultado(cutLabel);
   document.getElementById('mainContainer').classList.add('with-sidenav');
   document.getElementById('num2').className = 'step-num done';
@@ -859,6 +901,9 @@ function arredondarComNulos(valores, decimais) {
   return resultado;
 }
 function cls(v)   { if (v === null || Math.abs(v) < 0.005) return 'zer'; return v > 0 ? 'pos' : 'neg'; }
+// Sinal inverso de cls(): em prazo, positivo (terminou DEPOIS da base) é atraso (vermelho);
+// em % físico positivo é avanço (verde) — não dá pra reaproveitar cls() pros dois.
+function clsDias(v) { if (v === null) return 'muted'; if (v === 0) return 'zer'; return v > 0 ? 'neg' : 'pos'; }
 function statusPill(v) {
   if (Math.abs(v) < 0.005) return '<span class="pill zer">Em dia</span>';
   return v > 0 ? '<span class="pill pos">Adiantado</span>' : '<span class="pill neg">Atrasado</span>';
@@ -875,8 +920,8 @@ function copyTSV(tsv, btnId) { navigator.clipboard.writeText(tsv).then(() => cop
 
 // ─── Render principal ──────────────────────────────────────────────────────────
 const SECTION_TITLES = {
-  geral: 'Informações Gerais', curva: 'Curva S', previsto: 'Previsto x Realizado',
-  marcos: 'Datas Marcos', desvios: 'Desvios', semanal: 'Resumo Semanal', export: 'Exportar Resumo Geral'
+  geral: 'Informações Gerais', curva: 'Curva S', previsto: 'Análise de Pesos',
+  marcos: 'Análise de Prazos', desvios: 'Análise de Desvios', semanal: 'Resumo Semanal', export: 'Exportar Resumo Geral'
 };
 
 function renderResultado(cutLabel) {
@@ -890,9 +935,9 @@ function renderResultado(cutLabel) {
         </div>
         <button class="side-nav-item active" onclick="switchSection('geral',this)"><span class="side-nav-icon">📊</span>Informações Gerais</button>
         <button class="side-nav-item" onclick="switchSection('curva',this)"><span class="side-nav-icon">📈</span>Curva S</button>
-        <button class="side-nav-item" onclick="switchSection('previsto',this)"><span class="side-nav-icon">📋</span>Previsto x Realizado</button>
-        <button class="side-nav-item" onclick="switchSection('marcos',this)"><span class="side-nav-icon">🚩</span>Datas Marcos</button>
-        <button class="side-nav-item" onclick="switchSection('desvios',this)"><span class="side-nav-icon">⚠️</span>Desvios</button>
+        <button class="side-nav-item" onclick="switchSection('previsto',this)"><span class="side-nav-icon">📋</span>Análise de Pesos</button>
+        <button class="side-nav-item" onclick="switchSection('marcos',this)"><span class="side-nav-icon">🚩</span>Análise de Prazos</button>
+        <button class="side-nav-item" onclick="switchSection('desvios',this)"><span class="side-nav-icon">⚠️</span>Análise de Desvios</button>
         <button class="side-nav-item" onclick="switchSection('semanal',this)"><span class="side-nav-icon">📅</span>Resumo Semanal</button>
         <button class="side-nav-item" onclick="switchSection('export',this)"><span class="side-nav-icon">📤</span>Exportar Resumo Geral</button>
 
@@ -920,6 +965,8 @@ function switchSection(id, el) {
   document.getElementById('configCard').style.display = 'none';
   document.getElementById('sideContentWrap').style.display = '';
   _ACTIVE_SECTION = id;
+  _GROUP_PANEL_OPEN = false;
+  _STATUS_PRAZO_PANEL_OPEN = false;
   document.querySelectorAll('.side-nav-item').forEach(b => b.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('sectionContent').innerHTML = renderSection(id);
@@ -1018,32 +1065,148 @@ function renderSectionExport() {
 }
 
 // ─── Seção: Datas Marcos ────────────────────────────────────────────────────────
-function statusMarco(fimPlan, fimReal) {
-  if (!fimPlan) return '<span class="pill zer">—</span>';
-  const hoje = new Date();
-  if (fimReal) {
-    return fimReal.getTime() > fimPlan.getTime()
-      ? '<span class="pill neg">Concluído com atraso</span>'
-      : '<span class="pill pos">Concluído no prazo</span>';
-  }
-  return hoje.getTime() > fimPlan.getTime()
-    ? '<span class="pill neg">Atrasado</span>'
-    : '<span class="pill zer">Em andamento</span>';
+
+// ─── Status Prazo (compartilhado por Datas Marcos e Desvios) — baseado no desvio em dias vs. baseline ─────
+// 2 estados (já terminou ou não) × 3 direções (adiantado/no prazo/atrasado) =
+// vocabulário consistente, em vez de 6 frases soltas sem padrão.
+const STATUS_PRAZO_DEFS = [
+  { key: 'concluido_adiantado', label: 'Concluído adiantado' },
+  { key: 'concluido_no_prazo',  label: 'Concluído no prazo' },
+  { key: 'concluido_atrasado',  label: 'Concluído atrasado' },
+  { key: 'tendencia_adiantado', label: 'Tendência: adiantado' },
+  { key: 'tendencia_no_prazo',  label: 'Tendência: no prazo' },
+  { key: 'tendencia_atrasado',  label: 'Tendência: atrasado' },
+  { key: 'sem_previsao',        label: 'Sem previsão' }
+];
+function statusPrazoInfo(r) {
+  if (r.desvioPrazoDias === null) return { key: 'sem_previsao', label: 'Sem previsão', cls: 'muted' };
+  const concluido = !!r.fimReal;
+  const dir = r.desvioPrazoDias < 0 ? 'adiantado' : r.desvioPrazoDias > 0 ? 'atrasado' : 'no_prazo';
+  const key = (concluido ? 'concluido_' : 'tendencia_') + dir;
+  const label = STATUS_PRAZO_DEFS.find(d => d.key === key).label;
+  const cls = dir === 'adiantado' ? 'pos' : dir === 'atrasado' ? 'neg' : 'zer';
+  return { key, label, cls };
 }
-function renderNivelToggle() {
+function renderStatusPrazoFilter() {
+  const checks = STATUS_PRAZO_DEFS.map(d => `
+    <label class="popfilter-opt">
+      <input type="checkbox" onchange="toggleStatusPrazoFilter('${d.key}')" ${_STATUS_PRAZO_FILTER.includes(d.key) ? 'checked' : ''}>
+      ${d.label}
+    </label>`).join('');
+  const count = _STATUS_PRAZO_FILTER.length;
   return `
     <div class="filter-bar">
-      <span class="config-label">Nível</span>
-      <div class="toggle-group">
-        <button class="toggle-btn ${_ED_nivel==='unidade'?'active':''}" onclick="mudarNivelEtapas('unidade')">Unidade</button>
-        <button class="toggle-btn ${_ED_nivel==='local'?'active':''}" onclick="mudarNivelEtapas('local')">Local</button>
-        <button class="toggle-btn ${_ED_nivel==='macro'?'active':''}" onclick="mudarNivelEtapas('macro')">Macro Etapa</button>
-        <button class="toggle-btn ${_ED_nivel==='etapa'?'active':''}" onclick="mudarNivelEtapas('etapa')">Etapa</button>
+      <span class="config-label">Status Prazo</span>
+      <div class="popfilter${_STATUS_PRAZO_PANEL_OPEN ? ' open' : ''}" style="position:relative">
+        <button class="sf-btn" type="button" style="width:auto;min-width:190px" onclick="toggleStatusPrazoPanel()">
+          <span class="lbl">${count ? count + ' selecionado' + (count > 1 ? 's' : '') : 'Todos'}</span><span class="arrow">▾</span>
+        </button>
+        <div class="popfilter-panel" style="position:absolute;top:calc(100% + 6px);left:0;${_STATUS_PRAZO_PANEL_OPEN ? 'display:block' : ''}">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border)">
+            <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted)">Status Prazo</span>
+            <button type="button" onclick="closeStatusPrazoPanel()" style="border:none;background:none;cursor:pointer;color:var(--text-muted);font-size:14px;line-height:1;padding:2px 4px" title="Fechar">✕</button>
+          </div>
+          <div class="popfilter-list">${checks}</div>
+          <div class="popfilter-footer">
+            <button type="button" onclick="selectAllStatusPrazoFilter()">Selecionar todos</button>
+            <button type="button" onclick="clearStatusPrazoFilter()">Limpar</button>
+          </div>
+        </div>
       </div>
     </div>`;
 }
+function toggleStatusPrazoPanel() {
+  _STATUS_PRAZO_PANEL_OPEN = !_STATUS_PRAZO_PANEL_OPEN;
+  document.getElementById('sectionContent').innerHTML = renderSection(_ACTIVE_SECTION);
+}
+function closeStatusPrazoPanel() {
+  _STATUS_PRAZO_PANEL_OPEN = false;
+  document.getElementById('sectionContent').innerHTML = renderSection(_ACTIVE_SECTION);
+}
+function toggleStatusPrazoFilter(key) {
+  _STATUS_PRAZO_FILTER = _STATUS_PRAZO_FILTER.includes(key) ? _STATUS_PRAZO_FILTER.filter(k => k !== key) : [..._STATUS_PRAZO_FILTER, key];
+  _STATUS_PRAZO_PANEL_OPEN = true;
+  document.getElementById('sectionContent').innerHTML = renderSection(_ACTIVE_SECTION);
+}
+function selectAllStatusPrazoFilter() {
+  _STATUS_PRAZO_FILTER = STATUS_PRAZO_DEFS.map(d => d.key);
+  _STATUS_PRAZO_PANEL_OPEN = true;
+  document.getElementById('sectionContent').innerHTML = renderSection(_ACTIVE_SECTION);
+}
+function clearStatusPrazoFilter() {
+  _STATUS_PRAZO_FILTER = [];
+  _STATUS_PRAZO_PANEL_OPEN = true;
+  document.getElementById('sectionContent').innerHTML = renderSection(_ACTIVE_SECTION);
+}
+
+// ─── Controle "Agrupar por" — tabela dinâmica (campos + ordem escolhidos pelo usuário) ──
+function renderGroupFieldsControl() {
+  const checks = GROUP_FIELD_DEFS.map(d => `
+    <label class="popfilter-opt">
+      <input type="checkbox" onchange="toggleGroupField('${d.key}')" ${_GROUP_FIELDS.includes(d.key) ? 'checked' : ''}>
+      ${d.label}
+    </label>`).join('');
+  const order = _GROUP_FIELDS.map((f, i) => `
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 14px;font-size:12px">
+      <span style="flex:1;color:var(--navy)">${i + 1}. ${FIELD_LABELS[f]}</span>
+      <button type="button" onclick="moveGroupField('${f}',-1)" ${i === 0 ? 'disabled' : ''} style="border:none;background:none;cursor:pointer;color:var(--blue-bright);font-size:11px;opacity:${i === 0 ? '.3' : '1'}">▲</button>
+      <button type="button" onclick="moveGroupField('${f}',1)" ${i === _GROUP_FIELDS.length - 1 ? 'disabled' : ''} style="border:none;background:none;cursor:pointer;color:var(--blue-bright);font-size:11px;opacity:${i === _GROUP_FIELDS.length - 1 ? '.3' : '1'}">▼</button>
+    </div>`).join('');
+  return `
+    <div class="filter-bar">
+      <span class="config-label">Agrupar por</span>
+      <div class="popfilter${_GROUP_PANEL_OPEN ? ' open' : ''}" style="position:relative">
+        <button class="sf-btn" type="button" style="width:auto;min-width:220px" onclick="toggleGroupPanel()">
+          <span class="lbl">${groupLabel()}</span><span class="arrow">▾</span>
+        </button>
+        <div class="popfilter-panel" style="position:absolute;top:calc(100% + 6px);left:0;${_GROUP_PANEL_OPEN ? 'display:block' : ''}">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border)">
+            <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted)">Campos</span>
+            <button type="button" onclick="closeGroupPanel()" style="border:none;background:none;cursor:pointer;color:var(--text-muted);font-size:14px;line-height:1;padding:2px 4px" title="Fechar">✕</button>
+          </div>
+          <div class="popfilter-list">${checks}</div>
+          <div style="border-top:1px solid var(--border);padding:6px 0;background:var(--bg)">
+            <div style="padding:4px 14px 2px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted)">Ordem da concatenação</div>
+            ${order}
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+function toggleGroupPanel() {
+  _GROUP_PANEL_OPEN = !_GROUP_PANEL_OPEN;
+  document.getElementById('sectionContent').innerHTML = renderSection(_ACTIVE_SECTION);
+}
+function closeGroupPanel() {
+  _GROUP_PANEL_OPEN = false;
+  document.getElementById('sectionContent').innerHTML = renderSection(_ACTIVE_SECTION);
+}
+function toggleGroupField(field) {
+  if (_GROUP_FIELDS.includes(field)) {
+    if (_GROUP_FIELDS.length > 1) _GROUP_FIELDS = _GROUP_FIELDS.filter(f => f !== field);
+    // mantém ao menos 1 campo selecionado — não dá pra ter tabela sem agrupamento.
+  } else {
+    _GROUP_FIELDS = [..._GROUP_FIELDS, field];
+  }
+  _GROUP_PANEL_OPEN = true;
+  recomputeGroupFields();
+}
+function moveGroupField(field, dir) {
+  const i = _GROUP_FIELDS.indexOf(field);
+  const j = i + dir;
+  if (j < 0 || j >= _GROUP_FIELDS.length) return;
+  const arr = [..._GROUP_FIELDS];
+  [arr[i], arr[j]] = [arr[j], arr[i]];
+  _GROUP_FIELDS = arr;
+  _GROUP_PANEL_OPEN = true;
+  recomputeGroupFields();
+}
+function recomputeGroupFields() {
+  _ED = buildPrevistoRealAnalitico(_ANA_F, _GROUP_FIELDS);
+  document.getElementById('sectionContent').innerHTML = renderSection(_ACTIVE_SECTION);
+}
 function renderSectionMarcos() {
-  const nivel = NIVEL_LABELS[_ED_nivel];
+  const nivel = groupLabel();
   if (!S.hasDatas) {
     return `
       <div class="result-header"><div class="result-sub">${anaScopeLabel()}</div></div>
@@ -1051,13 +1214,18 @@ function renderSectionMarcos() {
         ℹ A base carregada não tem colunas de data (Início/Término Planejado e Real) — recarregue com essas colunas habilitadas no export do Agilean pra ver os marcos aqui.
       </div>`;
   }
-  const rows = _ED.map(r => `
+  const rows = _ED.map(r => {
+    const sp = statusPrazoInfo(r);
+    return `
     <tr>
       <td>${r.label}</td>
+      <td>${fmtDate(r.iniPlanBase)}</td><td>${fmtDate(r.fimPlanBase)}</td>
       <td>${fmtDate(r.iniPlan)}</td><td>${fmtDate(r.fimPlan)}</td>
       <td>${fmtDate(r.iniReal)}</td><td>${fmtDate(r.fimReal)}</td>
-      <td>${statusMarco(r.fimPlan, r.fimReal)}</td>
-    </tr>`).join('');
+      <td class="${clsDias(r.desvioPrazoDias)}">${fmtDias(r.desvioPrazoDias)}</td>
+      <td><span class="pill ${sp.cls}">${sp.label}</span></td>
+    </tr>`;
+  }).join('');
   return `
     <div class="result-header">
       <div class="result-sub">${anaScopeLabel()} · Nível: ${nivel}</div>
@@ -1066,73 +1234,104 @@ function renderSectionMarcos() {
         Copiar para Excel
       </button>
     </div>
-    ${renderNivelToggle()}
+    ${renderGroupFieldsControl()}
     <div class="table-wrap"><table>
       <thead><tr>
         <th>${nivel}</th>
+        <th>Início Plan. Base</th><th>Término Plan. Base</th>
         <th>Início Prev.</th><th>Término Prev.</th>
         <th>Início Real</th><th>Término Real</th>
-        <th>Status</th>
+        <th>Desvio Prazo</th><th>Status</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table></div>`;
 }
 function doCopyMarcos() {
-  const nivel = NIVEL_LABELS[_ED_nivel];
-  const hdr = [nivel, 'Início Prev.', 'Término Prev.', 'Início Real', 'Término Real', 'Status'];
-  const rows = _ED.map(r => {
-    const status = !r.fimPlan ? '—'
-      : r.fimReal ? (r.fimReal.getTime() > r.fimPlan.getTime() ? 'Concluído com atraso' : 'Concluído no prazo')
-      : (new Date().getTime() > r.fimPlan.getTime() ? 'Atrasado' : 'Em andamento');
-    return [r.label, fmtDate(r.iniPlan), fmtDate(r.fimPlan), fmtDate(r.iniReal), fmtDate(r.fimReal), status];
-  });
+  const nivel = groupLabel();
+  const hdr = [nivel, 'Início Planejado Base', 'Término Planejado Base', 'Início Planejado', 'Término Planejado', 'Início Real', 'Término Real', 'Desvio Prazo (dias)', 'Status'];
+  const rows = _ED.map(r => [r.label, fmtDate(r.iniPlanBase), fmtDate(r.fimPlanBase), fmtDate(r.iniPlan), fmtDate(r.fimPlan), fmtDate(r.iniReal), fmtDate(r.fimReal),
+    r.desvioPrazoDias === null ? '' : r.desvioPrazoDias, statusPrazoInfo(r).label]);
   copyTSV([hdr, ...rows].map(r => r.join('\t')).join('\n'), 'btnCopyMarcos');
 }
 
 // ─── Seção: Desvios ─────────────────────────────────────────────────────────────
 function renderSectionDesvios() {
-  const nivel   = NIVEL_LABELS[_ED_nivel];
-  const plural  = NIVEL_PLURAIS[_ED_nivel];
+  const nivel   = groupLabel();
+  const plural  = groupPlural();
   const sorted  = [..._ED].sort((a, b) => a.dev - b.dev); // maior atraso primeiro
   const ahead   = _ED.filter(r => r.dev > 0.005).length;
   const behind  = _ED.filter(r => r.dev < -0.005).length;
   const ontrack = _ED.length - ahead - behind;
-  const rows = sorted.map(r => `
+  // Filtro por Status Prazo só existe com colunas de data carregadas, e só afeta
+  // quais linhas aparecem nesta tabela — os KPIs acima continuam sobre todo _ED
+  // (são sobre o desvio físico, conceito diferente do status de prazo).
+  const visiveis = (S.hasDatas && _STATUS_PRAZO_FILTER.length)
+    ? sorted.filter(r => _STATUS_PRAZO_FILTER.includes(statusPrazoInfo(r).key))
+    : sorted;
+  const rows = visiveis.map(r => {
+    const sp = S.hasDatas ? statusPrazoInfo(r) : null;
+    return `
     <tr>
       <td>${r.label}</td>
-      <td>${p(r.bCut)}</td><td>${p(r.rCut)}</td>
+      <td>${p(r.bCut)}</td><td>${p(r.rpCut)}</td><td>${p(r.rCut)}</td>
       <td><span class="pill ${cls(r.dev)}">${pp(r.dev)}</span></td>
       <td>${statusPill(r.dev)}</td>
-    </tr>`).join('');
+      ${S.hasDatas ? `
+      <td>${fmtDate(r.iniPlanBase)}</td><td>${fmtDate(r.fimPlanBase)}</td>
+      <td>${fmtDate(r.iniPlan)}</td><td>${fmtDate(r.fimPlan)}</td>
+      <td>${fmtDate(r.iniReal)}</td><td>${fmtDate(r.fimReal)}</td>
+      <td class="${clsDias(r.desvioPrazoDias)}">${fmtDias(r.desvioPrazoDias)}</td>
+      <td><span class="pill ${sp.cls}">${sp.label}</span></td>` : ''}
+    </tr>`;
+  }).join('');
   return `
     <div class="result-header">
-      <div class="result-sub">${anaScopeLabel()} · Nível: ${nivel} · ordenado do maior atraso ao maior avanço</div>
+      <div class="result-sub">${anaScopeLabel()} · Nível: ${nivel} · ordenado do maior atraso físico ao maior avanço</div>
       <button class="btn btn-outline" id="btnCopyDesvios" onclick="doCopyDesvios()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
         Copiar para Excel
       </button>
     </div>
-    ${renderNivelToggle()}
+    ${renderGroupFieldsControl()}
+    ${S.hasDatas ? renderStatusPrazoFilter() : ''}
     <div class="kpi-row-3" style="margin-bottom:16px">
-      <div class="kpi"><div class="kpi-label">Atrasadas</div><div class="kpi-val neg">${behind}</div><div class="kpi-sub">${plural}</div></div>
-      <div class="kpi"><div class="kpi-label">Em dia</div><div class="kpi-val zer">${ontrack}</div><div class="kpi-sub">${plural}</div></div>
-      <div class="kpi"><div class="kpi-label">Adiantadas</div><div class="kpi-val pos">${ahead}</div><div class="kpi-sub">${plural}</div></div>
+      <div class="kpi"><div class="kpi-label">Atrasadas</div><div class="kpi-val neg">${behind}</div><div class="kpi-sub">${plural} · desvio físico</div></div>
+      <div class="kpi"><div class="kpi-label">Em dia</div><div class="kpi-val zer">${ontrack}</div><div class="kpi-sub">${plural} · desvio físico</div></div>
+      <div class="kpi"><div class="kpi-label">Adiantadas</div><div class="kpi-val pos">${ahead}</div><div class="kpi-sub">${plural} · desvio físico</div></div>
     </div>
+    ${!S.hasDatas ? `<div style="font-size:11.5px;color:var(--text-muted);margin-bottom:12px">ℹ Sem colunas de data na base carregada — mostrando só o desvio físico (%). Recarregue com Início/Término Planejado e Real pra ver também a análise de prazo.</div>` : ''}
     <div class="table-wrap"><table>
       <thead><tr>
-        <th>${nivel}</th><th>Base até Corte</th><th>Real até Corte</th><th>Desvio (R−B)</th><th>Status</th>
+        <th>${nivel}</th><th>Base até Corte</th><th>Reprog até Corte</th><th>Real até Corte</th><th>Desvio (R−B)</th><th>Status</th>
+        ${S.hasDatas ? `
+        <th>Início Plan. Base</th><th>Término Plan. Base</th>
+        <th>Início Prev.</th><th>Término Prev.</th>
+        <th>Início Real</th><th>Término Real</th>
+        <th>Desvio Prazo</th><th>Status Prazo</th>` : ''}
       </tr></thead>
       <tbody>${rows}</tbody>
     </table></div>`;
 }
 function doCopyDesvios() {
-  const nivel = NIVEL_LABELS[_ED_nivel];
+  const nivel = groupLabel();
   const sorted = [..._ED].sort((a, b) => a.dev - b.dev);
-  const bAj = arredondarComNulos(sorted.map(r => r.bCut), 2);
-  const rAj = arredondarComNulos(sorted.map(r => r.rCut), 2);
-  const hdr = [nivel, 'Base até Corte (%)', 'Real até Corte (%)', 'Desvio (p.p.)', 'Status'];
-  const rows = sorted.map((r, i) => [r.label, px(bAj[i]), px(rAj[i]), ppx(r.dev),
-    r.dev > 0.005 ? 'Adiantado' : r.dev < -0.005 ? 'Atrasado' : 'Em dia']);
+  const visiveis = (S.hasDatas && _STATUS_PRAZO_FILTER.length)
+    ? sorted.filter(r => _STATUS_PRAZO_FILTER.includes(statusPrazoInfo(r).key))
+    : sorted;
+  const bAj  = arredondarComNulos(visiveis.map(r => r.bCut), 2);
+  const rpAj = arredondarComNulos(visiveis.map(r => r.rpCut), 2);
+  const rAj  = arredondarComNulos(visiveis.map(r => r.rCut), 2);
+  const hdr = [nivel, 'Base até Corte (%)', 'Reprog até Corte (%)', 'Real até Corte (%)', 'Desvio (p.p.)', 'Status'];
+  if (S.hasDatas) hdr.push('Início Planejado Base', 'Término Planejado Base', 'Início Planejado', 'Término Planejado', 'Início Real', 'Término Real', 'Desvio Prazo (dias)', 'Status Prazo');
+  const rows = visiveis.map((r, i) => {
+    const row = [r.label, px(bAj[i]), px(rpAj[i]), px(rAj[i]), ppx(r.dev),
+      r.dev > 0.005 ? 'Adiantado' : r.dev < -0.005 ? 'Atrasado' : 'Em dia'];
+    if (S.hasDatas) {
+      row.push(fmtDate(r.iniPlanBase), fmtDate(r.fimPlanBase), fmtDate(r.iniPlan), fmtDate(r.fimPlan), fmtDate(r.iniReal), fmtDate(r.fimReal),
+        r.desvioPrazoDias === null ? '' : r.desvioPrazoDias, statusPrazoInfo(r).label);
+    }
+    return row;
+  });
   copyTSV([hdr, ...rows].map(r => r.join('\t')).join('\n'), 'btnCopyDesvios');
 }
 
@@ -1356,7 +1555,7 @@ function limparFiltroAna() {
 }
 function recomputeAnalitico() {
   _CS = buildCurvaSAnalitico(_ANA_F);
-  _ED = buildPrevistoRealAnalitico(_ANA_F, _ED_nivel);
+  _ED = buildPrevistoRealAnalitico(_ANA_F, _GROUP_FIELDS);
   document.getElementById('sectionContent').innerHTML = renderSection(_ACTIVE_SECTION);
   refreshSidebarFilters();
 }
@@ -1430,7 +1629,7 @@ function renderEtapasTabAnalitico() {
         Copiar para Excel
       </button>
     </div>
-    ${renderNivelToggle()}
+    ${renderGroupFieldsControl()}
     ${renderEtapasContent()}`;
 }
 function renderEtapasContent() {
@@ -1441,8 +1640,8 @@ function renderEtapasContent() {
   const totRP  = _ED.reduce((s, r) => s + r.rpCut, 0);
   const totRC  = _ED.reduce((s, r) => s + r.rCut, 0);
   const totDev = totRC - totBC;
-  const nivel  = NIVEL_LABELS[_ED_nivel];
-  const plural = NIVEL_PLURAIS[_ED_nivel];
+  const nivel  = groupLabel();
+  const plural = groupPlural();
   const rows   = _ED.map(r => `
     <tr>
       <td>${r.label}</td>
@@ -1473,13 +1672,8 @@ function renderEtapasContent() {
       </tr></tfoot>
     </table></div>`;
 }
-function mudarNivelEtapas(nivel) {
-  _ED_nivel = nivel;
-  _ED = buildPrevistoRealAnalitico(_ANA_F, _ED_nivel);
-  document.getElementById('sectionContent').innerHTML = renderSection(_ACTIVE_SECTION);
-}
 function doCopyEtapas() {
-  const nivel = NIVEL_LABELS[_ED_nivel];
+  const nivel = groupLabel();
   const bAj  = arredondarComNulos(_ED.map(r => r.bCut), 2);
   const rpAj = arredondarComNulos(_ED.map(r => r.rpCut), 2);
   const rAj  = arredondarComNulos(_ED.map(r => r.rCut), 2);
@@ -1527,7 +1721,7 @@ async function exportarExcel() {
     colWidths(ws1, [12,14,14,16,14,14,14,14]);
 
     // Aba 2: Previsto x Real — mesmo filtro + nível de agrupamento (Macro Etapa/Etapa) selecionado na tela
-    const nivelLbl = NIVEL_LABELS[_ED_nivel];
+    const nivelLbl = groupLabel();
     const ws2 = wb.addWorksheet('Previsto x Real');
     escopoCell(ws2, `Escopo do filtro: ${anaScopeLabel()} · Nível: ${nivelLbl}`);
     ws2.addRow([nivelLbl,'Base até Corte','Reprog até Corte','Real até Corte','Desvio (R-B)','Status']);
