@@ -2057,13 +2057,15 @@ function afterRenderCurva() {
   requestAnimationFrame(() => renderChartCurva());
 }
 function doCopyCurva() {
-  // Ajusta Base/Reprog/Real Mensal pra soma exata — sem isso, somar a coluna no
-  // Excel/Power BI fecha em 99,98% em vez de 100% (cada mês arredondado isoladamente).
-  const bAj  = arredondarComNulos(_CS.map(r => r.bMes), 2);
-  const rpAj = arredondarComNulos(_CS.map(r => r.rpMes), 2);
-  const rAj  = arredondarComNulos(_CS.map(r => r.rMes), 2);
+  const iniIdx = _CURVA_INI ?? 0;
+  const fimIdx = _CURVA_FIM ?? (_CS.length - 1);
+  const csView = _CS.slice(iniIdx, fimIdx + 1);
+  // Ajusta Base/Reprog/Real Mensal pra soma exata dentro da janela visível
+  const bAj  = arredondarComNulos(csView.map(r => r.bMes), 2);
+  const rpAj = arredondarComNulos(csView.map(r => r.rpMes), 2);
+  const rAj  = arredondarComNulos(csView.map(r => r.rMes), 2);
   const hdr = ['Mês','Base Mensal (%)','Base Acum (%)','Reprog Mensal (%)','Reprog Acum (%)','Real Mensal (%)','Real Acum (%)','Desvio (p.p.)'];
-  const rows = _CS.map((r, i) => [r.label, px(bAj[i]), px(r.bAcum), px(rpAj[i]), px(r.rpAcum),
+  const rows = csView.map((r, i) => [r.label, px(bAj[i]), px(r.bAcum), px(rpAj[i]), px(r.rpAcum),
     rAj[i] !== null ? px(rAj[i]) : '', r.rAcum !== null ? px(r.rAcum) : '',
     r.rAcum !== null ? ppx(r.rAcum - r.bAcum) : '']);
   copyTSV([hdr, ...rows].map(r => r.join('\t')).join('\n'), 'btnCopyCurva');
