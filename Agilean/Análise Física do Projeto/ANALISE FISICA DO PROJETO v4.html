@@ -870,6 +870,8 @@ function gerarAnalise() {
   _SEM_INI = '';
   _SEM_FIM = '';
   _SEM_QUEBRAR = false;
+  _CURVA_INI = null;
+  _CURVA_FIM = null;
   _EXP_ABAS = { capa: true, kpis: true, curva: true, pesos: true, prazos: true, desvios: true };
   _ACTIVE_SECTION = 'geral';
   _CS = buildCurvaSAnalitico(_ANA_F);
@@ -1812,15 +1814,33 @@ const GC = {
   reprog:   { line: '#1B3A7A', fill: 'rgba(27,58,122,0.12)',   point: '#1B3A7A' },
 };
 let _CURVA_MODO = 'acumulado'; // 'acumulado' | 'mensal'
+let _CURVA_INI  = null;        // índice de início do período visível (null = todos)
+let _CURVA_FIM  = null;        // índice de fim do período visível (null = todos)
 let _chartCurva = null;
 
 function setCurvaModo(modo) {
   _CURVA_MODO = modo;
   putSection('curva');
 }
+function setCurvaIni(val) {
+  _CURVA_INI = val ? parseInt(val) : null;
+  if (_CURVA_FIM !== null && _CURVA_INI !== null && _CURVA_INI > _CURVA_FIM) _CURVA_FIM = null;
+  putSection('curva');
+}
+function setCurvaFim(val) {
+  _CURVA_FIM = val ? parseInt(val) : null;
+  if (_CURVA_INI !== null && _CURVA_FIM !== null && _CURVA_FIM < _CURVA_INI) _CURVA_INI = null;
+  putSection('curva');
+}
+function resetCurvaPeriodo() { _CURVA_INI = null; _CURVA_FIM = null; putSection('curva'); }
 
 // ─── Curva S — com gráfico interativo (Acumulado / Mensal) ───────────────────
 function renderCurvaSAnalitico() {
+  const iniIdx = _CURVA_INI ?? 0;
+  const fimIdx = _CURVA_FIM ?? (_CS.length - 1);
+  const csView = _CS.slice(iniIdx, fimIdx + 1);
+
+  // KPIs sempre do corte global (independe do zoom de período)
   const cutRow = _CS.find(r => r.isCutoff);
   const bAcum  = cutRow ? cutRow.bAcum        : 0;
   const rAcum  = cutRow ? (cutRow.rAcum || 0) : 0;
@@ -1833,7 +1853,26 @@ function renderCurvaSAnalitico() {
       <div class="kpi"><div class="kpi-label">Desvio</div><div class="kpi-val ${cls(dev)}">${pp(dev)}</div><div class="kpi-sub">${dev > 0.005 ? 'Adiantada' : dev < -0.005 ? 'Atrasada' : 'Em dia'}</div></div>
     </div>` : '';
 
-  const rows = _CS.map(r => `
+  // Selects de período — opções = todos os meses disponíveis
+  const optsIni = _CS.map((r, i) => `<option value="${i}" ${i === iniIdx && _CURVA_INI !== null ? 'selected' : ''}>${r.label}</option>`).join('');
+  const optsFim = _CS.map((r, i) => `<option value="${i}" ${i === fimIdx && _CURVA_FIM !== null ? 'selected' : ''}>${r.label}</option>`).join('');
+  const temFiltro = _CURVA_INI !== null || _CURVA_FIM !== null;
+
+  const periodBar = `
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px">
+      <span style="font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap">Período visualizado</span>
+      <select onchange="setCurvaIni(this.value)" style="font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif">
+        <option value="">Início</option>${optsIni}
+      </select>
+      <span style="color:var(--muted);font-size:12px">até</span>
+      <select onchange="setCurvaFim(this.value)" style="font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif">
+        <option value="">Fim</option>${optsFim}
+      </select>
+      ${temFiltro ? `<button class="btn btn-outline" style="font-size:11px;padding:4px 10px" onclick="resetCurvaPeriodo()">✕ Limpar</button>` : ''}
+      <span style="font-size:11px;color:var(--muted);margin-left:auto">${csView.length} mês${csView.length !== 1 ? 'es' : ''} exibido${csView.length !== 1 ? 's' : ''}</span>
+    </div>`;
+
+  const rows = csView.map(r => `
     <tr class="${r.isCutoff ? 'cutoff-row' : ''}">
       <td>${r.label}${r.isCutoff ? ' <span style="font-size:10px;color:var(--blue-bright);font-weight:600">◀ CORTE</span>' : ''}</td>
       <td>${p(r.bMes)}</td><td><strong>${p(r.bAcum)}</strong></td>
@@ -1862,6 +1901,7 @@ function renderCurvaSAnalitico() {
       </div>
     </div>
     ${kpis}
+    ${periodBar}
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:16px;box-shadow:var(--shadow)">
       <canvas id="canvasCurva" height="110"></canvas>
     </div>
@@ -1889,13 +1929,15 @@ function renderChartCurva() {
   if (!canvas || typeof Chart === 'undefined') return;
   if (_chartCurva) { _chartCurva.destroy(); _chartCurva = null; }
 
-  const labels   = _CS.map(r => r.label);
-  const cutoffIdx = _CS.findIndex(r => r.isCutoff);
+  const iniIdx   = _CURVA_INI ?? 0;
+  const fimIdx   = _CURVA_FIM ?? (_CS.length - 1);
+  const csView   = _CS.slice(iniIdx, fimIdx + 1);
+  const labels   = csView.map(r => r.label);
+  // índice do corte dentro da janela visível (pode ser -1 se fora do zoom)
+  const cutoffIdx = csView.findIndex(r => r.isCutoff);
   const modoAcum  = _CURVA_MODO === 'acumulado';
 
   if (modoAcum) {
-    // ── Modo Acumulado: linhas com área ──────────────────────────────────────
-    const realData = _CS.map(r => r.rAcum !== null ? parseFloat(r.rAcum.toFixed(2)) : null);
     _chartCurva = new Chart(canvas, {
       type: 'line',
       data: {
@@ -1903,32 +1945,30 @@ function renderChartCurva() {
         datasets: [
           {
             label: 'BASELINE',
-            data: _CS.map(r => parseFloat(r.bAcum.toFixed(2))),
+            data: csView.map(r => parseFloat(r.bAcum.toFixed(2))),
             borderColor: GC.baseline.line, backgroundColor: GC.baseline.fill,
             pointBackgroundColor: GC.baseline.point, pointRadius: 4, pointHoverRadius: 6,
             borderWidth: 2, fill: false, tension: 0,
           },
           {
             label: 'REPROGRAMADO',
-            data: _CS.map(r => parseFloat(r.rpAcum.toFixed(2))),
+            data: csView.map(r => parseFloat(r.rpAcum.toFixed(2))),
             borderColor: GC.reprog.line, backgroundColor: GC.reprog.fill,
             pointBackgroundColor: GC.reprog.point, pointRadius: 4, pointHoverRadius: 6,
             borderWidth: 2, borderDash: [6, 3], fill: false, tension: 0,
           },
           {
             label: 'REALIZADO',
-            data: realData,
+            data: csView.map(r => r.rAcum !== null ? parseFloat(r.rAcum.toFixed(2)) : null),
             borderColor: GC.real.line, backgroundColor: GC.real.fill,
             pointBackgroundColor: GC.real.point, pointRadius: 4, pointHoverRadius: 6,
-            borderWidth: 2.5, fill: false, tension: 0,
-            spanGaps: false,
+            borderWidth: 2.5, fill: false, tension: 0, spanGaps: false,
           },
         ],
       },
       options: chartOptions(true, cutoffIdx, labels),
     });
   } else {
-    // ── Modo Mensal: barras agrupadas ─────────────────────────────────────────
     _chartCurva = new Chart(canvas, {
       type: 'bar',
       data: {
@@ -1936,17 +1976,17 @@ function renderChartCurva() {
         datasets: [
           {
             label: 'BASELINE',
-            data: _CS.map(r => parseFloat(r.bMes.toFixed(2))),
+            data: csView.map(r => parseFloat(r.bMes.toFixed(2))),
             backgroundColor: GC.baseline.line, borderRadius: 3, barPercentage: 0.75,
           },
           {
             label: 'REPROGRAMADO',
-            data: _CS.map(r => parseFloat(r.rpMes.toFixed(2))),
+            data: csView.map(r => parseFloat(r.rpMes.toFixed(2))),
             backgroundColor: GC.reprog.line, borderRadius: 3, barPercentage: 0.75,
           },
           {
             label: 'REALIZADO',
-            data: _CS.map(r => r.rMes !== null ? parseFloat(r.rMes.toFixed(2)) : null),
+            data: csView.map(r => r.rMes !== null ? parseFloat(r.rMes.toFixed(2)) : null),
             backgroundColor: GC.real.line, borderRadius: 3, barPercentage: 0.75,
           },
         ],
