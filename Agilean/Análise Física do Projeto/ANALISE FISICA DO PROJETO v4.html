@@ -277,7 +277,7 @@ tfoot td:first-child { text-align: left; }
 .pw-flag{font-size:10px;font-weight:600;color:var(--text-muted);background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:3px 10px;cursor:pointer;user-select:none;transition:border-color .15s,background .15s,color .15s}
 .pw-flag.on{border-color:#1B3A7A;background:#e8edf8;color:#1B3A7A}
 .pw-cnt{font-size:10px;color:var(--text-muted);margin-left:auto}
-.pw-body{display:flex;height:520px;gap:14px;margin-bottom:16px;padding:14px;background:#edf1f7;border-radius:12px;border:1px solid var(--border)}
+.pw-body{display:flex;height:720px;gap:14px;margin-bottom:16px;padding:14px;background:#edf1f7;border-radius:12px;border:1px solid var(--border)}
 .pw-left{flex:1;min-width:0;border:1px solid #d8e2ed;border-radius:10px;padding:12px 12px 12px 14px;display:flex;flex-direction:column;background:#fff;box-shadow:0 2px 8px rgba(26,43,69,.07)}
 .pw-right{flex:1;min-width:0;border:1px solid #d8e2ed;border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;background:#fff;box-shadow:0 2px 8px rgba(26,43,69,.07);position:relative;overflow:hidden}
 .pw-ptitle{font-family:'Sora',sans-serif;font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px;display:flex;align-items:baseline;gap:6px}
@@ -298,18 +298,21 @@ tfoot td:first-child { text-align: left; }
 .pw-nbox{display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;border:1.5px solid;line-height:1.6;min-width:34px;text-align:center}
 .pw-nb{background:#f3f5f8;color:#8a99ae;border-color:#c8d3df}
 .pw-nr{background:#e0f5fd;color:#0d6e94;border-color:#5BC8F5}
-.pw-nr.c100{background:#d3f4ee;color:#007a60;border-color:#00BFA5}
-.pw-pill{display:inline-block;font-size:9px;font-weight:700;padding:1px 5px;border-radius:20px;min-width:64px;text-align:center}
-.pw-pp{background:#e6f6f0;color:#0a8a5a}.pw-pn{background:#fdecea;color:#c0392b}.pw-pz{background:#f0f4f8;color:#9aacbe}
+.pw-nr.c100{background:#EEF5E0;color:#5D7A1F;border-color:#a8c870}
+.pw-rp{background:#cfd8ea;color:#1B3A7A;border-color:#1B3A7A}
+.pw-pill{display:inline-block;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;min-width:64px;text-align:center;border:1.5px solid}
+.pw-pp{background:#EAF4EE;color:#1A6B3A;border-color:#80c49a}.pw-pn{background:#F9EAEA;color:#A93226;border-color:#d9978f}.pw-pz{background:#f0f4f8;color:#9aacbe;border-color:#c8d3df}
 .pw-brow-total{border-top:2px solid #c8d5e2}
 .pw-brow-total .pw-bname{font-weight:700;font-size:10.5px}
 .pw-brow-total .pw-bbase{background:#6E7D8F}
-.pw-brow-total .pw-breal{background:#1B3A7A}
-.pw-nb-tot{background:#e4e9f0;color:#4a5970;border-color:#6E7D8F}
-.pw-nr-tot{background:#cfd8ea;color:#1B3A7A;border-color:#1B3A7A}
-.pw-pill-tot{background:#dce4f0;color:#1B3A7A;border:1.5px solid #1B3A7A;font-weight:700;min-width:64px;text-align:center;display:inline-block;font-size:9px;padding:1px 5px;border-radius:20px}
-.pw-cbox{flex:1;position:relative;min-height:0}
-.pw-cbox canvas{position:absolute;inset:0;cursor:default}
+.pw-brow-total .pw-breal{background:#4A6B8A}
+.pw-nb-tot{background:#E8EFF5;color:#4A6B8A;border-color:#96b4cc}
+.pw-nr-tot{background:#E8EFF5;color:#4A6B8A;border-color:#96b4cc}
+.pw-pill-tot{background:#E8EFF5;color:#4A6B8A;border:1.5px solid #96b4cc;font-weight:700;min-width:64px;text-align:center;display:inline-block;font-size:9px;padding:1px 5px;border-radius:4px}
+.pw-cbox{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden}
+.pw-cbox::-webkit-scrollbar{width:3px}
+.pw-cbox::-webkit-scrollbar-thumb{background:#d4dfe8;border-radius:4px}
+.pw-cbox canvas{display:block;cursor:default}
 #pw-tip{position:fixed;display:none;background:#1a2b45;color:#fff;border-radius:10px;padding:11px 14px;min-width:192px;font-family:'DM Sans',sans-serif;box-shadow:0 8px 28px rgba(0,0,0,.22);pointer-events:none;z-index:9999;line-height:1;will-change:transform}
 .pw-tt{font-family:'Sora',sans-serif;font-weight:700;font-size:11px;margin-bottom:8px;padding-bottom:7px;border-bottom:1px solid rgba(255,255,255,.14)}
 .pw-tr{display:flex;justify-content:space-between;gap:14px;margin-bottom:4px}
@@ -2159,7 +2162,7 @@ function renderEtapasTabAnalitico() {
         <div class="pw-leg">
           <div class="pw-li"><div class="pw-ld" style="background:#B0B8C4;width:18px;height:9px"></div>Planejado</div>
           <div class="pw-li"><div class="pw-ld" style="background:#5BC8F5;width:18px;height:5px"></div>Real / Reprog</div>
-          <div class="pw-li"><div class="pw-ld" style="background:#00BFA5;width:9px;height:9px;border-radius:50%"></div>100%</div>
+          <div class="pw-li"><div class="pw-ld" style="background:#5D7A1F;width:9px;height:9px;border-radius:50%"></div>100%</div>
         </div>
         <div class="pw-bwrap" id="pw-bwrap"></div>
       </div>
@@ -2234,7 +2237,7 @@ async function exportarExcel() {
     // ── Paleta de cores ───────────────────────────────────────────────────────
     const C = {
       navy: 'FF1A2B45', navy2: 'FF1E3358', white: 'FFFFFFFF',
-      green: 'FF0F9B6E', red: 'FFD63A3A', muted: 'FF6B80A0',
+      green: 'FF1A6B3A', red: 'FFA93226', muted: 'FF6B80A0',
       border: 'FFD4DFE8', borderD: 'FF3A5070',
       cutoff: 'FFFEF9E7', zebra: 'FFF7FAFD',
     };
@@ -2515,8 +2518,8 @@ async function exportarExcel() {
 // ═══════════════════════════════════════════════════════════════════════════════
 // ANÁLISE DE PESOS — gráficos (bullet + Canvas2D)
 // ═══════════════════════════════════════════════════════════════════════════════
-const _PW_COR100  = '#00BFA5';
-const _PW_TOTAL_C = '#1E3A5F';
+const _PW_COR100  = '#5D7A1F';
+const _PW_TOTAL_C = '#4A6B8A';
 let _pw_modo  = 'acum';
 let _pw_flags = { zero: false, c100: false, nodev: false };
 let _pw_viewCache = null, _pw_chartViewCache = null, _pw_bulletNames = null;
@@ -2548,12 +2551,23 @@ function afterRenderPrevisto() {
 
 // ── Data bridge: _ED → gráfico ────────────────────────────────────────────────
 function _pw_buildItens() {
-  return _ED.map(r => ({
+  const raw = _ED.map(r => ({
     nome: r.label,
     tot:  r.bTotal,
     bC:   r.bCut,  rpC: r.rpCut, rC: r.rCut,
     bM:   r.bMes||0, rpM: r.rpMes||0, rM: r.rMes||0
   }));
+  // Agilean pode exportar Contribuição em decimal (0.185) em vez de p.p. (18.5).
+  // Quando isso ocorre, processMatrix não normaliza (|sum≈1 − 100| > 15).
+  // Detectamos pela soma dos pesos totais: se < 10, estamos em escala decimal → *100.
+  const totSum = raw.reduce((s, d) => s + d.tot, 0);
+  if (totSum > 0 && totSum < 10) {
+    raw.forEach(d => {
+      d.tot *= 100; d.bC *= 100; d.rpC *= 100; d.rC *= 100;
+      d.bM  *= 100; d.rpM *= 100; d.rM  *= 100;
+    });
+  }
+  return raw;
 }
 
 // ── Cache ─────────────────────────────────────────────────────────────────────
@@ -2578,7 +2592,7 @@ function _pw_computeView() {
   });
   if (_pw_flags.zero)  v = v.filter(d => d.pP > 0.1 || d.rP > 0.1);
   if (_pw_flags.c100)  v = v.filter(d => !d.i100);
-  if (_pw_flags.nodev) v = v.filter(d => Math.abs(d.dev) >= 0.5);
+  if (_pw_flags.nodev) v = v.filter(d => Math.abs(d.wDev) >= 0.05);
   return (_pw_viewCache = v);
 }
 
@@ -2614,7 +2628,7 @@ function _pw_showTip(e, el) {
   document.getElementById('pw-tipR').textContent  = el.dataset.r + '%' + (el.dataset['100']==='true'?' ✓':'');
   const dev = parseFloat(el.dataset.dev), de = document.getElementById('pw-tipD');
   de.textContent = (dev>0?'+':'')+dev.toFixed(1)+' p.p.';
-  de.style.color = Math.abs(dev)<0.5 ? '#9aacbe' : dev>0 ? '#4DD9A0' : '#FF7B7B';
+  de.style.color = Math.abs(dev)<0.5 ? '#9aacbe' : dev>0 ? '#1A6B3A' : '#A93226';
   t.style.display = 'block';
   _pw_tipW = t.offsetWidth; _pw_tipH = t.offsetHeight;
   _pw_tipMx = e.clientX; _pw_tipMy = e.clientY; _pw_positionTip();
@@ -2627,7 +2641,7 @@ function _pw_showTipData(e, d) {
   document.getElementById('pw-tipR').textContent  = d.rP != null ? d.rP.toFixed(1)+'%' : '—';
   const dev = d.dev ?? 0, de = document.getElementById('pw-tipD');
   de.textContent = (dev>0?'+':'')+dev.toFixed(1)+' p.p.';
-  de.style.color = Math.abs(dev)<0.5 ? '#9aacbe' : dev>0 ? '#4DD9A0' : '#FF7B7B';
+  de.style.color = Math.abs(dev)<0.5 ? '#9aacbe' : dev>0 ? '#1A6B3A' : '#A93226';
   t.style.display = 'block';
   _pw_tipW = t.offsetWidth; _pw_tipH = t.offsetHeight;
   _pw_tipMx = e.clientX; _pw_tipMy = e.clientY; _pw_positionTip();
@@ -2672,18 +2686,18 @@ function _pw_updateBulletInPlace(wrap, view, tot) {
   const rows = wrap.querySelectorAll('.pw-brow:not(.pw-brow-total)');
   view.forEach((d, i) => {
     const row = rows[i];
-    const col = d.i100 ? _PW_COR100 : '#5BC8F5';
+    const col = d.i100 ? _PW_COR100 : (d.lbl==='Reprog' ? '#1B3A7A' : '#5BC8F5');
     row.dataset.b = d.pP.toFixed(1); row.dataset.r = d.rP.toFixed(1);
-    row.dataset.dev = d.dev; row.dataset.lbl = d.lbl; row.dataset['100'] = d.i100;
+    row.dataset.dev = d.wDev; row.dataset.lbl = d.lbl; row.dataset['100'] = d.i100;
     const base = row.querySelector('.pw-bbase'), real = row.querySelector('.pw-breal');
     base.style.width = d.pP.toFixed(1)+'%';
     real.style.width = d.rP.toFixed(1)+'%'; real.style.background = col;
     const [nb, nr] = row.querySelectorAll('.pw-nbox');
     nb.textContent = d.pP.toFixed(0)+'%';
-    nr.textContent = d.rP.toFixed(0)+'%'; nr.className = `pw-nbox ${d.i100?'pw-nr c100':'pw-nr'}`;
+    nr.textContent = d.rP.toFixed(0)+'%'; nr.className = `pw-nbox ${d.i100?'pw-nr c100':d.lbl==='Reprog'?'pw-rp':'pw-nr'}`;
     const pill = row.querySelector('.pw-pill');
-    pill.className = `pw-pill ${Math.abs(d.dev)<0.5?'pw-pz':d.dev>0?'pw-pp':'pw-pn'}`;
-    pill.textContent = (d.dev>0?'+':'')+d.dev.toFixed(1)+' p.p.';
+    pill.className = `pw-pill ${Math.abs(d.wDev)<0.05?'pw-pz':d.wDev>0?'pw-pp':'pw-pn'}`;
+    pill.textContent = (d.wDev>0?'+':'')+d.wDev.toFixed(2)+' p.p.';
   });
   const tRow = wrap.querySelector('.pw-brow-total');
   if (tRow) {
@@ -2712,12 +2726,12 @@ function _pw_buildBullet() {
   _pw_bulletNames = names;
 
   const iHtml = view.map(d => {
-    const col  = d.i100 ? _PW_COR100 : '#5BC8F5';
-    const rCls = d.i100 ? 'pw-nr c100' : 'pw-nr';
-    const dc   = Math.abs(d.dev)<0.5?'pw-pz':d.dev>0?'pw-pp':'pw-pn';
+    const col  = d.i100 ? _PW_COR100 : (d.lbl==='Reprog' ? '#1B3A7A' : '#5BC8F5');
+    const rCls = d.i100 ? 'pw-nr c100' : (d.lbl==='Reprog' ? 'pw-rp' : 'pw-nr');
+    const dc   = Math.abs(d.wDev)<0.05?'pw-pz':d.wDev>0?'pw-pp':'pw-pn';
     return `<div class="pw-brow"
         data-n="${d.nome}" data-b="${d.pP.toFixed(1)}" data-r="${d.rP.toFixed(1)}"
-        data-dev="${d.dev}" data-lbl="${d.lbl}" data-100="${d.i100}"
+        data-dev="${d.wDev}" data-lbl="${d.lbl}" data-100="${d.i100}"
         onmouseenter="_pw_showTip(event,this)" onmouseleave="_pw_hideTip()" onmousemove="_pw_moveTip(event)">
       <div class="pw-bname" title="${d.nome}">${d.nome}</div>
       <div class="pw-btrack">
@@ -2727,7 +2741,7 @@ function _pw_buildBullet() {
       <div class="pw-bvals">
         <span class="pw-nbox pw-nb">${d.pP.toFixed(0)}%</span>
         <span class="pw-nbox ${rCls}">${d.rP.toFixed(0)}%</span>
-        <span class="pw-pill ${dc}">${(d.dev>0?'+':'')+d.dev.toFixed(1)+' p.p.'}</span>
+        <span class="pw-pill ${dc}">${(d.wDev>0?'+':'')+d.wDev.toFixed(2)+' p.p.'}</span>
       </div></div>`;
   }).join('');
 
@@ -2755,8 +2769,8 @@ function _pw_niceTick(raw) {
   return (n<1.5?1:n<3?2:n<7?5:10)*mag;
 }
 function _pw_fmtVal(v) {
-  if (Math.abs(v)<0.005) return '0.00%';
-  return (v>0?'+':'')+v.toFixed(2)+'%';
+  if (Math.abs(v)<0.005) return '0.00 p.p.';
+  return (v>0?'+':'')+v.toFixed(2)+' p.p.';
 }
 function _pw_rr(ctx, x, y, w, h, r) {
   if (w===0) return;
@@ -2780,9 +2794,9 @@ function _pw_drawBox(ctx, text, x, y, font, fg, bg, lw) {
   ctx.fillStyle=fg; ctx.textAlign='left'; ctx.textBaseline='alphabetic';
   ctx.fillText(text, x, y+3.5);
 }
-function _pw_colFg(v) { return Math.abs(v)<0.05?'#9aacbe':v>0?'#0a8a5a':'#c0392b'; }
-function _pw_colBg(v) { return Math.abs(v)<0.05?'#f3f5f8':v>0?'#eaf7f1':'#fdecea'; }
-function _pw_colB2(v) { return Math.abs(v)<0.05?'#f5f6f8':v>0?'#f0faf6':'#fef4f3'; }
+function _pw_colFg(v) { return Math.abs(v)<0.05?'#9aacbe':v>0?'#1A6B3A':'#A93226'; }
+function _pw_colBg(v) { return Math.abs(v)<0.05?'#f3f5f8':v>0?'#EAF4EE':'#F9EAEA'; }
+function _pw_colB2(v) { return Math.abs(v)<0.05?'#f5f6f8':v>0?'#EAF4EE':'#F9EAEA'; }
 
 // ── Canvas2D — draw ───────────────────────────────────────────────────────────
 function _pw_drawChart2() {
@@ -2791,7 +2805,9 @@ function _pw_drawChart2() {
   const allRows = _pw_ch2AllRows, n = allRows.length;
   const dpr = devicePixelRatio || 1;
   const cont = canvas.parentElement;
-  const W = cont.clientWidth, H = cont.clientHeight;
+  const W = cont.clientWidth;
+  const ROW_H_MIN = 28;
+  const H = Math.max(cont.clientHeight, n * ROW_H_MIN + _PW_MT + _PW_MB + 20);
   if (canvas._cW !== W || canvas._cH !== H) {
     canvas.width  = Math.round(W*dpr); canvas.height = Math.round(H*dpr);
     canvas.style.width=W+'px'; canvas.style.height=H+'px';
@@ -2824,7 +2840,7 @@ function _pw_drawChart2() {
       ctx.beginPath(); ctx.moveTo(tx,MT); ctx.lineTo(tx,MT+ch); ctx.stroke();
     }
     ctx.setLineDash([]);
-    ctx.fillText((tick>0?'+':'')+parseFloat((tick*100).toFixed(4))+'%', tx, MT+ch+6);
+    ctx.fillText((tick>0?'+':'')+parseFloat(tick.toFixed(2))+' p.p.', tx, MT+ch+6);
     tick=parseFloat((tick+tickStep).toFixed(10));
   }
 
@@ -2844,7 +2860,7 @@ function _pw_drawChart2() {
     const by=ry(i)-bh/2;
     ctx.fillStyle = d.isTotal ? _PW_TOTAL_C :
                     Math.abs(d.wDev)<0.05 ? '#c8d3df' :
-                    d.wDev>0 ? '#0F9B6E' : '#D63A3A';
+                    d.wDev>0 ? '#1A6B3A' : '#A93226';
     _pw_rr(ctx, bx, by, bw||0.5, bh, 3); ctx.fill();
   });
 
@@ -2855,7 +2871,7 @@ function _pw_drawChart2() {
   ctx.stroke(); ctx.setLineDash([]);
   allRows.forEach((d,i) => {
     const cx=toX(d.cum),cy=ry(i);
-    const pc=d.isTotal?_PW_TOTAL_C:d.cum>0.05?'#0F9B6E':d.cum<-0.05?'#D63A3A':'#c8d3df';
+    const pc=d.isTotal?_PW_TOTAL_C:d.cum>0.05?'#1A6B3A':d.cum<-0.05?'#A93226':'#c8d3df';
     ctx.beginPath(); ctx.arc(cx,cy,5,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
     ctx.beginPath(); ctx.arc(cx,cy,3.5,0,Math.PI*2); ctx.fillStyle=pc; ctx.fill();
   });
@@ -2910,7 +2926,7 @@ function _pw_ch2OnMove(e) {
     if (_pw_ch2HovRow!==row) { _pw_ch2HovRow=row; _pw_drawChart2(); }
     const d=_pw_ch2AllRows[row];
     if (d.nome!==document.getElementById('pw-tipN').textContent || _pw_tip().style.display==='none')
-      _pw_showTipData(e, d.pP!=null?d:{...d,pP:null,rP:null,dev:d.wDev*100});
+      _pw_showTipData(e, d.pP!=null?d:{...d,pP:null,rP:null,dev:d.wDev});
     else _pw_moveTip(e);
   } else {
     if (_pw_ch2HovRow!==-1) { _pw_ch2HovRow=-1; _pw_drawChart2(); _pw_hideTip(); }
