@@ -321,6 +321,31 @@ tfoot td:first-child { text-align: left; }
 .pw-ts{border-top:1px solid rgba(255,255,255,.14);margin:7px 0}
 .pw-td{display:flex;justify-content:space-between;font-weight:700;font-size:11px}
 .pw-dp{color:#4DD9A0}.pw-dn{color:#FF7B7B}.pw-dz{color:#9aacbe}
+/* ─── Gantt Prazos ─────────────────────────────────────────────────────────── */
+.gp-panel{border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:14px;box-shadow:0 2px 8px rgba(26,43,69,.06)}
+.gp-legend{display:flex;align-items:center;gap:14px;padding:8px 16px;border-bottom:1px solid var(--border);background:var(--surface2);flex-wrap:wrap}
+.gp-li{display:flex;align-items:center;gap:5px;font-size:9.5px;color:var(--text-muted)}
+.gp-lt{height:11px;border-radius:3px}
+.gp-layout{display:flex}
+.gp-names,.gp-badge,.gp-status{flex-shrink:0}
+.gp-names{width:190px;border-right:1px solid var(--border)}
+.gp-badge{width:82px;border-right:1px solid var(--border);background:var(--surface2)}
+.gp-status{width:100px;border-left:1px solid var(--border);background:var(--surface2)}
+.gp-hdr{height:52px;background:var(--navy);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.06em;padding:0 10px}
+.gp-nrow{height:46px;display:flex;align-items:center;padding:0 12px;font-size:10px;font-weight:500;color:var(--navy);border-bottom:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:default} /* ← ROW_H */
+.gp-nrow:hover{background:var(--surface2)}
+.gp-brow,.gp-srow{height:46px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--border);padding:0 6px} /* ← ROW_H */
+.gp-hdr{position:sticky;top:0;z-index:3}
+.gp-layout-wrap{max-height:540px;overflow-y:auto;overflow-x:hidden}
+.gp-layout-wrap::-webkit-scrollbar{width:4px}
+.gp-layout-wrap::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+.gp-grid{flex:1;min-width:0}
+.gp-grid canvas{display:block}
+.gp-pill{display:inline-block;font-size:8.5px;font-weight:700;padding:2px 7px;border-radius:4px;border:1.5px solid;white-space:nowrap}
+.gp-pill.neg{background:var(--red-bg);color:var(--red);border-color:#e8a5a5}
+.gp-pill.neu{background:var(--border);color:var(--text-muted);border-color:var(--border)}
+.gp-pill.pos{background:var(--green-bg);color:var(--green);border-color:#8fd4bc}
+.gp-pill.muted{background:#f0f3f7;color:#9aacbe;border-color:#c8d3df}
 </style>
 </head>
 <body>
@@ -1059,8 +1084,9 @@ function switchSection(id, el) {
 
 function putSection(id) {
   document.getElementById('sectionContent').innerHTML = renderSection(id);
-  if (id === 'curva') afterRenderCurva();
+  if (id === 'curva')   afterRenderCurva();
   if (id === 'previsto') afterRenderPrevisto();
+  if (id === 'marcos')  afterRenderMarcos();
 }
 
 // ─── Despacho de seções ────────────────────────────────────────────────────────
@@ -1357,18 +1383,39 @@ function renderSectionMarcos() {
         ℹ A base carregada não tem colunas de data (Início/Término Planejado e Real) — recarregue com essas colunas habilitadas no export do Agilean pra ver os marcos aqui.
       </div>`;
   }
-  const rows = _ED.map(r => {
-    const sp = statusPrazoInfo(r);
-    return `
-    <tr>
-      <td>${r.label}</td>
-      <td>${fmtDate(r.iniPlanBase)}</td><td>${fmtDate(r.fimPlanBase)}</td>
-      <td>${fmtDate(r.iniPlan)}</td><td>${fmtDate(r.fimPlan)}</td>
-      <td>${fmtDate(r.iniReal)}</td><td>${fmtDate(r.fimReal)}</td>
-      <td class="${clsDias(r.desvioPrazoDias)}">${fmtDias(r.desvioPrazoDias)}</td>
-      <td><span class="pill ${sp.cls}">${sp.label}</span></td>
-    </tr>`;
-  }).join('');
+  // calcula range de meses a partir dos dados
+  const allDates = _ED.flatMap(r=>[r.iniPlanBase,r.fimPlanBase,r.iniPlan,r.fimPlan,r.iniReal,r.fimReal]).filter(Boolean);
+  const YM_MIN_F = allDates.length ? Math.min(...allDates.map(d=>_gp_toYM(d))) : 0;
+  const YM_MAX_F = allDates.length ? Math.max(...allDates.map(d=>_gp_toYM(d)))+1 : 0;
+  const fIni = _GP_FILTER_INI!==null ? Math.max(YM_MIN_F,Math.min(YM_MAX_F,_GP_FILTER_INI)) : YM_MIN_F;
+  const fFim = _GP_FILTER_FIM!==null ? Math.max(YM_MIN_F,Math.min(YM_MAX_F,_GP_FILTER_FIM)) : YM_MAX_F;
+  const temFiltro = _GP_FILTER_INI!==null || _GP_FILTER_FIM!==null;
+  const SS = `style="font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif"`;
+  let optsI='', optsF='';
+  for(let m=YM_MIN_F;m<=YM_MAX_F;m++){
+    const lbl=_GP_MESES[m%12]+'/'+Math.floor(m/12);
+    optsI+=`<option value="${m}"${m===fIni?' selected':''}>${lbl}</option>`;
+    optsF+=`<option value="${m}"${m===fFim?' selected':''}>${lbl}</option>`;
+  }
+  const visED = _gp_filteredED();
+  const tot   = _gp_totalItem(visED);
+  const totSc = _gp_scFromDias(tot.desvio);
+  const totRow = {
+    name: `<div class="gp-nrow" style="background:var(--navy);color:#fff;font-weight:700;font-size:10px" title="TOTAL">TOTAL</div>`,
+    badge:`<div class="gp-brow" style="background:var(--navy)"><span class="gp-pill ${totSc}">${fmtDias(tot.desvio)}</span></div>`,
+    status:`<div class="gp-srow" style="background:var(--navy)"><span class="gp-pill ${totSc}">${_gp_statusLbl(totSc)}</span></div>`,
+  };
+  const namesRows  = totRow.name  + visED.map(r=>`<div class="gp-nrow" title="${r.label}">${r.label}</div>`).join('');
+  const badgeRows  = totRow.badge + visED.map(r=>{ const sc=_gp_scFromDias(r.desvioPrazoDias); return `<div class="gp-brow"><span class="gp-pill ${sc}">${fmtDias(r.desvioPrazoDias)}</span></div>`; }).join('');
+  const statusRows = totRow.status+ visED.map(r=>{ const sc=_gp_scFromDias(r.desvioPrazoDias); return `<div class="gp-srow"><span class="gp-pill ${sc}">${_gp_statusLbl(sc)}</span></div>`; }).join('');
+  const tableRows  = visED.map(r=>{ const sp=statusPrazoInfo(r); return `<tr>
+    <td>${r.label}</td>
+    <td>${fmtDate(r.iniPlanBase)}</td><td>${fmtDate(r.fimPlanBase)}</td>
+    <td>${fmtDate(r.iniPlan)}</td><td>${fmtDate(r.fimPlan)}</td>
+    <td>${fmtDate(r.iniReal)}</td><td>${fmtDate(r.fimReal)}</td>
+    <td class="${clsDias(r.desvioPrazoDias)}">${fmtDias(r.desvioPrazoDias)}</td>
+    <td><span class="pill ${sp.cls}">${sp.label}</span></td>
+  </tr>`; }).join('');
   return `
     <div class="result-header">
       <div class="result-sub">${anaScopeLabel()} · Nível: ${nivel}</div>
@@ -1378,6 +1425,38 @@ function renderSectionMarcos() {
       </button>
     </div>
     ${renderGroupFieldsControl()}
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:10px">
+      <span style="font-size:11px;font-weight:600;color:var(--text-muted);white-space:nowrap">Período visualizado</span>
+      <select id="gp-sel-ini" onchange="gpSetIni(this.value)" ${SS}>${optsI}</select>
+      <span style="color:var(--text-muted);font-size:12px">até</span>
+      <select id="gp-sel-fim" onchange="gpSetFim(this.value)" ${SS}>${optsF}</select>
+      ${temFiltro?`<button class="btn btn-outline" style="font-size:11px;padding:4px 10px" onclick="gpResetPeriodo()">✕ Limpar</button>`:''}
+      <div class="toggle-group" style="margin-left:auto">
+        <button class="toggle-btn${_GP_EXC_100?' active':''}" onclick="gpToggle100()">Ocultar 100%</button>
+        <button class="toggle-btn${_GP_EXC_SEMDATA?' active':''}" onclick="gpToggleSemData()">Ocultar sem dados</button>
+      </div>
+    </div>
+    <div class="gp-panel">
+      <div class="gp-legend">
+        <div class="gp-li"><div class="gp-lt" style="width:20px;background:#B0B8C4"></div>Baseline</div>
+        <div class="gp-li"><div class="gp-lt" style="width:20px;background:#5BC8F5"></div>Real (até o corte)</div>
+        <div class="gp-li"><div class="gp-lt" style="width:20px;background:#1B3A7A"></div>Reprog (após corte)</div>
+        <div class="gp-li"><div class="gp-lt" style="width:20px;background:#5D7A1F"></div>Concluído</div>
+        <div class="gp-li"><div class="gp-lt" style="width:20px;background:#FFD54F;border:1px solid #F4B400"></div>Mês de corte</div>
+        <div class="gp-li"><div class="gp-lt" style="width:20px;background:#f0f3f7;border:1.5px dashed #c8d3df"></div>Sem previsão</div>
+      </div>
+      <div class="gp-layout-wrap">
+        <div class="gp-layout">
+          <div class="gp-names"><div class="gp-hdr">Etapa</div>${namesRows}</div>
+          <div class="gp-badge"><div class="gp-hdr">Desvio</div>${badgeRows}</div>
+          <div class="gp-grid" id="gp-grid">
+            <canvas id="gp-canvas-hdr" style="position:sticky;top:0;z-index:2"></canvas>
+            <canvas id="gp-canvas-body"></canvas>
+          </div>
+          <div class="gp-status"><div class="gp-hdr">Status</div>${statusRows}</div>
+        </div>
+      </div>
+    </div>
     <div class="table-wrap"><table>
       <thead><tr>
         <th>${nivel}</th>
@@ -1386,7 +1465,7 @@ function renderSectionMarcos() {
         <th>Início Real</th><th>Término Real</th>
         <th>Desvio Prazo</th><th>Status</th>
       </tr></thead>
-      <tbody>${rows}</tbody>
+      <tbody>${tableRows}</tbody>
     </table></div>`;
 }
 function doCopyMarcos() {
@@ -1885,14 +1964,22 @@ function setCurvaModo(modo) {
 function setCurvaIni(val) {
   _CURVA_INI = val ? parseInt(val) : null;
   if (_CURVA_FIM !== null && _CURVA_INI !== null && _CURVA_INI > _CURVA_FIM) _CURVA_FIM = null;
+  _GP_FILTER_INI = _gp_csIdxToYM(_CURVA_INI);
+  _GP_FILTER_FIM = _gp_csIdxToYM(_CURVA_FIM);
   putSection('curva');
 }
 function setCurvaFim(val) {
   _CURVA_FIM = val ? parseInt(val) : null;
   if (_CURVA_INI !== null && _CURVA_FIM !== null && _CURVA_FIM < _CURVA_INI) _CURVA_INI = null;
+  _GP_FILTER_INI = _gp_csIdxToYM(_CURVA_INI);
+  _GP_FILTER_FIM = _gp_csIdxToYM(_CURVA_FIM);
   putSection('curva');
 }
-function resetCurvaPeriodo() { _CURVA_INI = null; _CURVA_FIM = null; putSection('curva'); }
+function resetCurvaPeriodo() {
+  _CURVA_INI = null; _CURVA_FIM = null;
+  _GP_FILTER_INI = null; _GP_FILTER_FIM = null;
+  putSection('curva');
+}
 
 // ─── Curva S — com gráfico interativo (Acumulado / Mensal) ───────────────────
 function renderCurvaSAnalitico() {
@@ -2966,6 +3053,196 @@ function _pw_toggleFlag(k) {
 function _pw_refresh() {
   clearTimeout(_pw_debTimer);
   _pw_debTimer=setTimeout(()=>{ _pw_buildBullet(); _pw_buildChart2(); }, 60);
+}
+
+// ─── Gantt Prazos ─────────────────────────────────────────────────────────────
+let _GP_FILTER_INI=null, _GP_FILTER_FIM=null;
+let _GP_EXC_100=false, _GP_EXC_SEMDATA=false;
+const _GP_MESES=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+// converte índice Curva S → ym ordinal (year*12+month-1)
+function _gp_csIdxToYM(idx){
+  if(idx===null||idx===undefined||idx<0) return null;
+  const sk=S.months[idx]?.sortKey; if(!sk) return null;
+  return Math.floor(sk/100)*12+(sk%100)-1;
+}
+// converte ym ordinal → índice Curva S
+function _gp_ymToCsIdx(ym){
+  if(ym===null||ym===undefined) return null;
+  const sk=Math.floor(ym/12)*100+(ym%12)+1;
+  const i=S.months.findIndex(m=>m.sortKey===sk);
+  return i>=0?i:null;
+}
+
+function _gp_toYM(d){ return d.getFullYear()*12+d.getMonth(); }
+function _gp_fracStart(d){ return (d.getDate()-1)/(new Date(d.getFullYear(),d.getMonth()+1,0).getDate()); }
+function _gp_fracEnd(d)  { return  d.getDate()   /(new Date(d.getFullYear(),d.getMonth()+1,0).getDate()); }
+function _gp_scFromDias(v){ if(v===null) return 'muted'; if(v>5) return 'neg'; if(v<-5) return 'pos'; return 'neu'; }
+function _gp_statusLbl(sc){ return {neg:'Atrasado',neu:'No prazo',pos:'Adiantado',muted:'Sem dados'}[sc]||'—'; }
+
+// handlers globais do filtro (chamados via onchange no HTML)
+function gpSetIni(val){
+  _GP_FILTER_INI = val?parseInt(val):null;
+  _CURVA_INI = _gp_ymToCsIdx(_GP_FILTER_INI);
+  if(_CURVA_FIM!==null&&_CURVA_INI!==null&&_CURVA_INI>_CURVA_FIM) _CURVA_FIM=null;
+  putSection('marcos');
+}
+function gpSetFim(val){
+  _GP_FILTER_FIM = val?parseInt(val):null;
+  _CURVA_FIM = _gp_ymToCsIdx(_GP_FILTER_FIM);
+  if(_CURVA_INI!==null&&_CURVA_FIM!==null&&_CURVA_FIM<_CURVA_INI) _CURVA_INI=null;
+  putSection('marcos');
+}
+function gpResetPeriodo(){
+  _GP_FILTER_INI=null; _GP_FILTER_FIM=null;
+  _CURVA_INI=null; _CURVA_FIM=null;
+  putSection('marcos');
+}
+function gpToggle100(){ _GP_EXC_100=!_GP_EXC_100; putSection('marcos'); }
+function gpToggleSemData(){ _GP_EXC_SEMDATA=!_GP_EXC_SEMDATA; putSection('marcos'); }
+function _gp_filteredED(){
+  return _ED.filter(r=>{
+    if(_GP_EXC_100     && r.fimReal!=null)          return false;
+    if(_GP_EXC_SEMDATA && r.desvioPrazoDias===null) return false;
+    return true;
+  });
+}
+function _gp_totalItem(visED){
+  const hB=visED.filter(r=>r.iniPlanBase&&r.fimPlanBase);
+  const hP=visED.filter(r=>r.iniPlan&&r.fimPlan);
+  const hR=visED.filter(r=>r.iniReal);
+  const iniBase=hB.length?new Date(Math.min(...hB.map(r=>r.iniPlanBase.getTime()))):null;
+  const fimBase=hB.length?new Date(Math.max(...hB.map(r=>r.fimPlanBase.getTime()))):null;
+  const iniProg=hP.length?new Date(Math.min(...hP.map(r=>r.iniPlan.getTime()))):null;
+  const fimProg=hP.length?new Date(Math.max(...hP.map(r=>r.fimPlan.getTime()))):null;
+  const iniReal=hR.length?new Date(Math.min(...hR.map(r=>r.iniReal.getTime()))):null;
+  const desvio=(fimBase&&fimProg)?diffDias(fimProg,fimBase):null;
+  return {nome:'TOTAL',base:[iniBase,fimBase],prog:[iniProg,fimProg],real:[iniReal,null],done:false,desvio,isTotal:true};
+}
+
+function afterRenderMarcos(){
+  if(!S.hasDatas) return;
+  const CUTOFF    = ultimoDiaDoMes(S.months[S.cutoffIdx].sortKey);
+  const CUTOFF_YM = _gp_toYM(CUTOFF);
+  const _visED = _gp_filteredED();
+  const _tot   = _gp_totalItem(_visED);
+  const ITEMS  = [_tot, ..._visED.map(r=>({
+    nome:r.label, base:[r.iniPlanBase,r.fimPlanBase],
+    prog:r.iniPlan?[r.iniPlan,r.fimPlan]:null,
+    real:r.iniReal?[r.iniReal,r.fimReal||null]:null,
+    done:r.fimReal!=null,
+  }))];
+  const selIni=document.getElementById('gp-sel-ini');
+  const selFim=document.getElementById('gp-sel-fim');
+  if(!selIni||!selFim) return;
+  _gp_draw(ITEMS,CUTOFF,CUTOFF_YM,+selIni.value,+selFim.value);
+}
+
+// resize global — redesenha apenas se a seção ativa for marcos
+let _gp_resizeTimer=null;
+window.addEventListener('resize',()=>{
+  clearTimeout(_gp_resizeTimer);
+  _gp_resizeTimer=setTimeout(()=>{ if(_ACTIVE_SECTION==='marcos') afterRenderMarcos(); },120);
+});
+
+function _gp_draw(ITEMS,CUTOFF,CUTOFF_YM,fIni,fFim){
+  const chdr=document.getElementById('gp-canvas-hdr');
+  const cbdy=document.getElementById('gp-canvas-body');
+  const cont =document.getElementById('gp-grid');
+  if(!chdr||!cbdy||!cont) return;
+  const MONTHS=[]; for(let m=fIni;m<=fFim;m++) MONTHS.push(m);
+  if(!MONTHS.length) return;
+  const YM_MIN=MONTHS[0],YM_MAX=MONTHS[MONTHS.length-1];
+  const dpr=devicePixelRatio||1;
+  const W=Math.max(MONTHS.length*18,cont.clientWidth);
+  const MW=W/MONTHS.length;
+  const ROW_H=46,HDR_AH=26,HDR_MH=26,HDR_H=HDR_AH+HDR_MH; // ← ROW_H: altura das linhas em px (ajuste aqui + CSS .gp-nrow/.gp-brow/.gp-srow)
+  const BAR_H=15,BAR_GAP=6,R_BAR=3; // ← BAR_H: espessura das barras
+  const PAD_V=(ROW_H-(2*BAR_H+BAR_GAP))/2;
+  const YEARS=new Map();
+  MONTHS.forEach(m=>{ const y=Math.floor(m/12); if(!YEARS.has(y)) YEARS.set(y,[]); YEARS.get(y).push(m); });
+
+  // ── header canvas (sticky no topo) ────────────────────────────────────────
+  chdr.width=Math.round(W*dpr); chdr.height=Math.round(HDR_H*dpr);
+  chdr.style.width=W+'px'; chdr.style.height=HDR_H+'px';
+  const ch=chdr.getContext('2d');
+  ch.setTransform(dpr,0,0,dpr,0,0); ch.clearRect(0,0,W,HDR_H);
+  let xCur=0;
+  YEARS.forEach((months,year)=>{
+    const w=months.length*MW;
+    ch.fillStyle='#1a2b45'; ch.fillRect(xCur,0,w,HDR_AH);
+    ch.strokeStyle='#243756'; ch.lineWidth=1; ch.setLineDash([]);
+    ch.beginPath(); ch.moveTo(xCur+w,0); ch.lineTo(xCur+w,HDR_AH); ch.stroke();
+    ch.font='bold 10px DM Sans,sans-serif'; ch.textAlign='center'; ch.textBaseline='middle';
+    ch.fillStyle='#fff'; ch.fillText(String(year),xCur+w/2,HDR_AH/2);
+    xCur+=w;
+  });
+  MONTHS.forEach((m,i)=>{
+    const x=i*MW,isCut=m===CUTOFF_YM;
+    ch.fillStyle=isCut?'#FFF9C4':'#243756'; ch.fillRect(x,HDR_AH,MW,HDR_MH);
+    ch.strokeStyle=isCut?'#F4B400':'#2d4570'; ch.lineWidth=isCut?1.5:1; ch.setLineDash([]);
+    ch.beginPath(); ch.moveTo(x+MW,HDR_AH); ch.lineTo(x+MW,HDR_H); ch.stroke();
+    ch.font='bold 9px DM Sans,sans-serif'; ch.textAlign='center'; ch.textBaseline='middle';
+    ch.fillStyle=isCut?'#8a6000':'#fff';
+    ch.fillText(String((m%12)+1).padStart(2,'0'),x+MW/2,HDR_AH+HDR_MH/2);
+  });
+
+  // ── body canvas (linhas de dados, rola junto com o conteúdo) ──────────────
+  const BH=ITEMS.length*ROW_H;
+  cbdy.width=Math.round(W*dpr); cbdy.height=Math.round(BH*dpr);
+  cbdy.style.width=W+'px'; cbdy.style.height=BH+'px';
+  const ctx=cbdy.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,W,BH);
+  const C_BASE='#B0B8C4',C_REAL='#5BC8F5',C_REPROG='#1B3A7A',C_DONE='#5D7A1F';
+  const C_CUT='rgba(255,213,79,0.25)',C_GRID='rgba(200,215,230,0.8)',C_ALT='rgba(240,243,248,0.45)',C_NP='rgba(200,211,223,0.35)';
+  function drawBar(ini,fim,yBar,color){
+    if(!ini||!fim) return;
+    const ymI=_gp_toYM(ini),ymF=_gp_toYM(fim);
+    for(let m=Math.max(ymI,YM_MIN);m<=Math.min(ymF,YM_MAX);m++){
+      const mi=m-YM_MIN,cx=mi*MW; let x1=cx,x2=cx+MW;
+      if(m===ymI) x1=cx+_gp_fracStart(ini)*MW;
+      if(m===ymF) x2=cx+_gp_fracEnd(fim)*MW;
+      const bw=x2-x1; if(bw<0.5) continue;
+      ctx.fillStyle=color; const r=Math.min(R_BAR,BAR_H/2,bw/2);
+      ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(x1,yBar,bw,BAR_H,r); else ctx.rect(x1,yBar,bw,BAR_H); ctx.fill();
+    }
+  }
+  function drawNP(ini,fim,yBar){
+    if(!ini||!fim) return;
+    const ymI=_gp_toYM(ini),ymF=_gp_toYM(fim);
+    for(let m=Math.max(ymI,YM_MIN);m<=Math.min(ymF,YM_MAX);m++){
+      const mi=m-YM_MIN,cx=mi*MW; let x1=cx,x2=cx+MW;
+      if(m===ymI) x1=cx+_gp_fracStart(ini)*MW;
+      if(m===ymF) x2=cx+_gp_fracEnd(fim)*MW;
+      const bw=x2-x1; if(bw<0.5) continue;
+      const r=Math.min(R_BAR,BAR_H/2,bw/2);
+      ctx.fillStyle=C_NP; ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(x1,yBar,bw,BAR_H,r); else ctx.rect(x1,yBar,bw,BAR_H); ctx.fill();
+      ctx.save(); ctx.beginPath(); if(ctx.roundRect) ctx.roundRect(x1,yBar,bw,BAR_H,r); else ctx.rect(x1,yBar,bw,BAR_H); ctx.clip();
+      ctx.strokeStyle='#9AACBE'; ctx.lineWidth=1; ctx.setLineDash([3,3]); ctx.strokeRect(x1,yBar,bw,BAR_H);
+      ctx.restore(); ctx.setLineDash([]);
+    }
+  }
+  ITEMS.forEach((it,i)=>{
+    const y0=i*ROW_H,yB1=y0+PAD_V,yB2=yB1+BAR_H+BAR_GAP;
+    if(it.isTotal){
+      ctx.fillStyle='#1a2b45'; ctx.fillRect(0,y0,W,ROW_H);
+    } else {
+      if(i%2===0){ ctx.fillStyle=C_ALT; ctx.fillRect(0,y0,W,ROW_H); }
+      if(CUTOFF_YM>=YM_MIN&&CUTOFF_YM<=YM_MAX){ ctx.fillStyle=C_CUT; ctx.fillRect((CUTOFF_YM-YM_MIN)*MW,y0,MW,ROW_H); }
+    }
+    MONTHS.forEach((_,mi)=>{ ctx.strokeStyle=it.isTotal?'rgba(255,255,255,0.08)':C_GRID; ctx.lineWidth=1; ctx.setLineDash([]); ctx.beginPath(); ctx.moveTo(mi*MW,y0); ctx.lineTo(mi*MW,y0+ROW_H); ctx.stroke(); });
+    drawBar(it.base[0],it.base[1],yB1,it.isTotal?'rgba(176,184,196,0.7)':C_BASE);
+    const hasAny=it.real||it.prog;
+    if(!hasAny){ if(!it.isTotal) drawNP(it.base[0],it.base[1],yB2); }
+    else{
+      if(it.real){ const rc=it.done?C_DONE:(it.isTotal?'rgba(91,200,245,0.85)':C_REAL); const rf=it.real[1]?(it.real[1]<=CUTOFF?it.real[1]:CUTOFF):CUTOFF; drawBar(it.real[0],rf,yB2,rc); }
+      if(it.prog&&it.prog[1]>CUTOFF){ drawBar(new Date(CUTOFF.getTime()-86400000),it.prog[1],yB2,it.isTotal?'rgba(27,58,122,0.85)':C_REPROG); }
+      if(!it.real&&it.prog){ drawBar(it.prog[0],it.prog[1],yB2,C_REPROG); }
+    }
+    ctx.strokeStyle=it.isTotal?'rgba(255,255,255,0.2)':'#dde4ee';
+    ctx.lineWidth=it.isTotal?2:1; ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(0,y0+ROW_H); ctx.lineTo(W,y0+ROW_H); ctx.stroke();
+  });
 }
 </script>
 <div id="pw-tip">
