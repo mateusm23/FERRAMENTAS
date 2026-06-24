@@ -264,6 +264,60 @@ tfoot td:first-child { text-align: left; }
 .exp-card-on { border-color: var(--blue-bright) !important; background: var(--blue-light) !important; }
 .exp-card-off { opacity: .4; cursor: default; }
 .exp-footer { display: flex; justify-content: space-between; align-items: flex-end; padding-top: 16px; border-top: 1px solid var(--border); margin-top: 4px; flex-wrap: wrap; gap: 12px; }
+
+/* ── Análise de Pesos — dual chart panel ── */
+.pw-ctrl{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:14px}
+.pw-ctrl .pw-sep{width:1px;height:18px;background:var(--border);margin:0 2px}
+.pw-ctrl .pw-lbl{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.04em}
+.pw-tg{display:inline-flex;border:1.5px solid var(--border);border-radius:7px;overflow:hidden}
+.pw-tb{background:var(--surface);color:var(--text-muted);border:none;padding:4px 12px;font-size:10.5px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:background .15s,color .15s}
+.pw-tb:not(:last-child){border-right:1.5px solid var(--border)}
+.pw-tb.on{background:var(--navy);color:#fff}
+.pw-tb:hover:not(.on){background:#edf2f7;color:var(--navy)}
+.pw-flag{font-size:10px;font-weight:600;color:var(--text-muted);background:var(--surface);border:1.5px solid var(--border);border-radius:20px;padding:3px 10px;cursor:pointer;user-select:none;transition:border-color .15s,background .15s,color .15s}
+.pw-flag.on{border-color:#1B3A7A;background:#e8edf8;color:#1B3A7A}
+.pw-cnt{font-size:10px;color:var(--text-muted);margin-left:auto}
+.pw-body{display:flex;height:520px;gap:14px;margin-bottom:16px;padding:14px;background:#edf1f7;border-radius:12px;border:1px solid var(--border)}
+.pw-left{flex:1;min-width:0;border:1px solid #d8e2ed;border-radius:10px;padding:12px 12px 12px 14px;display:flex;flex-direction:column;background:#fff;box-shadow:0 2px 8px rgba(26,43,69,.07)}
+.pw-right{flex:1;min-width:0;border:1px solid #d8e2ed;border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;background:#fff;box-shadow:0 2px 8px rgba(26,43,69,.07);position:relative;overflow:hidden}
+.pw-ptitle{font-family:'Sora',sans-serif;font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px;display:flex;align-items:baseline;gap:6px}
+.pw-ptitle small{font-size:9.5px;font-weight:400;color:var(--text-muted)}
+.pw-leg{display:flex;gap:12px;margin-bottom:7px}
+.pw-li{display:flex;align-items:center;gap:4px;font-size:9.5px;font-weight:600;color:#4a5a70}
+.pw-ld{border-radius:2px;flex-shrink:0}
+.pw-bwrap{flex:1;overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column}
+.pw-bwrap::-webkit-scrollbar{width:3px;height:0}
+.pw-bwrap::-webkit-scrollbar-thumb{background:#d4dfe8;border-radius:4px}
+.pw-brow{display:grid;grid-template-columns:110px 1fr 134px;align-items:center;gap:8px;padding:0 4px;border-radius:5px;cursor:default}
+.pw-brow:hover{background:#f5f8fc}
+.pw-bname{font-size:10px;font-weight:500;color:var(--navy);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pw-btrack{position:relative;height:16px}
+.pw-bbase{position:absolute;top:2px;bottom:2px;left:0;background:#B0B8C4;border-radius:3px;width:0}
+.pw-breal{position:absolute;top:5px;bottom:5px;left:0;border-radius:2px;z-index:2;width:0}
+.pw-bvals{display:flex;align-items:center;gap:4px;font-size:10px;white-space:nowrap}
+.pw-nbox{display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;border:1.5px solid;line-height:1.6;min-width:34px;text-align:center}
+.pw-nb{background:#f3f5f8;color:#8a99ae;border-color:#c8d3df}
+.pw-nr{background:#e0f5fd;color:#0d6e94;border-color:#5BC8F5}
+.pw-nr.c100{background:#d3f4ee;color:#007a60;border-color:#00BFA5}
+.pw-pill{display:inline-block;font-size:9px;font-weight:700;padding:1px 5px;border-radius:20px;min-width:64px;text-align:center}
+.pw-pp{background:#e6f6f0;color:#0a8a5a}.pw-pn{background:#fdecea;color:#c0392b}.pw-pz{background:#f0f4f8;color:#9aacbe}
+.pw-brow-total{border-top:2px solid #c8d5e2}
+.pw-brow-total .pw-bname{font-weight:700;font-size:10.5px}
+.pw-brow-total .pw-bbase{background:#6E7D8F}
+.pw-brow-total .pw-breal{background:#1B3A7A}
+.pw-nb-tot{background:#e4e9f0;color:#4a5970;border-color:#6E7D8F}
+.pw-nr-tot{background:#cfd8ea;color:#1B3A7A;border-color:#1B3A7A}
+.pw-pill-tot{background:#dce4f0;color:#1B3A7A;border:1.5px solid #1B3A7A;font-weight:700;min-width:64px;text-align:center;display:inline-block;font-size:9px;padding:1px 5px;border-radius:20px}
+.pw-cbox{flex:1;position:relative;min-height:0}
+.pw-cbox canvas{position:absolute;inset:0;cursor:default}
+#pw-tip{position:fixed;display:none;background:#1a2b45;color:#fff;border-radius:10px;padding:11px 14px;min-width:192px;font-family:'DM Sans',sans-serif;box-shadow:0 8px 28px rgba(0,0,0,.22);pointer-events:none;z-index:9999;line-height:1;will-change:transform}
+.pw-tt{font-family:'Sora',sans-serif;font-weight:700;font-size:11px;margin-bottom:8px;padding-bottom:7px;border-bottom:1px solid rgba(255,255,255,.14)}
+.pw-tr{display:flex;justify-content:space-between;gap:14px;margin-bottom:4px}
+.pw-tl{color:rgba(255,255,255,.5);font-size:10px}
+.pw-tv{font-weight:600;font-size:10px}
+.pw-ts{border-top:1px solid rgba(255,255,255,.14);margin:7px 0}
+.pw-td{display:flex;justify-content:space-between;font-weight:700;font-size:11px}
+.pw-dp{color:#4DD9A0}.pw-dn{color:#FF7B7B}.pw-dz{color:#9aacbe}
 </style>
 </head>
 <body>
@@ -784,13 +838,15 @@ function buildPrevistoRealAnalitico(f, fields) {
     if (!groupMap.has(k)) groupMap.set(k, []);
     groupMap.get(k).push(r);
   });
+  const cutMonthLabel = S.months[S.cutoffIdx]?.label;
   const result = [];
   groupMap.forEach((gRows) => {
     const label = labelFn(gRows);
-    let bTotal = 0, bCut = 0, rpCut = 0, rCut = 0;
+    let bTotal = 0, bCut = 0, rpCut = 0, rCut = 0, bMes = 0, rpMes = 0, rMes = 0;
     gRows.forEach(r => {
       bTotal += r.cBase;
       if (cutSet.has(r.data.label)) { bCut += r.cBase; rpCut += r.cReprog; rCut += r.cReal; }
+      if (r.data.label === cutMonthLabel) { bMes += r.cBase; rpMes += r.cReprog; rMes += r.cReal; }
     });
     const fimPlanBase = maxDateStrict(gRows.map(r => r.fimPlanBase));
     const fimPlan      = maxDateStrict(gRows.map(r => r.fimPlan));
@@ -802,7 +858,7 @@ function buildPrevistoRealAnalitico(f, fields) {
     // de data ausente.
     const terminoEfetivo = fimReal || fimPlan;
     const desvioPrazoDias = (fimPlanBase && terminoEfetivo) ? diffDias(terminoEfetivo, fimPlanBase) : null;
-    result.push({ label, bTotal, bCut, rpCut, rCut, dev: rCut - bCut,
+    result.push({ label, bTotal, bCut, rpCut, rCut, bMes, rpMes, rMes, dev: rCut - bCut,
       iniPlanBase: minDate(gRows.map(r => r.iniPlanBase)), fimPlanBase,
       iniPlan: minDate(gRows.map(r => r.iniPlan)), fimPlan,
       iniReal: minDate(gRows.map(r => r.iniReal)), fimReal,
@@ -1001,6 +1057,7 @@ function switchSection(id, el) {
 function putSection(id) {
   document.getElementById('sectionContent').innerHTML = renderSection(id);
   if (id === 'curva') afterRenderCurva();
+  if (id === 'previsto') afterRenderPrevisto();
 }
 
 // ─── Despacho de seções ────────────────────────────────────────────────────────
@@ -2077,12 +2134,40 @@ function renderEtapasTabAnalitico() {
   return `
     <div class="result-header">
       <div class="result-sub">Acumulado até ${cutLabel} — ${anaScopeLabel()}</div>
-      <button class="btn btn-outline" id="btnCopyEtapas" onclick="doCopyEtapas()">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-        Copiar para Excel
-      </button>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <div class="pw-tg">
+          <button class="pw-tb on" id="pw-bAcum" onclick="_pw_setModo('acum')">Acumulado</button>
+          <button class="pw-tb"    id="pw-bMes"  onclick="_pw_setModo('mes')">No Mês</button>
+        </div>
+        <button class="btn btn-outline" id="btnCopyEtapas" onclick="doCopyEtapas()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copiar para Excel
+        </button>
+      </div>
     </div>
     ${renderGroupFieldsControl()}
+    <div class="pw-ctrl">
+      <span class="pw-lbl">Filtrar</span>
+      <button class="pw-flag" id="pw-fZero"  onclick="_pw_toggleFlag('zero')">✕ Zerados</button>
+      <button class="pw-flag" id="pw-f100"   onclick="_pw_toggleFlag('c100')">✓ 100%</button>
+      <button class="pw-flag" id="pw-fNodev" onclick="_pw_toggleFlag('nodev')">≠ Sem Desvio</button>
+      <span class="pw-cnt" id="pw-cnt"></span>
+    </div>
+    <div class="pw-body">
+      <div class="pw-left">
+        <div class="pw-ptitle">% Conclusão por Item <small>B = planejado &nbsp; R = real/reprog</small></div>
+        <div class="pw-leg">
+          <div class="pw-li"><div class="pw-ld" style="background:#B0B8C4;width:18px;height:9px"></div>Planejado</div>
+          <div class="pw-li"><div class="pw-ld" style="background:#5BC8F5;width:18px;height:5px"></div>Real / Reprog</div>
+          <div class="pw-li"><div class="pw-ld" style="background:#00BFA5;width:9px;height:9px;border-radius:50%"></div>100%</div>
+        </div>
+        <div class="pw-bwrap" id="pw-bwrap"></div>
+      </div>
+      <div class="pw-right">
+        <div class="pw-ptitle">Desvio por Item + Acumulado <small>p.p. peso global &nbsp;·&nbsp; pior → melhor</small></div>
+        <div class="pw-cbox"><canvas id="pw-chart"></canvas></div>
+      </div>
+    </div>
     ${renderEtapasContent()}`;
 }
 function renderEtapasContent() {
@@ -2426,7 +2511,454 @@ async function exportarExcel() {
     }
   }
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// ANÁLISE DE PESOS — gráficos (bullet + Canvas2D)
+// ═══════════════════════════════════════════════════════════════════════════════
+const _PW_COR100  = '#00BFA5';
+const _PW_TOTAL_C = '#1E3A5F';
+let _pw_modo  = 'acum';
+let _pw_flags = { zero: false, c100: false, nodev: false };
+let _pw_viewCache = null, _pw_chartViewCache = null, _pw_bulletNames = null;
+let _pw_ch2HovRow = -1, _pw_ch2AllRows = null;
+let _pw_resizeObs = null;
+// tip rAF
+let _pw_tipW=0, _pw_tipH=0, _pw_tipRaf=null, _pw_tipMx=0, _pw_tipMy=0;
+// canvas margins
+const _PW_ML=132, _PW_MR=120, _PW_MT=26, _PW_MB=26;
+// debounce
+let _pw_debTimer = null;
+
+function afterRenderPrevisto() {
+  // reset state
+  _pw_modo = 'acum';
+  _pw_flags = { zero: false, c100: false, nodev: false };
+  _pw_viewCache = null; _pw_chartViewCache = null; _pw_bulletNames = null;
+  _pw_ch2HovRow = -1; _pw_ch2AllRows = null;
+  if (_pw_resizeObs) { _pw_resizeObs.disconnect(); _pw_resizeObs = null; }
+  _pw_buildBullet();
+  _pw_buildChart2();
+  // ResizeObserver: redraws canvas when panel resizes
+  const canvas = document.getElementById('pw-chart');
+  if (canvas) {
+    _pw_resizeObs = new ResizeObserver(() => { if (_pw_ch2AllRows) _pw_drawChart2(); });
+    _pw_resizeObs.observe(canvas.parentElement);
+  }
+}
+
+// ── Data bridge: _ED → gráfico ────────────────────────────────────────────────
+function _pw_buildItens() {
+  return _ED.map(r => ({
+    nome: r.label,
+    tot:  r.bTotal,
+    bC:   r.bCut,  rpC: r.rpCut, rC: r.rCut,
+    bM:   r.bMes||0, rpM: r.rpMes||0, rM: r.rMes||0
+  }));
+}
+
+// ── Cache ─────────────────────────────────────────────────────────────────────
+function _pw_invalidateCache() {
+  _pw_viewCache = null; _pw_chartViewCache = null; _pw_bulletNames = null;
+}
+
+function _pw_computeView() {
+  if (_pw_viewCache) return _pw_viewCache;
+  const ITENS = _pw_buildItens();
+  let v = ITENS.map(d => {
+    const bv  = _pw_modo==='acum' ? d.bC  : d.bM;
+    const rv  = _pw_modo==='acum' ? d.rC  : d.rM;
+    const rpv = _pw_modo==='acum' ? d.rpC : d.rpM;
+    const inn = rv > 0.001 ? rv : rpv;
+    const pP  = d.tot > 0 ? Math.min(bv  / d.tot * 100, 100) : 0;
+    const rP  = d.tot > 0 ? Math.min(inn / d.tot * 100, 100) : 0;
+    const i100= rP >= 99.9;
+    const dev = parseFloat((rP - pP).toFixed(1));
+    const wDev= parseFloat((inn - bv).toFixed(2));
+    return { nome: d.nome, pP, rP, i100, dev, lbl: rv > 0.001 ? 'Real' : 'Reprog', wDev };
+  });
+  if (_pw_flags.zero)  v = v.filter(d => d.pP > 0.1 || d.rP > 0.1);
+  if (_pw_flags.c100)  v = v.filter(d => !d.i100);
+  if (_pw_flags.nodev) v = v.filter(d => Math.abs(d.dev) >= 0.5);
+  return (_pw_viewCache = v);
+}
+
+function _pw_getChartView() {
+  if (_pw_chartViewCache) return _pw_chartViewCache;
+  const view = _pw_computeView().slice().sort((a, b) => a.wDev - b.wDev);
+  let run = 0;
+  view.forEach(d => { run += d.wDev; d.cum = parseFloat(run.toFixed(2)); });
+  const totalDev = parseFloat(view.reduce((s, d) => s + d.wDev, 0).toFixed(2));
+  return (_pw_chartViewCache = { view, totalDev });
+}
+
+function _pw_computeTotal() {
+  const ITENS = _pw_buildItens();
+  const allBv  = ITENS.reduce((s,d) => s + (_pw_modo==='acum' ? d.bC : d.bM), 0);
+  const allInn = ITENS.reduce((s,d) => {
+    const rv = _pw_modo==='acum'?d.rC:d.rM, rpv = _pw_modo==='acum'?d.rpC:d.rpM;
+    return s + (rv > 0.001 ? rv : rpv);
+  }, 0);
+  const tPP = Math.min(allBv, 100), tRP = Math.min(allInn, 100);
+  const tDev = parseFloat((tRP - tPP).toFixed(1));
+  return { tPP, tRP, tDev, tDt: (tDev>0?'+':'')+tDev.toFixed(1)+' p.p.' };
+}
+
+// ── Tooltip ───────────────────────────────────────────────────────────────────
+const _pw_tip = () => document.getElementById('pw-tip');
+
+function _pw_showTip(e, el) {
+  const t = _pw_tip(); if (!t) return;
+  document.getElementById('pw-tipN').textContent  = el.dataset.n;
+  document.getElementById('pw-tipB').textContent  = el.dataset.b + '%';
+  document.getElementById('pw-tipRL').textContent = el.dataset.lbl;
+  document.getElementById('pw-tipR').textContent  = el.dataset.r + '%' + (el.dataset['100']==='true'?' ✓':'');
+  const dev = parseFloat(el.dataset.dev), de = document.getElementById('pw-tipD');
+  de.textContent = (dev>0?'+':'')+dev.toFixed(1)+' p.p.';
+  de.style.color = Math.abs(dev)<0.5 ? '#9aacbe' : dev>0 ? '#4DD9A0' : '#FF7B7B';
+  t.style.display = 'block';
+  _pw_tipW = t.offsetWidth; _pw_tipH = t.offsetHeight;
+  _pw_tipMx = e.clientX; _pw_tipMy = e.clientY; _pw_positionTip();
+}
+function _pw_showTipData(e, d) {
+  const t = _pw_tip(); if (!t) return;
+  document.getElementById('pw-tipN').textContent  = d.nome;
+  document.getElementById('pw-tipB').textContent  = d.pP != null ? d.pP.toFixed(1)+'%' : '—';
+  document.getElementById('pw-tipRL').textContent = d.lbl || '—';
+  document.getElementById('pw-tipR').textContent  = d.rP != null ? d.rP.toFixed(1)+'%' : '—';
+  const dev = d.dev ?? 0, de = document.getElementById('pw-tipD');
+  de.textContent = (dev>0?'+':'')+dev.toFixed(1)+' p.p.';
+  de.style.color = Math.abs(dev)<0.5 ? '#9aacbe' : dev>0 ? '#4DD9A0' : '#FF7B7B';
+  t.style.display = 'block';
+  _pw_tipW = t.offsetWidth; _pw_tipH = t.offsetHeight;
+  _pw_tipMx = e.clientX; _pw_tipMy = e.clientY; _pw_positionTip();
+}
+function _pw_moveTip(e) {
+  _pw_tipMx = e.clientX; _pw_tipMy = e.clientY;
+  if (_pw_tipRaf) return;
+  _pw_tipRaf = requestAnimationFrame(() => { _pw_positionTip(); _pw_tipRaf = null; });
+}
+function _pw_positionTip() {
+  const t = _pw_tip(); if (!t) return;
+  const x = _pw_tipMx+14, y = _pw_tipMy-16;
+  t.style.left = (x+_pw_tipW > window.innerWidth  ? x-_pw_tipW-22 : x)+'px';
+  t.style.top  = (y+_pw_tipH > window.innerHeight ? y-_pw_tipH    : y)+'px';
+}
+function _pw_hideTip() {
+  const t = _pw_tip(); if (t) t.style.display='none';
+  if (_pw_tipRaf) { cancelAnimationFrame(_pw_tipRaf); _pw_tipRaf=null; }
+}
+
+// ── Bullet — setDynamicHeights ────────────────────────────────────────────────
+function _pw_setDynamicHeights() {
+  requestAnimationFrame(() => {
+    const wrap = document.getElementById('pw-bwrap');
+    if (!wrap) return;
+    const rows = Array.from(wrap.querySelectorAll('.pw-brow'));
+    if (!rows.length) return;
+    const rH = Math.floor((wrap.clientHeight - 2) / rows.length);
+    if (rH < 18) return;
+    const tH     = Math.max(12, Math.min(44, Math.round(rH * 0.50)));
+    const bInset  = Math.max(2, Math.round(tH * 0.13));
+    const rInset  = Math.max(3, Math.round(tH * 0.30));
+    rows.forEach(r => { r.style.height = rH+'px'; });
+    wrap.querySelectorAll('.pw-btrack').forEach(t => { t.style.height = tH+'px'; });
+    wrap.querySelectorAll('.pw-bbase').forEach(b => { b.style.top=bInset+'px'; b.style.bottom=bInset+'px'; });
+    wrap.querySelectorAll('.pw-breal').forEach(b => { b.style.top=rInset+'px'; b.style.bottom=rInset+'px'; });
+  });
+}
+
+// ── Bullet — in-place update ──────────────────────────────────────────────────
+function _pw_updateBulletInPlace(wrap, view, tot) {
+  const rows = wrap.querySelectorAll('.pw-brow:not(.pw-brow-total)');
+  view.forEach((d, i) => {
+    const row = rows[i];
+    const col = d.i100 ? _PW_COR100 : '#5BC8F5';
+    row.dataset.b = d.pP.toFixed(1); row.dataset.r = d.rP.toFixed(1);
+    row.dataset.dev = d.dev; row.dataset.lbl = d.lbl; row.dataset['100'] = d.i100;
+    const base = row.querySelector('.pw-bbase'), real = row.querySelector('.pw-breal');
+    base.style.width = d.pP.toFixed(1)+'%';
+    real.style.width = d.rP.toFixed(1)+'%'; real.style.background = col;
+    const [nb, nr] = row.querySelectorAll('.pw-nbox');
+    nb.textContent = d.pP.toFixed(0)+'%';
+    nr.textContent = d.rP.toFixed(0)+'%'; nr.className = `pw-nbox ${d.i100?'pw-nr c100':'pw-nr'}`;
+    const pill = row.querySelector('.pw-pill');
+    pill.className = `pw-pill ${Math.abs(d.dev)<0.5?'pw-pz':d.dev>0?'pw-pp':'pw-pn'}`;
+    pill.textContent = (d.dev>0?'+':'')+d.dev.toFixed(1)+' p.p.';
+  });
+  const tRow = wrap.querySelector('.pw-brow-total');
+  if (tRow) {
+    const base = tRow.querySelector('.pw-bbase'), real = tRow.querySelector('.pw-breal');
+    base.style.width=tot.tPP.toFixed(1)+'%'; real.style.width=tot.tRP.toFixed(1)+'%';
+    const [nb,nr] = tRow.querySelectorAll('.pw-nbox');
+    nb.textContent=tot.tPP.toFixed(0)+'%'; nr.textContent=tot.tRP.toFixed(0)+'%';
+    const pt=tRow.querySelector('.pw-pill-tot'); pt.textContent=tot.tDt;
+  }
+}
+
+function _pw_buildBullet() {
+  const view = _pw_computeView(), tot = _pw_computeTotal();
+  const cntEl = document.getElementById('pw-cnt');
+  if (cntEl) cntEl.textContent = view.length+' itens';
+  const wrap = document.getElementById('pw-bwrap');
+  if (!wrap) return;
+  const names = view.map(d => d.nome);
+
+  if (_pw_bulletNames &&
+      _pw_bulletNames.length === names.length &&
+      _pw_bulletNames.every((n,i) => n === names[i])) {
+    _pw_updateBulletInPlace(wrap, view, tot);
+    return;
+  }
+  _pw_bulletNames = names;
+
+  const iHtml = view.map(d => {
+    const col  = d.i100 ? _PW_COR100 : '#5BC8F5';
+    const rCls = d.i100 ? 'pw-nr c100' : 'pw-nr';
+    const dc   = Math.abs(d.dev)<0.5?'pw-pz':d.dev>0?'pw-pp':'pw-pn';
+    return `<div class="pw-brow"
+        data-n="${d.nome}" data-b="${d.pP.toFixed(1)}" data-r="${d.rP.toFixed(1)}"
+        data-dev="${d.dev}" data-lbl="${d.lbl}" data-100="${d.i100}"
+        onmouseenter="_pw_showTip(event,this)" onmouseleave="_pw_hideTip()" onmousemove="_pw_moveTip(event)">
+      <div class="pw-bname" title="${d.nome}">${d.nome}</div>
+      <div class="pw-btrack">
+        <div class="pw-bbase" data-w="${d.pP.toFixed(1)}"></div>
+        <div class="pw-breal" data-w="${d.rP.toFixed(1)}" style="background:${col}"></div>
+      </div>
+      <div class="pw-bvals">
+        <span class="pw-nbox pw-nb">${d.pP.toFixed(0)}%</span>
+        <span class="pw-nbox ${rCls}">${d.rP.toFixed(0)}%</span>
+        <span class="pw-pill ${dc}">${(d.dev>0?'+':'')+d.dev.toFixed(1)+' p.p.'}</span>
+      </div></div>`;
+  }).join('');
+
+  wrap.innerHTML = iHtml + `<div class="pw-brow pw-brow-total">
+    <div class="pw-bname">TOTAL</div>
+    <div class="pw-btrack">
+      <div class="pw-bbase" data-w="${tot.tPP.toFixed(1)}"></div>
+      <div class="pw-breal" data-w="${tot.tRP.toFixed(1)}"></div>
+    </div>
+    <div class="pw-bvals">
+      <span class="pw-nbox pw-nb-tot">${tot.tPP.toFixed(0)}%</span>
+      <span class="pw-nbox pw-nr-tot">${tot.tRP.toFixed(0)}%</span>
+      <span class="pw-pill-tot">${tot.tDt}</span>
+    </div></div>`;
+
+  _pw_setDynamicHeights();
+  wrap.querySelectorAll('.pw-bbase').forEach(el => { el.style.width=el.dataset.w+'%'; });
+  wrap.querySelectorAll('.pw-breal').forEach(el => { el.style.width=el.dataset.w+'%'; });
+}
+
+// ── Canvas2D helpers ──────────────────────────────────────────────────────────
+function _pw_niceTick(raw) {
+  const mag = Math.pow(10, Math.floor(Math.log10(Math.abs(raw)||1)));
+  const n = raw/mag;
+  return (n<1.5?1:n<3?2:n<7?5:10)*mag;
+}
+function _pw_fmtVal(v) {
+  if (Math.abs(v)<0.005) return '0.00%';
+  return (v>0?'+':'')+v.toFixed(2)+'%';
+}
+function _pw_rr(ctx, x, y, w, h, r) {
+  if (w===0) return;
+  if (w<0) { x+=w; w=-w; }
+  ctx.beginPath();
+  if (ctx.roundRect) { ctx.roundRect(x,y,w,h,r); }
+  else {
+    r = Math.min(r, w/2, h/2);
+    ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+    ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+    ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+  }
+}
+function _pw_drawBox(ctx, text, x, y, font, fg, bg, lw) {
+  ctx.font = font;
+  const tw = ctx.measureText(text).width, px=4.5, ph=7;
+  _pw_rr(ctx, x-px, y-ph, tw+px*2, ph*2, 3);
+  ctx.fillStyle=bg; ctx.fill();
+  ctx.strokeStyle=fg; ctx.lineWidth=lw??1; ctx.stroke();
+  ctx.fillStyle=fg; ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+  ctx.fillText(text, x, y+3.5);
+}
+function _pw_colFg(v) { return Math.abs(v)<0.05?'#9aacbe':v>0?'#0a8a5a':'#c0392b'; }
+function _pw_colBg(v) { return Math.abs(v)<0.05?'#f3f5f8':v>0?'#eaf7f1':'#fdecea'; }
+function _pw_colB2(v) { return Math.abs(v)<0.05?'#f5f6f8':v>0?'#f0faf6':'#fef4f3'; }
+
+// ── Canvas2D — draw ───────────────────────────────────────────────────────────
+function _pw_drawChart2() {
+  const canvas = document.getElementById('pw-chart');
+  if (!canvas || !_pw_ch2AllRows) return;
+  const allRows = _pw_ch2AllRows, n = allRows.length;
+  const dpr = devicePixelRatio || 1;
+  const cont = canvas.parentElement;
+  const W = cont.clientWidth, H = cont.clientHeight;
+  if (canvas._cW !== W || canvas._cH !== H) {
+    canvas.width  = Math.round(W*dpr); canvas.height = Math.round(H*dpr);
+    canvas.style.width=W+'px'; canvas.style.height=H+'px';
+    canvas._cW=W; canvas._cH=H;
+  }
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,W,H);
+
+  const ML=_PW_ML, MR=_PW_MR, MT=_PW_MT, MB=_PW_MB;
+  const cw=W-ML-MR, ch=H-MT-MB;
+  const rh=ch/n, bh=Math.min(rh*0.50,28);
+
+  const allV = allRows.flatMap(d=>[d.wDev,d.cum]);
+  let xMin=Math.min(0,...allV), xMax=Math.max(0,...allV);
+  const span=xMax-xMin||0.02;
+  xMin-=span*0.10; xMax+=span*0.10;
+  const toX = v => ML+(v-xMin)/(xMax-xMin)*cw;
+  const ry  = i => MT+(i+0.5)*rh;
+  const zx  = toX(0);
+
+  // Grid
+  const tickStep = _pw_niceTick(span/5);
+  let tick = Math.ceil(xMin/tickStep)*tickStep;
+  ctx.font='9px DM Sans'; ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillStyle='#9aacbe';
+  while (tick <= xMax+1e-9) {
+    const tx=toX(tick);
+    if (Math.abs(tick)>1e-9) {
+      ctx.strokeStyle='rgba(200,211,223,0.55)'; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+      ctx.beginPath(); ctx.moveTo(tx,MT); ctx.lineTo(tx,MT+ch); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    ctx.fillText((tick>0?'+':'')+parseFloat((tick*100).toFixed(4))+'%', tx, MT+ch+6);
+    tick=parseFloat((tick+tickStep).toFixed(10));
+  }
+
+  // Zero line
+  ctx.strokeStyle='#1a2b45'; ctx.lineWidth=2; ctx.setLineDash([]);
+  ctx.beginPath(); ctx.moveTo(zx,MT-4); ctx.lineTo(zx,MT+ch+4); ctx.stroke();
+
+  // Hover
+  if (_pw_ch2HovRow>=0 && _pw_ch2HovRow<n) {
+    ctx.fillStyle='#f5f8fc';
+    ctx.fillRect(ML, MT+_pw_ch2HovRow*rh, cw, rh);
+  }
+
+  // Bars
+  allRows.forEach((d,i) => {
+    const x0=zx, x1=toX(d.wDev), bx=Math.min(x0,x1), bw=Math.abs(x1-x0);
+    const by=ry(i)-bh/2;
+    ctx.fillStyle = d.isTotal ? _PW_TOTAL_C :
+                    Math.abs(d.wDev)<0.05 ? '#c8d3df' :
+                    d.wDev>0 ? '#0F9B6E' : '#D63A3A';
+    _pw_rr(ctx, bx, by, bw||0.5, bh, 3); ctx.fill();
+  });
+
+  // Cumulative line
+  ctx.setLineDash([5,3]); ctx.strokeStyle='#1B3A7A'; ctx.lineWidth=2;
+  ctx.beginPath();
+  allRows.forEach((d,i) => { const cx=toX(d.cum),cy=ry(i); i===0?ctx.moveTo(cx,cy):ctx.lineTo(cx,cy); });
+  ctx.stroke(); ctx.setLineDash([]);
+  allRows.forEach((d,i) => {
+    const cx=toX(d.cum),cy=ry(i);
+    const pc=d.isTotal?_PW_TOTAL_C:d.cum>0.05?'#0F9B6E':d.cum<-0.05?'#D63A3A':'#c8d3df';
+    ctx.beginPath(); ctx.arc(cx,cy,5,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
+    ctx.beginPath(); ctx.arc(cx,cy,3.5,0,Math.PI*2); ctx.fillStyle=pc; ctx.fill();
+  });
+
+  // Y labels
+  ctx.textAlign='right'; ctx.textBaseline='middle';
+  allRows.forEach((d,i) => {
+    ctx.font = d.isTotal ? 'bold 10px DM Sans' : '500 10px DM Sans';
+    ctx.fillStyle = d.isTotal ? '#1a2b45' : '#4a5a70';
+    const txt = d.nome.length>17 ? d.nome.slice(0,16)+'…' : d.nome;
+    ctx.fillText(txt, ML-8, ry(i));
+  });
+
+  // Total separator
+  if (n>1) {
+    const sy = MT+(n-1)*rh;
+    ctx.strokeStyle='#c8d5e2'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(ML-8,sy); ctx.lineTo(W-MR+4,sy); ctx.stroke();
+  }
+
+  // Column separators
+  ctx.strokeStyle='#dce5ef'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(W-MR+6,MT-4); ctx.lineTo(W-MR+6,MT+ch+4); ctx.stroke();
+  ctx.strokeStyle='#e8edf3';
+  ctx.beginPath(); ctx.moveTo(W-MR+56,MT-4); ctx.lineTo(W-MR+56,MT+ch+4); ctx.stroke();
+
+  // Value columns
+  const C1=W-MR+14, C2=W-MR+64;
+  ctx.font='bold 8px DM Sans'; ctx.fillStyle='#8a99ae';
+  ctx.textAlign='left'; ctx.textBaseline='middle';
+  ctx.fillText('Item', C1, MT-10);
+  ctx.fillText('Acum.', C2, MT-10);
+  allRows.forEach((d,i) => {
+    const y=ry(i);
+    _pw_drawBox(ctx, _pw_fmtVal(d.wDev), C1, y, 'bold 9.5px DM Sans', _pw_colFg(d.wDev), _pw_colBg(d.wDev));
+    if (!d.isTotal)
+      _pw_drawBox(ctx, _pw_fmtVal(d.cum), C2, y, '9px DM Sans', _pw_colFg(d.cum), _pw_colB2(d.cum), 0.8);
+  });
+}
+
+// ── Canvas hover ──────────────────────────────────────────────────────────────
+function _pw_ch2OnMove(e) {
+  if (!_pw_ch2AllRows) return;
+  const canvas=document.getElementById('pw-chart'); if(!canvas) return;
+  const rect=canvas.getBoundingClientRect();
+  const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+  const ML=_PW_ML, MR=_PW_MR, MT=_PW_MT, MB=_PW_MB;
+  const ch=canvas.clientHeight-MT-MB, n=_pw_ch2AllRows.length;
+  const row=Math.floor((my-MT)/(ch/n));
+  const inChart = mx>=ML && mx<=(canvas.clientWidth-MR) && row>=0 && row<n;
+  if (inChart) {
+    if (_pw_ch2HovRow!==row) { _pw_ch2HovRow=row; _pw_drawChart2(); }
+    const d=_pw_ch2AllRows[row];
+    if (d.nome!==document.getElementById('pw-tipN').textContent || _pw_tip().style.display==='none')
+      _pw_showTipData(e, d.pP!=null?d:{...d,pP:null,rP:null,dev:d.wDev*100});
+    else _pw_moveTip(e);
+  } else {
+    if (_pw_ch2HovRow!==-1) { _pw_ch2HovRow=-1; _pw_drawChart2(); _pw_hideTip(); }
+  }
+}
+function _pw_ch2OnLeave() {
+  if (_pw_ch2HovRow!==-1) { _pw_ch2HovRow=-1; _pw_drawChart2(); _pw_hideTip(); }
+}
+
+function _pw_buildChart2() {
+  const { view, totalDev } = _pw_getChartView();
+  _pw_ch2AllRows = [...view, { nome:'TOTAL', wDev:totalDev, cum:totalDev, isTotal:true, pP:null }];
+  _pw_ch2HovRow  = -1;
+  const canvas = document.getElementById('pw-chart'); if (!canvas) return;
+  if (!canvas._pw_evt) {
+    canvas.addEventListener('mousemove', _pw_ch2OnMove, { passive:true });
+    canvas.addEventListener('mouseleave', _pw_ch2OnLeave);
+    canvas._pw_evt = true;
+  }
+  _pw_drawChart2();
+}
+
+// ── Controls ──────────────────────────────────────────────────────────────────
+function _pw_setModo(m) {
+  _pw_modo=m; _pw_invalidateCache();
+  const bA=document.getElementById('pw-bAcum'), bM=document.getElementById('pw-bMes');
+  if(bA) bA.classList.toggle('on',m==='acum');
+  if(bM) bM.classList.toggle('on',m==='mes');
+  _pw_refresh();
+}
+function _pw_toggleFlag(k) {
+  _pw_flags[k]=!_pw_flags[k]; _pw_invalidateCache();
+  const ids={zero:'pw-fZero',c100:'pw-f100',nodev:'pw-fNodev'};
+  const el=document.getElementById(ids[k]); if(el) el.classList.toggle('on',_pw_flags[k]);
+  _pw_refresh();
+}
+function _pw_refresh() {
+  clearTimeout(_pw_debTimer);
+  _pw_debTimer=setTimeout(()=>{ _pw_buildBullet(); _pw_buildChart2(); }, 60);
+}
 </script>
+<div id="pw-tip">
+  <div class="pw-tt" id="pw-tipN"></div>
+  <div class="pw-tr"><span class="pw-tl">Planejado</span><span class="pw-tv" id="pw-tipB"></span></div>
+  <div class="pw-tr"><span class="pw-tl" id="pw-tipRL">Real</span><span class="pw-tv" id="pw-tipR"></span></div>
+  <div class="pw-ts"></div>
+  <div class="pw-td"><span>Desvio conclusão</span><span id="pw-tipD"></span></div>
+</div>
 <script src="https://mateusm23.github.io/HUB/assets/tracker.js" data-tool="ferramentas"></script>
 </body>
 </html>
