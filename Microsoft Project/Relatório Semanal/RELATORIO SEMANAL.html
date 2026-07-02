@@ -201,6 +201,7 @@ input[type=text]:focus, input[type=date]:focus { border-color: var(--blue-bright
 .kpi-val.g { color: var(--green); }
 .kpi-val.r { color: var(--red); }
 .kpi-val.o { color: var(--orange); }
+.kpi-val.c { color: #0e7c72; }
 
 /* ── Panel ── */
 .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; }
@@ -232,6 +233,8 @@ tbody tr:last-child td { border-bottom: none; }
 .b-o { background: var(--orange-bg); color: var(--orange); }
 .b-b { background: var(--blue-light); color: var(--blue-bright); }
 .b-x { background: var(--border); color: var(--muted); }
+.b-c { background: #e9f2f2; color: #0e7c72; }
+.b-p { background: #f3ecfd; color: #7c3aed; }
 
 /* Delay */
 .d-pos { color: var(--red); font-weight: 700; }
@@ -608,7 +611,8 @@ const S = {
   nStart: null, nEnd: null,
   logoUrl: null, fotoUrl: null,
   fotos: [],           // [{url, caption}]
-  just: {},            // {uid: {just, plano}}
+  justRows: [],        // [{motivo, plano}] — lista livre preenchida pelo usuário
+  compFilter: null,    // filtro ativo no Quadro Comparativo: {kind:'status', value} | {kind:'conc', value} | {kind:'new'}
   period: [],          // compared tasks filtered to period
   next: [],            // compared tasks filtered to next period
   compared: []         // all compared tasks
@@ -688,6 +692,7 @@ function compare(tasks00, tasks01) {
     const t0  = map.get(t1.uid);
     const ps  = t0 ? t0.start : null;   // R00 planned start
     const pf  = t0 ? t0.finish : null;  // R00 planned finish
+    const isNew = !t0; // atividade sem correspondência no R00 (não estava planejada)
 
     let desvio = null;
     if (pf && t1.finish) desvio = Math.round((t1.finish - pf) / 864e5);
@@ -697,13 +702,15 @@ function compare(tasks00, tasks01) {
       status = 'concluida';
     } else if (desvio !== null && desvio > 0) {
       status = 'atrasada';
+    } else if (desvio !== null && desvio < 0 && (t1.pct > 0 || t1.actualStart)) {
+      status = 'adiantada';
     } else if (t1.pct > 0 || t1.actualStart) {
       status = 'andamento';
     } else {
       status = 'prevista';
     }
 
-    return { ...t1, planStart: ps, planFinish: pf, desvio, status };
+    return { ...t1, planStart: ps, planFinish: pf, desvio, status, isNew };
   });
 }
 
@@ -711,8 +718,11 @@ function filterPeriod(tasks, s, e) {
   return tasks.filter(t => {
     const ts = t.planStart || t.start;
     const tf = t.planFinish || t.finish;
-    if (!ts || !tf) return false;
-    return ts <= e && tf >= s;
+    const plannedOverlap = ts && tf && ts <= e && tf >= s;
+    // pega também avanço de execução fora da janela planejada (atividade não reprogramada mas já em execução)
+    const executedInPeriod = (t.actualStart && t.actualStart <= e && t.actualStart >= s) ||
+      (t.pct > 0 && t.start && t.finish && t.start <= e && t.finish >= s);
+    return plannedOverlap || executedInPeriod;
   });
 }
 
@@ -727,13 +737,59 @@ const fs = fd; // usa formato completo DD/MM/AAAA em todos os contextos
 const fp = (a,b) => a && b ? `${fd(a)} a ${fd(b)}` : '';
 const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 
+// ════════════════════════════════ ÍCONES (SVG, corporativos) ══════════════════
+const ICO = {
+  concluida: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`,
+  atrasada:  `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+  adiantada: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>`,
+  andamento: `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><polyline points="12 7 12 12 15.5 14"/></svg>`,
+  prevista:  `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="9"/></svg>`,
+  naoplan:   `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`,
+};
+function icoSize(svg, px) { return svg.replace(/width="11" height="11"/, `width="${px}" height="${px}"`); }
+
+// Badge para uso dentro do PDF (estilos inline, sem depender do CSS da página)
+function pdfBadge(status, isNew) {
+  const scMap  = { concluida: '#0f9b6e', atrasada: '#d63a3a', adiantada: '#0e7c72', andamento: '#1A6EE8', prevista: '#6b80a0' };
+  const lblMap = { concluida: 'CONCLUÍDA', atrasada: 'ATRASO', adiantada: 'ADIANTADA', andamento: 'ANDAMENTO', prevista: 'PREVISTA' };
+  const sc = scMap[status] || '#6b80a0';
+  const main = `<span style="display:inline-flex;align-items:center;gap:3px;padding:1px 5px;border-radius:3px;font-size:7.5px;font-weight:700;background:${sc}22;color:${sc};white-space:nowrap">${icoSize(ICO[status]||'',8)}${lblMap[status] || esc(status)}</span>`;
+  const tag = isNew ? `<span style="display:inline-flex;align-items:center;gap:3px;margin-top:2px;padding:1px 5px;border-radius:3px;font-size:7px;font-weight:700;background:#7c3aed22;color:#7c3aed;white-space:nowrap">${icoSize(ICO.naoplan,7)}NÃO PLANEJADA</span>` : '';
+  return `<div style="display:flex;flex-direction:column;gap:2px;align-items:flex-start">${main}${tag}</div>`;
+}
+
 function badge(status) {
   return {
-    concluida: `<span class="badge b-g">✓ Concluída</span>`,
-    atrasada:  `<span class="badge b-r">⚠ Atrasada</span>`,
-    andamento: `<span class="badge b-b">● Em Andamento</span>`,
-    prevista:  `<span class="badge b-x">◌ Prevista</span>`
+    concluida: `<span class="badge b-g">${ICO.concluida}Concluída</span>`,
+    atrasada:  `<span class="badge b-r">${ICO.atrasada}Atrasada</span>`,
+    adiantada: `<span class="badge b-c">${ICO.adiantada}Adiantada</span>`,
+    andamento: `<span class="badge b-b">${ICO.andamento}Em Andamento</span>`,
+    prevista:  `<span class="badge b-x">${ICO.prevista}Prevista</span>`
   }[status] || `<span class="badge b-x">${esc(status)}</span>`;
+}
+
+function newTag(isNew) {
+  return isNew ? `<span class="badge b-p">${ICO.naoplan}Não Planejada</span>` : '';
+}
+
+// ════════════════════════════════ LEGENDA DE STATUS ════════════════════════════
+const STATUS_LEGEND = [
+  { status: 'concluida', desc: 'Atividade com 100% executado.' },
+  { status: 'atrasada',  desc: 'Não concluída e o término atual ficou depois do previsto no R00.' },
+  { status: 'adiantada', desc: 'Em execução e o término atual ficou antes do previsto no R00.' },
+  { status: 'andamento', desc: 'Com progresso registrado, sem desvio de prazo em relação ao R00.' },
+  { status: 'prevista',  desc: 'Ainda sem execução registrada no período.' },
+];
+
+function renderLegend() {
+  const cards = STATUS_LEGEND.map(it =>
+    `<div style="border:1px solid var(--border);border-radius:8px;padding:8px 10px">${badge(it.status)}<div style="color:var(--muted);font-size:10.5px;margin-top:5px;line-height:1.4">${it.desc}</div></div>`
+  ).join('');
+  const newCard = `<div style="border:1px solid var(--border);border-radius:8px;padding:8px 10px">${newTag(true)}<div style="color:var(--muted);font-size:10.5px;margin-top:5px;line-height:1.4">Existe na revisão atual (${esc(S.revisao)}) mas não tinha correspondência no R00.</div></div>`;
+  return `<div class="panel" style="margin-bottom:16px">
+    <div class="panel-head"><span class="panel-title">Legenda de Status</span></div>
+    <div style="padding:12px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px">${cards}${newCard}</div>
+  </div>`;
 }
 
 function desvioHtml(d) {
@@ -919,71 +975,7 @@ function renderCapa() {
 </div>`;
 }
 
-// ── Quadro Comparativo ────────────────────────────────────────────────────────
-function renderComparativo() {
-  const tasks  = S.period;
-  const leaves = tasks.filter(t => !t.isSummary);
-  const tot    = leaves.length;
-  const conc   = leaves.filter(t => t.status === 'concluida').length;
-  const atr    = leaves.filter(t => t.status === 'atrasada').length;
-  const and    = leaves.filter(t => t.status === 'andamento').length;
-
-  const rows = tasks.map(t => {
-    const rc = t.isSummary ? ' class="row-sum"' : '';
-    const pre = t.isSummary ? '▶ ' : (t.isMilestone ? '◆ ' : '');
-    return `<tr${rc}>
-      <td style="color:var(--muted);font-size:11px;white-space:nowrap">${esc(t.wbs||t.id)}</td>
-      <td><div class="tn">${pad(t.outlineLevel)}<span>${pre}${esc(t.name)}</span></div></td>
-      <td style="white-space:nowrap">${fs(t.planStart)}</td>
-      <td style="white-space:nowrap">${fs(t.planFinish)}</td>
-      <td style="white-space:nowrap">${fs(t.start)}</td>
-      <td style="white-space:nowrap">${fs(t.finish)}</td>
-      <td style="text-align:center">${t.isSummary ? '' : t.pct+'%'}</td>
-      <td>${t.isSummary ? '' : desvioHtml(t.desvio)}</td>
-      <td>${t.isSummary ? '' : badge(t.status)}</td>
-    </tr>`;
-  }).join('');
-
-  const empty = `<div class="empty">
-    <div class="empty-ico">📭</div>
-    <div class="empty-ttl">Nenhuma atividade no período</div>
-    <div class="empty-dsc">Verifique as datas do período ou a correspondência entre R00 e R01.</div>
-  </div>`;
-
-  return `
-<div class="print-pg">
-  <div class="sec-title">Quadro Comparativo</div>
-  <div class="sec-sub">Atividades no período ${fp(S.pStart, S.pEnd)} — R00 × ${esc(S.revisao)}</div>
-
-  <div class="kpi-row">
-    <div class="kpi"><div class="kpi-lbl">Total</div><div class="kpi-val">${tot}</div></div>
-    <div class="kpi"><div class="kpi-lbl">Concluídas</div><div class="kpi-val g">${conc}</div></div>
-    <div class="kpi"><div class="kpi-lbl">Em Atraso</div><div class="kpi-val r">${atr}</div></div>
-    <div class="kpi"><div class="kpi-lbl">Em Andamento</div><div class="kpi-val o">${and}</div></div>
-  </div>
-
-  <div class="panel">
-    <div class="panel-head">
-      <span class="panel-title">Atividades do Período</span>
-      <span class="panel-count">${tasks.length} atividade${tasks.length!==1?'s':''}</span>
-    </div>
-    ${tasks.length ? `<div class="tbl-wrap"><table>
-      <thead><tr>
-        <th style="width:56px">WBS</th>
-        <th>Atividade</th>
-        <th>Início R00</th><th>Fim R00</th>
-        <th>Início ${esc(S.revisao)}</th><th>Fim ${esc(S.revisao)}</th>
-        <th style="width:56px;text-align:center">% Ex.</th>
-        <th style="width:66px">Desvio</th>
-        <th>Status</th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table></div>` : empty}
-  </div>
-</div>`;
-}
-
-// ── Helpers de hierarquia ──────────────────────────────────────────────────────
+// ── Helpers de hierarquia (WBS) ────────────────────────────────────────────────
 function buildParentMap(tasks) {
   const parentMap = new Map();
   const stack = [];
@@ -1006,81 +998,170 @@ function getAncestors(uid, parentMap, taskMap) {
   return ancestors;
 }
 
-function buildJustRows(atrasadas, forPDF) {
-  const taskMap = new Map(S.compared.map(t => [t.uid, t]));
-  const parentMap = buildParentMap(S.compared);
+// ── Quadro Comparativo ────────────────────────────────────────────────────────
+function matchesCompFilter(t) {
+  const f = S.compFilter;
+  if (!f) return true;
+  if (f.kind === 'status') return t.status === f.value;
+  if (f.kind === 'new')    return !!t.isNew;
+  if (f.kind === 'conc') {
+    if (t.status !== 'concluida') return false;
+    if (f.value === 'all')    return true;
+    if (f.value === 'prazo')  return !t.desvio;
+    if (f.value === 'antes')  return t.desvio < 0;
+    if (f.value === 'atraso') return t.desvio > 0;
+  }
+  return true;
+}
 
-  const groups = new Map();
-  for (const t of atrasadas) {
-    const ancestors = getAncestors(t.uid, parentMap, taskMap);
-    const top = ancestors.length > 0 ? ancestors[0] : null;
-    const key = top ? top.uid : 'none';
-    if (!groups.has(key)) groups.set(key, { label: top ? top.name : '', items: [] });
-    groups.get(key).items.push({ t, ancestors });
+function setCompFilter(kind, value) {
+  if (kind === null) { S.compFilter = null; navTo('comparativo'); return; }
+  const same = S.compFilter && S.compFilter.kind === kind && S.compFilter.value === value;
+  S.compFilter = same ? null : { kind, value };
+  navTo('comparativo');
+}
+
+function renderComparativo() {
+  const tasks  = S.period;
+  const leaves = tasks.filter(t => !t.isSummary);
+  const tot    = leaves.length;
+  const concluidas = leaves.filter(t => t.status === 'concluida');
+  const conc   = concluidas.length;
+  const concPrazo  = concluidas.filter(t => !t.desvio).length;
+  const concAntes  = concluidas.filter(t => t.desvio < 0).length;
+  const concAtraso = concluidas.filter(t => t.desvio > 0).length;
+  const atr    = leaves.filter(t => t.status === 'atrasada').length;
+  const and    = leaves.filter(t => t.status === 'andamento').length;
+  const adi    = leaves.filter(t => t.status === 'adiantada').length;
+  const nplan  = leaves.filter(t => t.isNew).length;
+
+  const f = S.compFilter;
+  const isActive = (kind, value) => f && f.kind === kind && f.value === value;
+  const ACTIVE = 'outline:2px solid var(--blue-bright);outline-offset:-1px;';
+
+  let displayTasks = tasks;
+  let matchCount = tasks.length;
+  if (f) {
+    const matched = leaves.filter(matchesCompFilter);
+    matchCount = matched.length;
+    const parentMap = buildParentMap(S.compared);
+    const taskMap = new Map(S.compared.map(x => [x.uid, x]));
+    const keep = new Set();
+    for (const t of matched) {
+      keep.add(t.uid);
+      for (const a of getAncestors(t.uid, parentMap, taskMap)) keep.add(a.uid);
+    }
+    displayTasks = S.compared.filter(t => keep.has(t.uid));
   }
 
-  let rows = '';
-  for (const [, group] of groups) {
-    if (group.label) {
-      rows += `<tr class="row-group-header"><td colspan="4"><span>${esc(group.label)}</span></td></tr>`;
-    }
-    for (const { t, ancestors } of group.items) {
-      const crumb = ancestors.slice(1).map(a => esc(a.name)).join(' › ');
-      const j = S.just[t.uid] || { just: '', plano: '' };
-      const justCell = forPDF
-        ? `<div style="min-height:36px;font-size:12px;line-height:1.5;border:1px solid #ccc;padding:6px 8px;border-radius:4px">${esc(j.just)}</div>`
-        : `<div class="just-edit" contenteditable="true" data-uid="${t.uid}" data-f="just" data-ph="Justificativa da construtora...">${esc(j.just)}</div>`;
-      const planoCell = forPDF
-        ? `<div style="min-height:36px;font-size:12px;line-height:1.5;border:1px solid #ccc;padding:6px 8px;border-radius:4px">${esc(j.plano)}</div>`
-        : `<div class="just-edit" contenteditable="true" data-uid="${t.uid}" data-f="plano" data-ph="Plano de ação para recuperação do prazo...">${esc(j.plano)}</div>`;
-      rows += `<tr>
-        <td style="min-width:200px;max-width:280px">
-          ${crumb ? `<div class="just-breadcrumb">${crumb}</div>` : ''}
-          <div class="tn"><strong>${esc(t.name)}</strong></div>
-          <div style="font-size:10.5px;color:var(--muted);margin-top:3px">Fim planejado: ${fd(t.planFinish)}</div>
-        </td>
-        <td style="width:76px;text-align:center">${desvioHtml(t.desvio)}</td>
-        <td style="min-width:200px">${justCell}</td>
-        <td style="min-width:200px">${planoCell}</td>
-      </tr>`;
-    }
-  }
-  return rows;
+  const rows = displayTasks.map(t => {
+    const rc = t.isSummary ? ' class="row-sum"' : '';
+    const pre = t.isSummary ? '▶ ' : (t.isMilestone ? '◆ ' : '');
+    return `<tr${rc}>
+      <td style="color:var(--muted);font-size:11px;white-space:nowrap">${esc(t.wbs||t.id)}</td>
+      <td><div class="tn">${pad(t.outlineLevel)}<span>${pre}${esc(t.name)}</span></div></td>
+      <td style="white-space:nowrap">${fs(t.planStart)}</td>
+      <td style="white-space:nowrap">${fs(t.planFinish)}</td>
+      <td style="white-space:nowrap">${fs(t.start)}</td>
+      <td style="white-space:nowrap">${fs(t.finish)}</td>
+      <td style="text-align:center">${t.isSummary ? '' : t.pct+'%'}</td>
+      <td>${t.isSummary ? '' : desvioHtml(t.desvio)}</td>
+      <td>${t.isSummary ? '' : `<div style="display:flex;flex-wrap:wrap;gap:4px">${badge(t.status)}${newTag(t.isNew)}</div>`}</td>
+    </tr>`;
+  }).join('');
+
+  const empty = `<div class="empty">
+    <div class="empty-ico">📭</div>
+    <div class="empty-ttl">Nenhuma atividade ${f ? 'para esse filtro' : 'no período'}</div>
+    <div class="empty-dsc">${f ? 'Limpe o filtro para ver todas as atividades.' : 'Verifique as datas do período ou a correspondência entre R00 e R01.'}</div>
+  </div>`;
+
+  const FILTER_LABELS = {
+    'status:atrasada': 'Em Atraso', 'status:andamento': 'Em Andamento', 'status:adiantada': 'Adiantadas',
+    'new:true': 'Não Planejadas', 'conc:all': 'Concluídas', 'conc:prazo': 'Concluídas no Prazo',
+    'conc:antes': 'Concluídas Antes do Prazo', 'conc:atraso': 'Concluídas com Atraso'
+  };
+  const filterChip = f ? `<span class="badge b-b" style="cursor:pointer" onclick="setCompFilter(null,null)" title="Limpar filtro">Filtro: ${FILTER_LABELS[f.kind+':'+f.value] || f.value} ✕</span>` : '';
+
+  return `
+<div class="print-pg">
+  <div class="sec-title">Quadro Comparativo</div>
+  <div class="sec-sub">Atividades no período ${fp(S.pStart, S.pEnd)} — R00 × ${esc(S.revisao)}</div>
+
+  ${renderLegend()}
+
+  <div class="kpi-row">
+    <div class="kpi" style="cursor:pointer;${!f ? ACTIVE : ''}" onclick="setCompFilter(null,null)"><div class="kpi-lbl">Total</div><div class="kpi-val">${tot}</div></div>
+    <div class="kpi" style="cursor:pointer;${isActive('status','atrasada') ? ACTIVE : ''}" onclick="setCompFilter('status','atrasada')"><div class="kpi-lbl">Em Atraso</div><div class="kpi-val r">${atr}</div></div>
+    <div class="kpi" style="cursor:pointer;${isActive('status','andamento') ? ACTIVE : ''}" onclick="setCompFilter('status','andamento')"><div class="kpi-lbl">Em Andamento</div><div class="kpi-val o">${and}</div></div>
+    <div class="kpi" style="cursor:pointer;${isActive('status','adiantada') ? ACTIVE : ''}" onclick="setCompFilter('status','adiantada')"><div class="kpi-lbl">Adiantadas</div><div class="kpi-val c">${adi}</div></div>
+    <div class="kpi" style="cursor:pointer;${isActive('new','true') ? ACTIVE : ''}" onclick="setCompFilter('new','true')"><div class="kpi-lbl">Não Planejadas</div><div class="kpi-val" style="color:#7c3aed">${nplan}</div></div>
+    <div class="kpi" style="flex:2 1 260px">
+      <div class="kpi-lbl">Concluídas — Detalhamento</div>
+      <div style="display:flex;gap:16px;margin-top:6px;flex-wrap:wrap">
+        <div style="cursor:pointer;padding:2px 6px;margin:-2px -6px;border-radius:6px;${isActive('conc','all') ? ACTIVE : ''}" onclick="setCompFilter('conc','all')"><div style="font-family:'Sora',sans-serif;font-size:20px;font-weight:700;color:var(--navy)">${conc}</div><div style="font-size:10px;color:var(--muted);margin-top:2px">Total</div></div>
+        <div style="cursor:pointer;padding:2px 6px;margin:-2px -6px;border-radius:6px;${isActive('conc','prazo') ? ACTIVE : ''}" onclick="setCompFilter('conc','prazo')"><div style="font-family:'Sora',sans-serif;font-size:20px;font-weight:700;color:var(--green)">${concPrazo}</div><div style="font-size:10px;color:var(--muted);margin-top:2px">No Prazo</div></div>
+        <div style="cursor:pointer;padding:2px 6px;margin:-2px -6px;border-radius:6px;${isActive('conc','antes') ? ACTIVE : ''}" onclick="setCompFilter('conc','antes')"><div style="font-family:'Sora',sans-serif;font-size:20px;font-weight:700;color:#0e7c72">${concAntes}</div><div style="font-size:10px;color:var(--muted);margin-top:2px">Antes do Prazo</div></div>
+        <div style="cursor:pointer;padding:2px 6px;margin:-2px -6px;border-radius:6px;${isActive('conc','atraso') ? ACTIVE : ''}" onclick="setCompFilter('conc','atraso')"><div style="font-family:'Sora',sans-serif;font-size:20px;font-weight:700;color:var(--orange)">${concAtraso}</div><div style="font-size:10px;color:var(--muted);margin-top:2px">Com Atraso</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <span class="panel-title">Atividades do Período</span>
+      ${filterChip}
+      <span class="panel-count">${matchCount} atividade${matchCount!==1?'s':''}${f ? ` <span style="opacity:.6">(${displayTasks.length-matchCount} grupo${displayTasks.length-matchCount!==1?'s':''} de contexto)</span>` : ''}</span>
+    </div>
+    ${displayTasks.length ? `<div class="tbl-wrap"><table>
+      <thead><tr>
+        <th style="width:56px">WBS</th>
+        <th>Atividade</th>
+        <th>Início Previsto</th><th>Término Previsto</th>
+        <th>Início Real</th><th>Término Real</th>
+        <th style="width:56px;text-align:center">% Ex.</th>
+        <th style="width:66px">Desvio</th>
+        <th>Status</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>` : empty}
+  </div>
+</div>`;
 }
 
 // ── Justificativas ────────────────────────────────────────────────────────────
-function renderJust() {
-  const atrasadas = S.period.filter(t => !t.isSummary && t.status === 'atrasada');
+function addJustRow() { S.justRows.push({ motivo: '', plano: '' }); navTo('justificativas'); }
+function rmJustRow(i) { S.justRows.splice(i, 1); navTo('justificativas'); }
 
-  if (!atrasadas.length) return `
-<div class="print-pg">
-  <div class="sec-title">Justificativas e Plano de Ação</div>
-  <div class="sec-sub">Atividades com desvio no período ${fp(S.pStart, S.pEnd)}</div>
-  <div class="panel"><div class="empty">
-    <div class="empty-ico">✅</div>
-    <div class="empty-ttl">Nenhuma atividade em atraso</div>
-    <div class="empty-dsc">Todas as atividades do período estão dentro do prazo.</div>
-  </div></div>
-</div>`;
+function renderJust() {
+  if (!S.justRows.length) S.justRows.push({ motivo: '', plano: '' });
+
+  const rows = S.justRows.map((r, i) => `<tr>
+    <td style="min-width:220px"><div class="just-edit" contenteditable="true" data-idx="${i}" data-f="motivo" data-ph="Ex.: Atraso na entrega de material, chuvas, falta de mão de obra...">${esc(r.motivo)}</div></td>
+    <td style="min-width:220px"><div class="just-edit" contenteditable="true" data-idx="${i}" data-f="plano" data-ph="Ex.: Reprogramar entrega, reforçar equipe, acionar fornecedor alternativo...">${esc(r.plano)}</div></td>
+    <td class="no-print" style="width:40px;text-align:center"><button class="photo-rm" onclick="rmJustRow(${i})" title="Remover">✕</button></td>
+  </tr>`).join('');
 
   return `
 <div class="print-pg">
   <div class="sec-title">Justificativas e Plano de Ação</div>
-  <div class="sec-sub">Clique nas células para preencher — o texto é salvo automaticamente e aparece no PDF</div>
+  <div class="sec-sub">Liste os principais motivos de desvio no período e o plano de ação definido para cada um</div>
   <div class="panel">
     <div class="panel-head">
-      <span class="panel-title">Atividades com Desvio</span>
-      <span class="panel-count">${atrasadas.length} ocorrência${atrasadas.length!==1?'s':''}</span>
+      <span class="panel-title">Motivos e Planos de Ação</span>
+      <span class="panel-count">${S.justRows.length} item${S.justRows.length!==1?'s':''}</span>
     </div>
     <div class="tbl-wrap"><table>
       <thead><tr>
-        <th>Atividade</th>
-        <th style="width:76px;text-align:center">Desvio</th>
-        <th>Justificativa da Construtora</th>
+        <th>Motivo do Desvio</th>
         <th>Plano de Ação</th>
+        <th class="no-print" style="width:40px"></th>
       </tr></thead>
-      <tbody>${buildJustRows(atrasadas, false)}</tbody>
+      <tbody>${rows}</tbody>
     </table></div>
+    <div class="no-print" style="padding:14px 16px;border-top:1px solid var(--border)">
+      <button class="btn btn-outline btn-sm" onclick="addJustRow()">+ Adicionar item</button>
+    </div>
   </div>
 </div>`;
 }
@@ -1088,9 +1169,8 @@ function renderJust() {
 function setupJust() {
   document.querySelectorAll('.just-edit').forEach(el => {
     el.addEventListener('input', () => {
-      const { uid, f } = el.dataset;
-      if (!S.just[uid]) S.just[uid] = { just: '', plano: '' };
-      S.just[uid][f] = el.textContent;
+      const { idx, f } = el.dataset;
+      S.justRows[idx][f] = el.textContent;
     });
   });
 }
@@ -1213,8 +1293,8 @@ function renderProximasTable(tasks) {
       <thead><tr>
         <th style="width:56px">WBS</th>
         <th>Atividade</th>
-        <th>Início R00</th><th>Fim R00</th>
-        <th>Início ${esc(S.revisao)}</th><th>Fim ${esc(S.revisao)}</th>
+        <th>Início Previsto</th><th>Término Previsto</th>
+        <th>Início Real</th><th>Término Real</th>
         <th style="width:56px;text-align:center">% Ex.</th>
       </tr></thead>
       <tbody>${rows}</tbody>
@@ -1306,6 +1386,69 @@ function _pagePort(inner, secTitle, pgNum) {
   </div>`;
 }
 
+// Altura útil de conteúdo por página A4 retrato: 1123 (altura total) - 60 (header) - 36 (rodapé) - 40 (padding 20+20)
+const PDF_PAGE_CONTENT_H = 987;
+
+// Mede a altura real (renderizada) de um bloco de HTML, para paginação sem cortar conteúdo
+function _measureHeight(html, width) {
+  const div = document.createElement('div');
+  div.style.cssText = `position:absolute;left:-99999px;top:0;visibility:hidden;width:${width}px;`;
+  div.innerHTML = html;
+  document.body.appendChild(div);
+  const h = div.offsetHeight;
+  document.body.removeChild(div);
+  return h;
+}
+
+// Divide um conjunto de linhas <tr> em páginas medindo a altura real de cada uma no navegador,
+// garantindo que nenhuma linha fique cortada por estourar a altura útil da página.
+function _paginateRows(theadHtml, rowsHtml, extraFirstPageHtml) {
+  const container = document.createElement('div');
+  container.style.cssText = 'position:absolute;left:-99999px;top:0;visibility:hidden;width:794px;padding:0 28px;';
+  container.innerHTML = `<table style="width:100%;border-collapse:collapse;font-family:'DM Sans',sans-serif">
+    ${theadHtml}<tbody>${rowsHtml.join('')}</tbody>
+  </table>`;
+  document.body.appendChild(container);
+  const theadH = container.querySelector('thead').offsetHeight;
+  const heights = Array.from(container.querySelectorAll('tbody tr')).map(tr => tr.offsetHeight);
+  document.body.removeChild(container);
+
+  const extraH = extraFirstPageHtml
+    ? _measureHeight(`<div style="padding:0 28px">${extraFirstPageHtml}</div>`, 794) + 8
+    : 0;
+
+  const slices = [];
+  let idx = 0, pageNum = 0;
+  while (idx < heights.length) {
+    const budget = PDF_PAGE_CONTENT_H - theadH - 24 /* borda/margem da tabela */ - (pageNum === 0 ? extraH : 0);
+    let used = 0, count = 0;
+    while (idx + count < heights.length && (count === 0 || used + heights[idx + count] <= budget)) {
+      used += heights[idx + count];
+      count++;
+    }
+    slices.push([idx, idx + count]);
+    idx += count; pageNum++;
+  }
+  return slices;
+}
+
+function pdfLegendHtml() {
+  const items = [
+    ['concluida', 'CONCLUÍDA',      '#0f9b6e', 'Atividade com 100% executado.'],
+    ['atrasada',  'ATRASO',         '#d63a3a', 'Término atual ficou depois do previsto no R00.'],
+    ['adiantada', 'ADIANTADA',      '#0e7c72', 'Em execução com término atual antes do previsto no R00.'],
+    ['andamento', 'ANDAMENTO',      '#1A6EE8', 'Com progresso registrado, sem desvio de prazo.'],
+    ['prevista',  'PREVISTA',       '#6b80a0', 'Ainda sem execução registrada no período.'],
+    ['naoplan',   'NÃO PLANEJADA',  '#7c3aed', 'Sem correspondência no R00 — incluída depois do baseline.'],
+  ];
+  return `<div style="border:1px solid #e0e7ef;border-radius:8px;padding:8px 12px;margin-bottom:8px;display:flex;flex-wrap:wrap;gap:5px 16px;background:#f8fafc">
+    ${items.map(([key,lbl,c,desc]) => `<div style="display:flex;align-items:center;gap:6px">
+      <span style="display:inline-flex;align-items:center;gap:3px;padding:1px 5px;border-radius:3px;font-size:7.5px;font-weight:700;background:${c}22;color:${c};white-space:nowrap">${icoSize(ICO[key],8)}${lbl}</span>
+      <span style="font-size:8px;color:#6b7a99">${desc}</span>
+    </div>`).join('')}
+  </div>`;
+}
+
 function buildCoverPagePDF() {
   const foto = S.fotoUrl || '';
   const logo = S.logoUrl ? `<img src="${S.logoUrl}" style="height:52px;max-width:180px;object-fit:contain">` : '';
@@ -1336,123 +1479,110 @@ function buildComparativoPDFPages() {
   if (!tasks.length) return [];
 
   const atr   = tasks.filter(t=>!t.isSummary && t.status==='atrasada').length;
-  const ok    = tasks.filter(t=>!t.isSummary && t.status==='ok').length;
-  const ini   = tasks.filter(t=>!t.isSummary && t.status==='iniciada').length;
+  const concluidas = tasks.filter(t=>!t.isSummary && t.status==='concluida');
+  const conc  = concluidas.length;
+  const concPrazo  = concluidas.filter(t=>!t.desvio).length;
+  const concAntes  = concluidas.filter(t=>t.desvio<0).length;
+  const concAtraso = concluidas.filter(t=>t.desvio>0).length;
+  const and   = tasks.filter(t=>!t.isSummary && t.status==='andamento').length;
+  const adi   = tasks.filter(t=>!t.isSummary && t.status==='adiantada').length;
+  const nplan = tasks.filter(t=>!t.isSummary && t.isNew).length;
   const total = tasks.filter(t=>!t.isSummary).length;
 
-  const kpis = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px">
-    ${[['Atividades no Período','📋',total,'#1A6EE8'],['Em Atraso','🔴',atr,'#d63a3a'],['No Prazo','🟢',ok,'#0f9b6e'],['Em Andamento','🟡',ini,'#d97706']]
-      .map(([lbl,ico,v,c])=>`<div style="background:#f8fafc;border:1px solid #e0e7ef;border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:8px">
-        <div style="font-size:22px;line-height:1">${ico}</div>
-        <div><div style="font-size:20px;font-weight:800;color:${c};font-family:'Sora',sans-serif;line-height:1">${v}</div>
-        <div style="font-size:9px;color:#6b7a99;margin-top:1px">${lbl}</div></div>
+  const kpis = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:8px">
+    ${[['Atividades no Período',total,'#1A6EE8'],['Em Atraso',atr,'#d63a3a'],['Em Andamento',and,'#d97706'],['Adiantadas',adi,'#0e7c72'],['Não Planejadas',nplan,'#7c3aed']]
+      .map(([lbl,v,c])=>`<div style="background:#f8fafc;border:1px solid #e0e7ef;border-radius:8px;padding:8px 10px">
+        <div style="font-size:19px;font-weight:800;color:${c};font-family:'Sora',sans-serif;line-height:1">${v}</div>
+        <div style="font-size:8.5px;color:#6b7a99;margin-top:3px">${lbl}</div>
       </div>`).join('')}
+    <div style="grid-column:span 3;background:#f8fafc;border:1px solid #e0e7ef;border-radius:8px;padding:8px 14px;display:flex;align-items:center;gap:28px">
+      <div style="font-size:8.5px;color:#6b7a99;flex-shrink:0">Concluídas —<br>Detalhamento</div>
+      <div style="display:flex;gap:32px;flex:1">
+        <div><div style="font-size:19px;font-weight:800;color:#1a2b45;font-family:'Sora',sans-serif;line-height:1">${conc}</div><div style="font-size:8.5px;color:#6b7a99;margin-top:3px">Total</div></div>
+        <div><div style="font-size:19px;font-weight:800;color:#0f9b6e;font-family:'Sora',sans-serif;line-height:1">${concPrazo}</div><div style="font-size:8.5px;color:#6b7a99;margin-top:3px">No Prazo</div></div>
+        <div><div style="font-size:19px;font-weight:800;color:#0e7c72;font-family:'Sora',sans-serif;line-height:1">${concAntes}</div><div style="font-size:8.5px;color:#6b7a99;margin-top:3px">Antes do Prazo</div></div>
+        <div><div style="font-size:19px;font-weight:800;color:#d97706;font-family:'Sora',sans-serif;line-height:1">${concAtraso}</div><div style="font-size:8.5px;color:#6b7a99;margin-top:3px">Com Atraso</div></div>
+      </div>
+    </div>
   </div>`;
 
   const thead = `<thead><tr style="background:#1a2b45;color:#fff">
-    <th style="padding:4px 6px;font-size:9px;font-weight:600;text-align:left;white-space:nowrap">WBS</th>
-    <th style="padding:4px 6px;font-size:9px;font-weight:600;text-align:left">Atividade</th>
-    <th style="padding:4px 6px;font-size:9px;font-weight:600;white-space:nowrap">Início R00</th>
-    <th style="padding:4px 6px;font-size:9px;font-weight:600;white-space:nowrap">Fim R00</th>
-    <th style="padding:4px 6px;font-size:9px;font-weight:600;white-space:nowrap">Início ${esc(S.revisao)}</th>
-    <th style="padding:4px 6px;font-size:9px;font-weight:600;white-space:nowrap">Fim ${esc(S.revisao)}</th>
-    <th style="padding:4px 6px;font-size:9px;font-weight:600;text-align:center">%</th>
-    <th style="padding:4px 6px;font-size:9px;font-weight:600;text-align:center">Desvio</th>
-    <th style="padding:4px 6px;font-size:9px;font-weight:600;text-align:center">Status</th>
+    <th style="padding:4px 5px;font-size:8px;font-weight:600;text-align:left;white-space:nowrap">WBS</th>
+    <th style="padding:4px 5px;font-size:8px;font-weight:600;text-align:left">Atividade</th>
+    <th style="padding:4px 5px;font-size:8px;font-weight:600;text-align:center;white-space:nowrap">Início Previsto</th>
+    <th style="padding:4px 5px;font-size:8px;font-weight:600;text-align:center;white-space:nowrap">Término Previsto</th>
+    <th style="padding:4px 5px;font-size:8px;font-weight:600;text-align:center;white-space:nowrap">Início Real</th>
+    <th style="padding:4px 5px;font-size:8px;font-weight:600;text-align:center;white-space:nowrap">Término Real</th>
+    <th style="padding:4px 5px;font-size:8px;font-weight:600;text-align:center">%</th>
+    <th style="padding:4px 5px;font-size:8px;font-weight:600;text-align:center">Desvio</th>
+    <th style="padding:4px 5px;font-size:8px;font-weight:600;text-align:center">Status</th>
   </tr></thead>`;
 
   const rowHtml = t => {
     const bg = t.isSummary ? 'background:#f0f4f8;font-weight:600;' : '';
     const pre = t.isSummary ? '▶ ' : (t.isMilestone ? '◆ ' : '');
-    const sc = t.status==='atrasada' ? '#d63a3a' : t.status==='ok' ? '#0f9b6e' : '#d97706';
-    const badge = t.isSummary ? '' : `<span style="display:inline-block;padding:1px 5px;border-radius:3px;font-size:8px;font-weight:700;background:${sc}22;color:${sc}">${t.status==='atrasada'?'ATRASO':t.status==='ok'?'OK':'ANDAMENTO'}</span>`;
+    const badge = t.isSummary ? '' : pdfBadge(t.status, t.isNew);
     const dev = t.desvio ? `<span style="color:${t.desvio>0?'#d63a3a':'#0f9b6e'};font-weight:700">${t.desvio>0?'+':''}${t.desvio}d</span>` : '—';
+    const indent = (t.outlineLevel - 1) * 10;
     return `<tr style="${bg}border-bottom:1px solid #e8eef4">
-      <td style="padding:3px 6px;font-size:9px;color:#6b7a99;white-space:nowrap">${esc(t.wbs||t.id)}</td>
-      <td style="padding:3px 6px;font-size:10px">${pad(t.outlineLevel)}<span>${pre}${esc(t.name)}</span></td>
-      <td style="padding:3px 6px;font-size:9px;white-space:nowrap">${fs(t.planStart)}</td>
-      <td style="padding:3px 6px;font-size:9px;white-space:nowrap">${fs(t.planFinish)}</td>
-      <td style="padding:3px 6px;font-size:9px;white-space:nowrap">${fs(t.start)}</td>
-      <td style="padding:3px 6px;font-size:9px;white-space:nowrap">${fs(t.finish)}</td>
-      <td style="padding:3px 6px;font-size:9px;text-align:center">${t.isSummary ? '' : t.pct+'%'}</td>
-      <td style="padding:3px 6px;font-size:9px;text-align:center">${dev}</td>
-      <td style="padding:3px 6px;text-align:center">${badge}</td>
+      <td style="padding:3px 5px;font-size:8px;color:#6b7a99;white-space:nowrap;vertical-align:middle">${esc(t.wbs||t.id)}</td>
+      <td style="padding:3px 5px 3px ${5+indent}px;font-size:9px;line-height:1.3;vertical-align:middle">${pre}${esc(t.name)}</td>
+      <td style="padding:3px 5px;font-size:8px;white-space:nowrap;text-align:center;vertical-align:middle">${fs(t.planStart)}</td>
+      <td style="padding:3px 5px;font-size:8px;white-space:nowrap;text-align:center;vertical-align:middle">${fs(t.planFinish)}</td>
+      <td style="padding:3px 5px;font-size:8px;white-space:nowrap;text-align:center;vertical-align:middle">${fs(t.start)}</td>
+      <td style="padding:3px 5px;font-size:8px;white-space:nowrap;text-align:center;vertical-align:middle">${fs(t.finish)}</td>
+      <td style="padding:3px 5px;font-size:8px;text-align:center;vertical-align:middle">${t.isSummary ? '' : t.pct+'%'}</td>
+      <td style="padding:3px 5px;font-size:8px;text-align:center;vertical-align:middle">${dev}</td>
+      <td style="padding:3px 5px;text-align:center;vertical-align:middle">${badge}</td>
     </tr>`;
   };
 
-  const pages = [];
-  let pg = 1, i = 0;
-  while (i < tasks.length) {
-    const limit = pg === 1 ? 30 : 40;
-    const slice = tasks.slice(i, i + limit);
-    const inner = `${pg === 1 ? kpis : ''}
+  const rowsHtml = tasks.map(rowHtml);
+  const slices = _paginateRows(thead, rowsHtml, kpis + pdfLegendHtml());
+
+  const pages = slices.map(([start, end], idx) => {
+    const inner = `${idx === 0 ? kpis + pdfLegendHtml() : ''}
       <div style="overflow:hidden;border:1px solid #e0e7ef;border-radius:8px">
         <table style="width:100%;border-collapse:collapse;font-family:'DM Sans',sans-serif">
-          ${thead}<tbody>${slice.map(rowHtml).join('')}</tbody>
+          ${thead}<tbody>${rowsHtml.slice(start, end).join('')}</tbody>
         </table>
       </div>`;
-    pages.push({ landscape: false, html: _pagePort(inner, 'Comparativo', pg) });
-    i += limit; pg++;
-  }
+    return { landscape: false, html: _pagePort(inner, 'Comparativo', idx + 1) };
+  });
   return pages;
 }
 
 function buildJustPDFPages() {
-  const atrasadas = S.period.filter(t => !t.isSummary && t.status === 'atrasada');
-  if (!atrasadas.length) {
+  const rows = S.justRows.filter(r => r.motivo.trim() || r.plano.trim());
+  if (!rows.length) {
     const inner = `<div style="text-align:center;padding:60px 0">
-      <div style="font-size:44px;margin-bottom:12px">✅</div>
-      <div style="font-size:16px;font-weight:700;color:#1a2b45">Nenhuma atividade em atraso</div>
+      <div style="font-size:44px;margin-bottom:12px">📝</div>
+      <div style="font-size:16px;font-weight:700;color:#1a2b45">Nenhum item cadastrado</div>
     </div>`;
     return [{ landscape: false, html: _pagePort(inner, 'Justificativas', 1) }];
   }
 
-  const taskMap = new Map(S.compared.map(t => [t.uid, t]));
-  const parentMap = buildParentMap(S.compared);
-  const allRows = [];
-  const groups = new Map();
-  for (const t of atrasadas) {
-    const ancestors = getAncestors(t.uid, parentMap, taskMap);
-    const top = ancestors[0] || null;
-    const key = top ? top.uid : 'none';
-    if (!groups.has(key)) groups.set(key, { label: top ? top.name : '', items: [] });
-    groups.get(key).items.push({ t, ancestors });
-  }
-  for (const [, g] of groups) {
-    if (g.label) allRows.push({ type: 'hdr', label: g.label });
-    for (const { t, ancestors } of g.items) allRows.push({ type: 'row', t, crumb: ancestors.slice(1).map(a=>esc(a.name)).join(' › '), j: S.just[t.uid]||{just:'',plano:''} });
-  }
-
   const thead = `<thead><tr style="background:#1a2b45;color:#fff">
-    <th style="padding:4px 8px;font-size:9px;font-weight:600;text-align:left">Atividade</th>
-    <th style="padding:4px 8px;font-size:9px;font-weight:600;text-align:center;width:60px">Desvio</th>
-    <th style="padding:4px 8px;font-size:9px;font-weight:600;text-align:left">Justificativa</th>
-    <th style="padding:4px 8px;font-size:9px;font-weight:600;text-align:left">Plano de Ação</th>
+    <th style="padding:4px 8px;font-size:9px;font-weight:600;text-align:left;width:50%">Motivo do Desvio</th>
+    <th style="padding:4px 8px;font-size:9px;font-weight:600;text-align:left;width:50%">Plano de Ação</th>
   </tr></thead>`;
 
-  const renderR = r => {
-    if (r.type === 'hdr') return `<tr><td colspan="4" style="background:#eef4fd;padding:4px 8px;border-bottom:2px solid #1A6EE8"><span style="font-family:'Sora',sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#1A6EE8">${esc(r.label)}</span></td></tr>`;
-    const dev = r.t.desvio ? `<span style="color:${r.t.desvio>0?'#d63a3a':'#0f9b6e'};font-weight:700">${r.t.desvio>0?'+':''}${r.t.desvio}d</span>` : '—';
-    return `<tr style="border-bottom:1px solid #e8eef4">
-      <td style="padding:4px 8px;font-size:10px;vertical-align:top">${r.crumb?`<div style="font-size:8px;color:#6b7a99;margin-bottom:1px">${r.crumb}</div>`:''}<strong>${esc(r.t.name)}</strong></td>
-      <td style="padding:4px 8px;font-size:10px;text-align:center;vertical-align:top;white-space:nowrap">${dev}</td>
-      <td style="padding:4px 8px;font-size:10px;vertical-align:top"><div style="min-height:24px;border:1px solid #dde3ec;border-radius:4px;padding:3px 5px;background:#fafafa">${esc(r.j.just)}</div></td>
-      <td style="padding:4px 8px;font-size:10px;vertical-align:top"><div style="min-height:24px;border:1px solid #dde3ec;border-radius:4px;padding:3px 5px;background:#fafafa">${esc(r.j.plano)}</div></td>
+  const renderR = r => `<tr style="border-bottom:1px solid #e8eef4">
+      <td style="padding:5px 8px;font-size:10px;vertical-align:top"><div style="min-height:30px;border:1px solid #dde3ec;border-radius:4px;padding:5px 7px;background:#fafafa">${esc(r.motivo)}</div></td>
+      <td style="padding:5px 8px;font-size:10px;vertical-align:top"><div style="min-height:30px;border:1px solid #dde3ec;border-radius:4px;padding:5px 7px;background:#fafafa">${esc(r.plano)}</div></td>
     </tr>`;
-  };
 
-  const pages = [];
-  let pg = 1, i = 0;
-  while (i < allRows.length) {
-    const slice = allRows.slice(i, i + 14);
+  const rowsHtml = rows.map(renderR);
+  const slices = _paginateRows(thead, rowsHtml, null);
+
+  const pages = slices.map(([start, end], idx) => {
     const inner = `<div style="overflow:hidden;border:1px solid #e0e7ef;border-radius:8px">
       <table style="width:100%;border-collapse:collapse;font-family:'DM Sans',sans-serif">
-        ${thead}<tbody>${slice.map(renderR).join('')}</tbody>
+        ${thead}<tbody>${rowsHtml.slice(start, end).join('')}</tbody>
       </table>
     </div>`;
-    pages.push({ landscape: false, html: _pagePort(inner, 'Justificativas', pg) });
-    i += 9; pg++;
-  }
+    return { landscape: false, html: _pagePort(inner, 'Justificativas', idx + 1) };
+  });
   return pages;
 }
 
@@ -1464,7 +1594,9 @@ function buildFotosPDFPages() {
   for (let i = 0; i < S.fotos.length; i += PER_PAGE) {
     const slice = S.fotos.slice(i, i + PER_PAGE);
     const cards = slice.map(f => `<div style="border:1px solid #e0e7ef;border-radius:8px;overflow:hidden;display:flex;flex-direction:column">
-      <img src="${f.url}" style="width:100%;height:160px;object-fit:cover;display:block">
+      <div style="width:100%;height:210px;background:#f0f4f8;display:flex;align-items:center;justify-content:center">
+        <img src="${f.url}" style="max-width:100%;max-height:100%;object-fit:contain;display:block">
+      </div>
       <div style="padding:8px 10px;font-size:11px;color:#1a2b45;min-height:28px;border-top:1px solid #e8eef4;background:#f8fafc">${esc(f.caption)||'&nbsp;'}</div>
     </div>`).join('');
     const inner = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">${cards}</div>`;
@@ -1479,41 +1611,41 @@ function buildProximasPDFPages() {
   if (!tasks.length) return [];
 
   const thead = `<thead><tr style="background:#1a2b45;color:#fff">
-    <th style="padding:4px 6px;font-size:9px;font-weight:600;text-align:left;white-space:nowrap">WBS</th>
-    <th style="padding:4px 6px;font-size:9px;font-weight:600;text-align:left">Atividade</th>
-    <th style="padding:4px 6px;font-size:9px;font-weight:600;white-space:nowrap">Início R00</th>
-    <th style="padding:4px 6px;font-size:9px;font-weight:600;white-space:nowrap">Fim R00</th>
-    <th style="padding:4px 6px;font-size:9px;font-weight:600;white-space:nowrap">Início ${esc(S.revisao)}</th>
-    <th style="padding:4px 6px;font-size:9px;font-weight:600;white-space:nowrap">Fim ${esc(S.revisao)}</th>
-    <th style="padding:4px 6px;font-size:9px;font-weight:600;text-align:center">%</th>
+    <th style="padding:4px 5px;font-size:8px;font-weight:600;text-align:left;white-space:nowrap">WBS</th>
+    <th style="padding:4px 5px;font-size:8px;font-weight:600;text-align:left">Atividade</th>
+    <th style="padding:4px 5px;font-size:8px;font-weight:600;text-align:center;white-space:nowrap">Início Previsto</th>
+    <th style="padding:4px 5px;font-size:8px;font-weight:600;text-align:center;white-space:nowrap">Término Previsto</th>
+    <th style="padding:4px 5px;font-size:8px;font-weight:600;text-align:center;white-space:nowrap">Início Real</th>
+    <th style="padding:4px 5px;font-size:8px;font-weight:600;text-align:center;white-space:nowrap">Término Real</th>
+    <th style="padding:4px 5px;font-size:8px;font-weight:600;text-align:center">%</th>
   </tr></thead>`;
 
   const rowHtml = t => {
     const bg = t.isSummary ? 'background:#f0f4f8;font-weight:600;' : '';
     const pre = t.isSummary ? '▶ ' : (t.isMilestone ? '◆ ' : '');
+    const indent = (t.outlineLevel - 1) * 10;
     return `<tr style="${bg}border-bottom:1px solid #e8eef4">
-      <td style="padding:3px 6px;font-size:9px;color:#6b7a99;white-space:nowrap">${esc(t.wbs||t.id)}</td>
-      <td style="padding:3px 6px;font-size:10px">${pad(t.outlineLevel)}<span>${pre}${esc(t.name)}</span></td>
-      <td style="padding:3px 6px;font-size:9px;white-space:nowrap">${fs(t.planStart)}</td>
-      <td style="padding:3px 6px;font-size:9px;white-space:nowrap">${fs(t.planFinish)}</td>
-      <td style="padding:3px 6px;font-size:9px;white-space:nowrap">${fs(t.start)}</td>
-      <td style="padding:3px 6px;font-size:9px;white-space:nowrap">${fs(t.finish)}</td>
-      <td style="padding:3px 6px;font-size:9px;text-align:center">${t.isSummary ? '' : t.pct+'%'}</td>
+      <td style="padding:3px 5px;font-size:8px;color:#6b7a99;white-space:nowrap;vertical-align:middle">${esc(t.wbs||t.id)}</td>
+      <td style="padding:3px 5px 3px ${5+indent}px;font-size:9px;line-height:1.3;vertical-align:middle">${pre}${esc(t.name)}</td>
+      <td style="padding:3px 5px;font-size:8px;white-space:nowrap;text-align:center;vertical-align:middle">${fs(t.planStart)}</td>
+      <td style="padding:3px 5px;font-size:8px;white-space:nowrap;text-align:center;vertical-align:middle">${fs(t.planFinish)}</td>
+      <td style="padding:3px 5px;font-size:8px;white-space:nowrap;text-align:center;vertical-align:middle">${fs(t.start)}</td>
+      <td style="padding:3px 5px;font-size:8px;white-space:nowrap;text-align:center;vertical-align:middle">${fs(t.finish)}</td>
+      <td style="padding:3px 5px;font-size:8px;text-align:center;vertical-align:middle">${t.isSummary ? '' : t.pct+'%'}</td>
     </tr>`;
   };
 
-  const pages = [];
-  let pg = 1, i = 0;
-  while (i < tasks.length) {
-    const slice = tasks.slice(i, i + 40);
+  const rowsHtml = tasks.map(rowHtml);
+  const slices = _paginateRows(thead, rowsHtml, null);
+
+  const pages = slices.map(([start, end], idx) => {
     const inner = `<div style="overflow:hidden;border:1px solid #e0e7ef;border-radius:8px">
-      <table style="width:100%;border-collapse:collapse;font-family:'DM Sans',sans-serif">
-        ${thead}<tbody>${slice.map(rowHtml).join('')}</tbody>
-      </table>
-    </div>`;
-    pages.push({ landscape: false, html: _pagePort(inner, 'Próximas Atividades', pg) });
-    i += 26; pg++;
-  }
+        <table style="width:100%;border-collapse:collapse;font-family:'DM Sans',sans-serif">
+          ${thead}<tbody>${rowsHtml.slice(start, end).join('')}</tbody>
+        </table>
+      </div>`;
+    return { landscape: false, html: _pagePort(inner, 'Próximas Atividades', idx + 1) };
+  });
   return pages;
 }
 
