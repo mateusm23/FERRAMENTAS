@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Preview — Linha de Balanço (Canvas)</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+
+:root {
+  --navy:      #1a2b45;
+  --blue:      #1B6FBF;
+  --blue-bright:#1A6EE8;
+  --blue-light:#e8f1fc;
+  --bg:        #f0f4f9;
+  --surface:   #ffffff;
+  --surface2:  #f7fafd;
+  --border:    #d4dfe8;
+  --text:      #1a2b45;
+  --muted:     #6b80a0;
+  --green:     #0f9b6e;
+  --shadow:    0 2px 16px rgba(26,43,69,.08);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); padding: 32px 24px 60px; }
+.container { max-width: 1000px; margin: 0 auto; }
+
+.sec-title { font-family: 'Sora', sans-serif; font-size: 18px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+.sec-sub { font-size: 12.5px; color: var(--muted); margin-bottom: 20px; }
+
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; margin-bottom: 22px; }
+.panel-head { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--surface2); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.panel-title { font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 700; color: var(--navy); }
+.panel-body { padding: 16px; position: relative; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 7px; padding: 8px 16px; margin-left: auto;
+  border-radius: 8px; font-family: 'Sora', sans-serif; font-size: 12.5px;
+  font-weight: 600; cursor: pointer; border: none; background: var(--green); color: #fff;
+}
+.btn:hover { opacity: .9; }
+
+.legend { display: flex; gap: 18px; flex-wrap: wrap; padding: 4px 16px 16px; font-size: 11.5px; color: var(--muted); }
+.legend-item { display: flex; align-items: center; gap: 7px; }
+.legend-swatch { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
+
+#tooltip {
+  position: fixed; display: none; background: var(--navy); color: #fff; padding: 8px 12px;
+  border-radius: 8px; font-size: 12px; line-height: 1.5; pointer-events: none; z-index: 100;
+  box-shadow: 0 8px 24px rgba(0,0,0,.25); max-width: 240px;
+}
+#tooltip strong { display: block; font-family: 'Sora', sans-serif; font-size: 12.5px; margin-bottom: 2px; }
+
+.note {
+  background: var(--blue-light); border: 1px solid #cfe0fb; border-radius: 10px;
+  padding: 12px 16px; font-size: 12px; color: var(--blue); margin-bottom: 22px; line-height: 1.55;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="sec-title">Linha de Balanço — Preview (Canvas)</div>
+  <div class="sec-sub">Dados fictícios, só para validar o formato visual e a interação</div>
+
+  <div class="note">
+    <strong>Experimente:</strong> passe o mouse sobre qualquer barra colorida pra ver o tooltip com os detalhes
+    (serviço, pavimento, período) — essa é a principal vantagem prática do canvas sobre a grade de células.
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <span class="panel-title">Fluxo de Produção — Pavimentos × Calendário</span>
+      <button class="btn" onclick="alert('Na ferramenta real, isso gera um arquivo .xlsx de verdade com as mesmas cores e datas, pronto pra abrir no Excel.')">⬇ Exportar Excel</button>
+    </div>
+    <div class="panel-body">
+      <canvas id="lob" width="1400" height="620" style="width:100%;height:auto;display:block"></canvas>
+    </div>
+    <div class="legend" id="legend"></div>
+  </div>
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+const canvas = document.getElementById('lob');
+const ctx = canvas.getContext('2d');
+const tooltip = document.getElementById('tooltip');
+
+// ── Dados ficticios ──────────────────────────────────────────────────────────
+const projectStart = new Date(2026, 5, 1); // 01/jun/2026
+const totalDays = 95;
+
+const pavimentos = ['PAV 01','PAV 02','PAV 03','PAV 04','PAV 05','PAV 06','PAV 07','PAV 08'];
+
+const servicos = [
+  { nome: 'Alvenaria',        cor: '#0f9b6e' },
+  { nome: 'Elétrica/Hidráulica', cor: '#d97706' },
+  { nome: 'Reboco',           cor: '#1A6EE8' },
+  { nome: 'Revestimento',     cor: '#7c3aed' },
+  { nome: 'Pintura',          cor: '#d63a3a' },
+];
+
+const feriados = [ { dia: 20, desc: 'Feriado Municipal' } ];
+const pulmaoInicioDia = 55;
+
+// Gera barras: cada serviço avança ~2 pavimentos por semana, com pequena variação de ritmo
+const bars = [];
+pavimentos.forEach((pav, pi) => {
+  servicos.forEach((sv, si) => {
+    const rate = 2.6 + si * 0.35; // dias por pavimento (ritmos diferentes por servico)
+    const lag = si * 6;           // defasagem entre servicos (buffer entre disciplinas)
+    const dur = 4 + (si % 2);     // duracao da barra em dias
+    const startDay = Math.round(lag + pi * rate);
+    bars.push({ pav: pi, servico: si, startDay, dur, nome: sv.nome, cor: sv.cor, pavNome: pav });
+  });
+});
+
+// ── Layout ───────────────────────────────────────────────────────────────────
+const marginLeft = 130, marginTop = 70, marginRight = 20, marginBottom = 10;
+const rowH = 46, subRowH = rowH / servicos.length;
+const dayW = (canvas.width - marginLeft - marginRight) / totalDays;
+const chartH = pavimentos.length * rowH;
+
+function dayToX(d) { return marginLeft + d * dayW; }
+function pavToY(pi) { return marginTop + pi * rowH; }
+
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.font = '11px DM Sans, sans-serif';
+
+  // Fundo dos pavimentos (zebra)
+  pavimentos.forEach((pav, pi) => {
+    ctx.fillStyle = pi % 2 === 0 ? '#f7fafd' : '#ffffff';
+    ctx.fillRect(marginLeft, pavToY(pi), totalDays * dayW, rowH);
+  });
+
+  // Fins de semana
+  for (let d = 0; d < totalDays; d++) {
+    const date = new Date(projectStart); date.setDate(date.getDate() + d);
+    const dow = date.getDay();
+    if (dow === 0 || dow === 6) {
+      ctx.fillStyle = 'rgba(107,128,160,.10)';
+      ctx.fillRect(dayToX(d), marginTop, dayW, chartH);
+    }
+  }
+  // Feriados
+  feriados.forEach(f => {
+    ctx.fillStyle = 'rgba(217,119,6,.18)';
+    ctx.fillRect(dayToX(f.dia), marginTop, dayW, chartH);
+  });
+
+  // Linha do pulmão
+  ctx.strokeStyle = '#1A6EE8';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([6,4]);
+  ctx.beginPath();
+  ctx.moveTo(dayToX(pulmaoInicioDia), marginTop);
+  ctx.lineTo(dayToX(pulmaoInicioDia), marginTop + chartH);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#1A6EE8';
+  ctx.font = 'bold 10px DM Sans, sans-serif';
+  ctx.fillText('PULMÃO', dayToX(pulmaoInicioDia) + 4, marginTop - 6);
+
+  // Cabecalho de meses e dias da semana
+  ctx.fillStyle = '#1a2b45';
+  ctx.font = 'bold 11px Sora, sans-serif';
+  let lastMonth = -1;
+  for (let d = 0; d < totalDays; d++) {
+    const date = new Date(projectStart); date.setDate(date.getDate() + d);
+    if (date.getMonth() !== lastMonth) {
+      lastMonth = date.getMonth();
+      const label = date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase();
+      ctx.fillText(label, dayToX(d) + 4, marginTop - 30);
+      ctx.strokeStyle = '#9aa9c0';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(dayToX(d), marginTop - 20);
+      ctx.lineTo(dayToX(d), marginTop + chartH);
+      ctx.stroke();
+    }
+  }
+
+  // Linhas/rotulos dos pavimentos
+  ctx.fillStyle = '#1a2b45';
+  ctx.font = 'bold 12px Sora, sans-serif';
+  pavimentos.forEach((pav, pi) => {
+    ctx.fillText(pav, 14, pavToY(pi) + rowH/2 + 4);
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(marginLeft, pavToY(pi) + rowH);
+    ctx.lineTo(marginLeft + totalDays * dayW, pavToY(pi) + rowH);
+    ctx.stroke();
+  });
+
+  // Borda externa
+  ctx.strokeStyle = '#d4dfe8';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(marginLeft, marginTop, totalDays * dayW, chartH);
+
+  // Barras dos servicos
+  bars.forEach(b => {
+    const x = dayToX(b.startDay);
+    const w = Math.max(b.dur * dayW, 3);
+    const y = pavToY(b.pav) + b.servico * subRowH + 2;
+    const h = subRowH - 4;
+    ctx.fillStyle = b.cor;
+    roundRect(ctx, x, y, w, h, 3);
+    ctx.fill();
+  });
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y, x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x, y+h, r);
+  ctx.arcTo(x, y+h, x, y, r);
+  ctx.arcTo(x, y, x+w, y, r);
+  ctx.closePath();
+}
+
+draw();
+
+// ── Tooltip interativo ──────────────────────────────────────────────────────
+canvas.addEventListener('mousemove', ev => {
+  const rect = canvas.getBoundingClientRect();
+  const scale = canvas.width / rect.width;
+  const mx = (ev.clientX - rect.left) * scale;
+  const my = (ev.clientY - rect.top) * scale;
+
+  const hit = bars.find(b => {
+    const x = dayToX(b.startDay), w = Math.max(b.dur * dayW, 3);
+    const y = pavToY(b.pav) + b.servico * subRowH + 2, h = subRowH - 4;
+    return mx >= x && mx <= x + w && my >= y && my <= y + h;
+  });
+
+  if (hit) {
+    const d1 = new Date(projectStart); d1.setDate(d1.getDate() + hit.startDay);
+    const d2 = new Date(projectStart); d2.setDate(d2.getDate() + hit.startDay + hit.dur - 1);
+    const fmt = d => d.toLocaleDateString('pt-BR');
+    tooltip.innerHTML = `<strong>${hit.nome}</strong>${hit.pavNome}<br>${fmt(d1)} a ${fmt(d2)} (${hit.dur}d)`;
+    tooltip.style.display = 'block';
+    tooltip.style.left = (ev.clientX + 14) + 'px';
+    tooltip.style.top = (ev.clientY + 14) + 'px';
+    canvas.style.cursor = 'pointer';
+  } else {
+    tooltip.style.display = 'none';
+    canvas.style.cursor = 'default';
+  }
+});
+canvas.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+
+// Legenda
+document.getElementById('legend').innerHTML = servicos.map(s =>
+  `<div class="legend-item"><div class="legend-swatch" style="background:${s.cor}"></div>${s.nome}</div>`
+).join('') + `<div class="legend-item"><div style="width:14px;height:0;border-top:2px dashed #1A6EE8"></div>Pulmão</div>`;
+</script>
+
+</body>
+</html>

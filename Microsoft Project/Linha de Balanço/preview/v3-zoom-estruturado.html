@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Preview v3 — Linha de Balanço (zoom + painéis fixos)</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+
+:root {
+  --navy:      #1a2b45;
+  --blue:      #1B6FBF;
+  --blue-bright:#1A6EE8;
+  --blue-light:#e8f1fc;
+  --bg:        #f0f4f9;
+  --surface:   #ffffff;
+  --surface2:  #f7fafd;
+  --border:    #d4dfe8;
+  --text:      #1a2b45;
+  --muted:     #6b80a0;
+  --green:     #0f9b6e;
+  --shadow:    0 2px 16px rgba(26,43,69,.08);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); padding: 28px 24px 60px; }
+.container { max-width: 1280px; margin: 0 auto; }
+
+.sec-title { font-family: 'Sora', sans-serif; font-size: 18px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+.sec-sub { font-size: 12.5px; color: var(--muted); margin-bottom: 18px; }
+
+.note {
+  background: var(--blue-light); border: 1px solid #cfe0fb; border-radius: 10px;
+  padding: 12px 16px; font-size: 12px; color: var(--blue); margin-bottom: 18px; line-height: 1.55;
+}
+
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; }
+.panel-head { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--surface2); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.panel-title { font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 700; color: var(--navy); }
+
+.toolbar { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.tbtn {
+  display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px;
+  border-radius: 7px; border: 1px solid var(--border); background: #fff; color: var(--navy);
+  font-size: 15px; font-weight: 700; cursor: pointer;
+}
+.tbtn:hover { background: var(--blue-light); border-color: var(--blue-bright); color: var(--blue-bright); }
+.zoom-pct { font-size: 11.5px; color: var(--muted); min-width: 42px; text-align: center; font-family: 'Sora', sans-serif; font-weight: 700; }
+.tsep { width: 1px; height: 18px; background: var(--border); margin: 0 4px; }
+.btn-export {
+  display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px;
+  border-radius: 7px; font-family: 'Sora', sans-serif; font-size: 12px;
+  font-weight: 600; cursor: pointer; border: none; background: var(--green); color: #fff;
+}
+
+/* ── Grid com paineis fixos (corner / header / sidebar / main) ── */
+.lob-grid {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  grid-template-rows: 78px 1fr;
+  height: 560px;
+}
+.lob-corner {
+  grid-column: 1; grid-row: 1;
+  background: var(--surface2); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Sora', sans-serif; font-size: 10.5px; font-weight: 700; color: var(--muted); text-transform: uppercase;
+}
+.lob-header-wrap {
+  grid-column: 2; grid-row: 1;
+  overflow: hidden; position: relative; border-bottom: 1px solid var(--border); background: #fff;
+}
+.lob-sidebar-wrap {
+  grid-column: 1; grid-row: 2;
+  overflow: hidden; position: relative; border-right: 1px solid var(--border); background: #fff;
+}
+.lob-main-wrap {
+  grid-column: 2; grid-row: 2;
+  overflow: auto; position: relative; background: #fff;
+}
+#headerCanvas, #sidebarCanvas { position: absolute; top: 0; left: 0; }
+
+.legend { display: flex; gap: 18px; flex-wrap: wrap; padding: 10px 16px; font-size: 11.5px; color: var(--muted); border-top: 1px solid var(--border); }
+.legend-item { display: flex; align-items: center; gap: 7px; }
+.legend-swatch { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
+
+#tooltip {
+  position: fixed; display: none; background: var(--navy); color: #fff; padding: 8px 12px;
+  border-radius: 8px; font-size: 12px; line-height: 1.5; pointer-events: none; z-index: 100;
+  box-shadow: 0 8px 24px rgba(0,0,0,.25); max-width: 240px;
+}
+#tooltip strong { display: block; font-family: 'Sora', sans-serif; font-size: 12.5px; margin-bottom: 2px; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="sec-title">Linha de Balanço — Preview v3 (zoom + painéis fixos)</div>
+  <div class="sec-sub">Dados fictícios (20 pavimentos × 180 dias) — pra testar rolagem, zoom e cabeçalho/coluna fixos numa escala mais realista</div>
+
+  <div class="note">
+    <strong>Novidades desta versão:</strong> escala maior (20 pavimentos, ~6 meses), controles de zoom (+/−/ajustar),
+    cabeçalho do calendário fixo ao rolar verticalmente, e coluna de pavimentos fixa ao rolar horizontalmente —
+    igual "congelar painéis" do Excel. Role dentro do quadro e use os botões de zoom no canto superior direito.
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <span class="panel-title">Fluxo de Produção — Pavimentos × Calendário</span>
+      <div class="toolbar">
+        <button class="tbtn" id="btnZoomOut" title="Diminuir zoom">−</button>
+        <span class="zoom-pct" id="zoomPct">100%</span>
+        <button class="tbtn" id="btnZoomIn" title="Aumentar zoom">+</button>
+        <button class="tbtn" id="btnZoomReset" title="Ajustar à tela" style="width:auto;padding:0 10px;font-size:11px">Ajustar</button>
+        <div class="tsep"></div>
+        <button class="btn-export" onclick="alert('Na ferramenta real, isso gera um arquivo .xlsx de verdade com as mesmas cores e datas, pronto pra abrir no Excel.')">⬇ Exportar Excel</button>
+      </div>
+    </div>
+
+    <div class="lob-grid">
+      <div class="lob-corner">Pavimento</div>
+      <div class="lob-header-wrap"><canvas id="headerCanvas"></canvas></div>
+      <div class="lob-sidebar-wrap"><canvas id="sidebarCanvas"></canvas></div>
+      <div class="lob-main-wrap" id="mainWrap"><canvas id="mainCanvas"></canvas></div>
+    </div>
+
+    <div class="legend" id="legend"></div>
+  </div>
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+// ── Dados fictícios ──────────────────────────────────────────────────────────
+const projectStart = new Date(2026, 5, 1);
+const totalDays = 180;
+
+const pavimentos = Array.from({length: 20}, (_, i) => 'PAV ' + String(i + 1).padStart(2, '0'));
+
+const servicos = [
+  { nome: 'Alvenaria',            cor: '#0f9b6e' },
+  { nome: 'Elétrica/Hidráulica',  cor: '#d97706' },
+  { nome: 'Reboco',               cor: '#1A6EE8' },
+  { nome: 'Revestimento',         cor: '#7c3aed' },
+  { nome: 'Pintura',              cor: '#d63a3a' },
+];
+
+const feriados = [ { dia: 20, desc: 'Feriado Municipal' }, { dia: 95, desc: 'Feriado Nacional' } ];
+const pulmaoInicioDia = 150;
+
+const bars = [];
+pavimentos.forEach((pav, pi) => {
+  servicos.forEach((sv, si) => {
+    const rate = 3.4 + si * 0.5;
+    const lag = si * 8;
+    const dur = 4 + (si % 2) + 1;
+    const startDay = Math.round(lag + pi * rate);
+    bars.push({ pav: pi, servico: si, startDay, dur, nome: sv.nome, cor: sv.cor, pavNome: pav });
+  });
+});
+
+// ── Escala / zoom ────────────────────────────────────────────────────────────
+let zoom = 1;
+const BASE_DAY_W = 26, BASE_ROW_H = 46;
+const SIDEBAR_W = 150, HEADER_H = 78;
+let dayW, rowH, subRowH;
+
+function applyZoom() {
+  dayW = BASE_DAY_W * zoom;
+  rowH = BASE_ROW_H * zoom;
+  subRowH = rowH / servicos.length;
+  document.getElementById('zoomPct').textContent = Math.round(zoom * 100) + '%';
+  layout();
+}
+
+function layout() {
+  const contentW = totalDays * dayW;
+  const contentH = pavimentos.length * rowH;
+
+  const mainCanvas = document.getElementById('mainCanvas');
+  mainCanvas.width = contentW; mainCanvas.height = contentH;
+
+  const headerCanvas = document.getElementById('headerCanvas');
+  headerCanvas.width = contentW; headerCanvas.height = HEADER_H;
+
+  const sidebarCanvas = document.getElementById('sidebarCanvas');
+  sidebarCanvas.width = SIDEBAR_W; sidebarCanvas.height = contentH;
+
+  drawHeader(); drawSidebar(); drawMain();
+  syncTransforms();
+}
+
+function dayToX(d) { return d * dayW; }
+function pavToY(pi) { return pi * rowH; }
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y, x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x, y+h, r);
+  ctx.arcTo(x, y+h, x, y, r);
+  ctx.arcTo(x, y, x+w, y, r);
+  ctx.closePath();
+}
+
+function drawHeader() {
+  const c = document.getElementById('headerCanvas');
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, c.width, c.height);
+  ctx.font = 'bold 11px Sora, sans-serif';
+  ctx.fillStyle = '#1a2b45';
+  let lastMonth = -1;
+  for (let d = 0; d < totalDays; d++) {
+    const date = new Date(projectStart); date.setDate(date.getDate() + d);
+    if (date.getMonth() !== lastMonth) {
+      lastMonth = date.getMonth();
+      const label = date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase();
+      ctx.fillText(label, dayToX(d) + 4, 20);
+      ctx.strokeStyle = '#9aa9c0'; ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.moveTo(dayToX(d), 30); ctx.lineTo(dayToX(d), HEADER_H); ctx.stroke();
+    }
+    if (zoom >= 0.7) {
+      const dow = date.getDay();
+      ctx.font = '9px DM Sans, sans-serif';
+      ctx.fillStyle = (dow === 0 || dow === 6) ? '#c53030' : '#6b80a0';
+      ctx.fillText(String(date.getDate()).padStart(2,'0'), dayToX(d) + dayW/2 - 6, 44);
+    }
+  }
+  ctx.strokeStyle = '#d4dfe8'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, HEADER_H - 0.5); ctx.lineTo(c.width, HEADER_H - 0.5); ctx.stroke();
+}
+
+function drawSidebar() {
+  const c = document.getElementById('sidebarCanvas');
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, c.width, c.height);
+  pavimentos.forEach((pav, pi) => {
+    ctx.fillStyle = pi % 2 === 0 ? '#f7fafd' : '#ffffff';
+    ctx.fillRect(0, pavToY(pi), c.width, rowH);
+    ctx.fillStyle = '#1a2b45';
+    ctx.font = 'bold 12px Sora, sans-serif';
+    ctx.fillText(pav, 14, pavToY(pi) + rowH/2 + 4);
+    ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, pavToY(pi) + rowH); ctx.lineTo(c.width, pavToY(pi) + rowH); ctx.stroke();
+  });
+}
+
+function drawMain() {
+  const c = document.getElementById('mainCanvas');
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, c.width, c.height);
+
+  pavimentos.forEach((pav, pi) => {
+    ctx.fillStyle = pi % 2 === 0 ? '#f7fafd' : '#ffffff';
+    ctx.fillRect(0, pavToY(pi), c.width, rowH);
+  });
+
+  for (let d = 0; d < totalDays; d++) {
+    const date = new Date(projectStart); date.setDate(date.getDate() + d);
+    const dow = date.getDay();
+    if (dow === 0 || dow === 6) {
+      ctx.fillStyle = 'rgba(107,128,160,.10)';
+      ctx.fillRect(dayToX(d), 0, dayW, c.height);
+    }
+  }
+  feriados.forEach(f => {
+    ctx.fillStyle = 'rgba(217,119,6,.18)';
+    ctx.fillRect(dayToX(f.dia), 0, dayW, c.height);
+  });
+
+  ctx.strokeStyle = '#1A6EE8'; ctx.lineWidth = 2; ctx.setLineDash([6,4]);
+  ctx.beginPath(); ctx.moveTo(dayToX(pulmaoInicioDia), 0); ctx.lineTo(dayToX(pulmaoInicioDia), c.height); ctx.stroke();
+  ctx.setLineDash([]);
+
+  pavimentos.forEach((pav, pi) => {
+    ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, pavToY(pi) + rowH); ctx.lineTo(c.width, pavToY(pi) + rowH); ctx.stroke();
+  });
+
+  let lastMonth = -1;
+  for (let d = 0; d < totalDays; d++) {
+    const date = new Date(projectStart); date.setDate(date.getDate() + d);
+    if (date.getMonth() !== lastMonth) {
+      lastMonth = date.getMonth();
+      ctx.strokeStyle = '#9aa9c0'; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(dayToX(d), 0); ctx.lineTo(dayToX(d), c.height); ctx.stroke();
+    }
+  }
+
+  bars.forEach(b => {
+    const x = dayToX(b.startDay);
+    const w = Math.max(b.dur * dayW, 3);
+    const y = pavToY(b.pav) + b.servico * subRowH + 2;
+    const h = subRowH - 4;
+    ctx.fillStyle = b.cor;
+    roundRect(ctx, x, y, w, h, Math.min(3, h/2));
+    ctx.fill();
+  });
+}
+
+// ── Sincronizacao de scroll (paineis fixos) ─────────────────────────────────
+function syncTransforms() {
+  const mainWrap = document.getElementById('mainWrap');
+  document.getElementById('headerCanvas').style.transform = `translateX(${-mainWrap.scrollLeft}px)`;
+  document.getElementById('sidebarCanvas').style.transform = `translateY(${-mainWrap.scrollTop}px)`;
+}
+document.getElementById('mainWrap').addEventListener('scroll', syncTransforms);
+
+// ── Controles de zoom ────────────────────────────────────────────────────────
+document.getElementById('btnZoomIn').onclick = () => { zoom = Math.min(zoom * 1.25, 3); applyZoom(); };
+document.getElementById('btnZoomOut').onclick = () => { zoom = Math.max(zoom / 1.25, 0.35); applyZoom(); };
+document.getElementById('btnZoomReset').onclick = () => { zoom = 1; applyZoom(); document.getElementById('mainWrap').scrollTo(0,0); };
+
+// Zoom com Ctrl+scroll do mouse
+document.getElementById('mainWrap').addEventListener('wheel', ev => {
+  if (!ev.ctrlKey) return;
+  ev.preventDefault();
+  zoom = ev.deltaY < 0 ? Math.min(zoom * 1.1, 3) : Math.max(zoom / 1.1, 0.35);
+  applyZoom();
+}, { passive: false });
+
+// ── Tooltip ──────────────────────────────────────────────────────────────────
+const tooltip = document.getElementById('tooltip');
+document.getElementById('mainWrap').addEventListener('mousemove', ev => {
+  const wrap = document.getElementById('mainWrap');
+  const rect = wrap.getBoundingClientRect();
+  const mx = ev.clientX - rect.left + wrap.scrollLeft;
+  const my = ev.clientY - rect.top + wrap.scrollTop;
+
+  const hit = bars.find(b => {
+    const x = dayToX(b.startDay), w = Math.max(b.dur * dayW, 3);
+    const y = pavToY(b.pav) + b.servico * subRowH + 2, h = subRowH - 4;
+    return mx >= x && mx <= x + w && my >= y && my <= y + h;
+  });
+
+  if (hit) {
+    const d1 = new Date(projectStart); d1.setDate(d1.getDate() + hit.startDay);
+    const d2 = new Date(projectStart); d2.setDate(d2.getDate() + hit.startDay + hit.dur - 1);
+    const fmt = d => d.toLocaleDateString('pt-BR');
+    tooltip.innerHTML = `<strong>${hit.nome}</strong>${hit.pavNome}<br>${fmt(d1)} a ${fmt(d2)} (${hit.dur}d)`;
+    tooltip.style.display = 'block';
+    tooltip.style.left = (ev.clientX + 14) + 'px';
+    tooltip.style.top = (ev.clientY + 14) + 'px';
+    wrap.style.cursor = 'pointer';
+  } else {
+    tooltip.style.display = 'none';
+    wrap.style.cursor = 'default';
+  }
+});
+document.getElementById('mainWrap').addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
+
+// Legenda
+document.getElementById('legend').innerHTML = servicos.map(s =>
+  `<div class="legend-item"><div class="legend-swatch" style="background:${s.cor}"></div>${s.nome}</div>`
+).join('') + `<div class="legend-item"><div style="width:14px;height:0;border-top:2px dashed #1A6EE8"></div>Pulmão</div>`;
+
+applyZoom();
+</script>
+
+</body>
+</html>

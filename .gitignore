@@ -1,2 +1,8 @@
 EXEMPLO DE BASE DE DADOS.xlsx
 **/EXEMPLO DE BASE DE DADOS.xlsx
+
+# Arquivos-modelo/exemplo reais do usuário (dados de obra), não fazem parte do código da ferramenta
+**/GERADOR LB*.xlsm
+*.xlsm
+01_CRONOGRAMA*.xml
+02_CRONOGRAMA*.xml
