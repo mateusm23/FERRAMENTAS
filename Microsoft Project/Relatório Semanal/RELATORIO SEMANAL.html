@@ -1,0 +1,1605 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Relatório Semanal de Obra</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📋</text></svg>">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+
+:root {
+  --navy:      #1a2b45;
+  --blue:      #1B6FBF;
+  --blue-bright:#1A6EE8;
+  --blue-light:#e8f1fc;
+  --bg:        #f0f4f9;
+  --surface:   #ffffff;
+  --surface2:  #f7fafd;
+  --border:    #d4dfe8;
+  --text:      #1a2b45;
+  --muted:     #6b80a0;
+  --green:     #0f9b6e;
+  --red:       #d63a3a;
+  --orange:    #d97706;
+  --green-bg:  #e6f7f2;
+  --red-bg:    #fdf0f0;
+  --orange-bg: #fef3c7;
+  --shadow:    0 2px 16px rgba(26,43,69,.08);
+  --hh:        64px;
+  --snw:       218px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-top: var(--hh); }
+
+/* ── Header ── */
+header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: var(--navy); padding: 0 28px; height: var(--hh);
+  display: flex; align-items: center; gap: 14px;
+}
+.hdr-back {
+  display: flex; align-items: center; gap: 6px; color: rgba(255,255,255,.5);
+  font-size: 12px; text-decoration: none; padding: 5px 10px;
+  border-radius: 6px; border: 1px solid rgba(255,255,255,.12); transition: all .15s;
+}
+.hdr-back:hover { color: #fff; border-color: rgba(255,255,255,.3); background: rgba(255,255,255,.07); }
+header h1 { font-family: 'Sora', sans-serif; font-size: 17px; font-weight: 600; color: #fff; }
+header h1 span { font-size: 13px; color: rgba(255,255,255,.4); font-weight: 400; }
+.hdr-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+/* ── Containers ── */
+.container { max-width: 880px; margin: 0 auto; padding: 32px 24px 60px; }
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 7px; padding: 10px 20px;
+  border-radius: 8px; font-family: 'Sora', sans-serif; font-size: 13px;
+  font-weight: 600; cursor: pointer; border: none; transition: all .15s; white-space: nowrap;
+}
+.btn-primary { background: var(--blue-bright); color: #fff; }
+.btn-primary:hover { background: var(--blue); }
+.btn-primary:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+.btn-outline:hover { border-color: var(--blue); color: var(--blue); }
+.btn-sm { padding: 6px 14px; font-size: 12px; }
+
+/* ── Intro ── */
+.intro-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; box-shadow: var(--shadow); padding: 40px 44px;
+}
+.intro-icon-wrap {
+  width: 56px; height: 56px; border-radius: 14px;
+  background: linear-gradient(135deg, var(--navy), var(--blue-bright));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; margin-bottom: 18px;
+  box-shadow: 0 6px 18px rgba(26,110,232,.28);
+}
+.intro-title { font-family: 'Sora', sans-serif; font-size: 22px; font-weight: 800; color: var(--navy); margin-bottom: 8px; }
+.intro-desc { font-size: 13.5px; color: var(--muted); line-height: 1.72; max-width: 680px; margin-bottom: 30px; }
+.intro-how { font-family: 'Sora', sans-serif; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin-bottom: 20px; }
+
+/* Timeline */
+.timeline { position: relative; display: flex; align-items: flex-start; gap: 4px; margin-bottom: 28px; }
+.timeline::before { content: ''; position: absolute; top: 44px; left: 7.5%; right: 7.5%; height: 2px; background: var(--border); z-index: 0; }
+.tl-item { position: relative; z-index: 1; flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; }
+.tl-icon { width: 88px; height: 88px; border-radius: 22px; background: #fff; border: 2px solid var(--border); box-shadow: 0 4px 14px rgba(26,43,69,.12); display: flex; align-items: center; justify-content: center; font-size: 34px; flex-shrink: 0; }
+.tl-title { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 11.5px; color: var(--navy); line-height: 1.35; padding: 0 4px; }
+.tl-sub { font-size: 10.5px; color: var(--muted); line-height: 1.4; padding: 0 4px; }
+
+@media (max-width: 820px) {
+  .timeline { flex-direction: column; align-items: stretch; gap: 18px; }
+  .timeline::before { display: none; }
+  .tl-item { flex-direction: row; text-align: left; gap: 16px; }
+  .tl-icon { width: 60px; height: 60px; font-size: 26px; flex-shrink: 0; border-radius: 14px; }
+}
+
+.intro-tip {
+  background: var(--blue-light); border: 1px solid #cfe0fb; border-radius: 10px;
+  padding: 12px 16px; font-size: 12.5px; color: var(--blue); margin-bottom: 26px; line-height: 1.5;
+}
+.intro-tip strong { font-weight: 700; }
+.intro-footer {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--border);
+  color: var(--muted); font-size: 12px;
+}
+.intro-sep { width: 1px; height: 12px; background: var(--border); }
+
+/* ── Config: step cards ── */
+.steps { display: flex; flex-direction: column; gap: 16px; }
+.step-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; }
+.step-head { display: flex; align-items: center; gap: 12px; padding: 14px 20px; background: var(--surface2); border-bottom: 1px solid var(--border); }
+.step-num { width: 26px; height: 26px; border-radius: 50%; background: var(--navy); color: #fff; font-family: 'Sora', sans-serif; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.step-num.ok { background: var(--green); }
+.step-label { flex: 1; }
+.step-title { font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 600; color: var(--text); }
+.step-hint { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.step-tag { font-size: 11px; padding: 3px 9px; border-radius: 20px; background: var(--border); color: var(--muted); font-weight: 500; white-space: nowrap; }
+.step-tag.ok { background: var(--green-bg); color: var(--green); }
+.step-body { padding: 18px 20px; }
+
+/* ── Form inputs ── */
+.frow { display: flex; gap: 14px; flex-wrap: wrap; }
+.fgrp { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 190px; }
+.fgrp.sm { flex: 0 0 140px; min-width: 0; }
+.flabel { font-size: 11.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+input[type=text], input[type=date] {
+  border: 1px solid var(--border); border-radius: 8px; padding: 9px 13px;
+  font-family: 'DM Sans', sans-serif; font-size: 13.5px; color: var(--text);
+  background: #fff; outline: none; transition: border .15s; width: 100%;
+}
+input[type=text]:focus, input[type=date]:focus { border-color: var(--blue-bright); box-shadow: 0 0 0 3px rgba(26,110,232,.1); }
+
+/* ── Upload zones ── */
+.up-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 580px) { .up-pair { grid-template-columns: 1fr; } }
+
+.upzone {
+  border: 2px dashed var(--border); border-radius: 10px; padding: 26px 18px;
+  text-align: center; cursor: pointer; transition: all .15s; background: var(--bg); display: block;
+}
+.upzone:hover, .upzone.over { border-color: var(--blue-bright); background: #eef4fd; }
+.upzone.done { border-color: var(--green); background: var(--green-bg); border-style: solid; }
+.upzone input { display: none; }
+.upzone-icon { font-size: 26px; margin-bottom: 8px; }
+.upzone-text { font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+.upzone-text strong { display: block; margin-bottom: 2px; color: var(--blue-bright); }
+.upzone.done .upzone-text strong { color: var(--green); }
+.upzone-fname { font-size: 11px; color: var(--green); margin-top: 5px; font-weight: 600; display: none; }
+.upzone.done .upzone-fname { display: block; }
+
+.img-zone {
+  border: 2px dashed var(--border); border-radius: 10px; padding: 18px;
+  text-align: center; cursor: pointer; transition: all .15s; background: var(--bg);
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.img-zone:hover { border-color: var(--blue-bright); background: #eef4fd; }
+.img-zone input { display: none; }
+.img-prev { width: 100%; height: 100px; object-fit: cover; border-radius: 7px; }
+
+/* ── Config actions ── */
+.cfg-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+
+/* ── Sidebar (result) ── */
+.side-nav {
+  position: fixed; left: 0; top: var(--hh); bottom: 0;
+  width: var(--snw); display: flex; flex-direction: column;
+  padding: 16px 10px; background: #f7f9fc;
+  border-right: 1px solid var(--border); overflow-y: auto; z-index: 30;
+}
+.sn-label { padding: 6px 10px 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.sn-item {
+  display: flex; align-items: center; gap: 9px; padding: 9px 10px;
+  border-radius: 8px; border: none; background: transparent; cursor: pointer;
+  text-align: left; font-family: 'DM Sans', sans-serif; font-size: 12px;
+  font-weight: 500; color: var(--muted); transition: all .15s; width: 100%;
+}
+.sn-item .ni { font-size: 14px; flex-shrink: 0; opacity: .8; }
+.sn-item:hover { background: #eef1f6; color: var(--text); }
+.sn-item.active { background: var(--blue-light); color: var(--blue-bright); font-weight: 700; }
+.sn-item.active .ni { opacity: 1; }
+.sn-sep { height: 1px; background: var(--border); margin: 8px 4px; }
+
+/* ── Result content ── */
+.res-content {
+  padding-left: calc(var(--snw) + 28px); padding-right: 28px;
+  padding-top: 28px; padding-bottom: 60px;
+}
+
+/* Section headers */
+.sec-title { font-family: 'Sora', sans-serif; font-size: 18px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+.sec-sub { font-size: 12.5px; color: var(--muted); margin-bottom: 20px; }
+
+/* ── KPI cards ── */
+.kpi-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+.kpi { flex: 1; min-width: 120px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; box-shadow: var(--shadow); }
+.kpi-lbl { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 6px; }
+.kpi-val { font-family: 'Sora', sans-serif; font-size: 24px; font-weight: 700; color: var(--navy); }
+.kpi-val.g { color: var(--green); }
+.kpi-val.r { color: var(--red); }
+.kpi-val.o { color: var(--orange); }
+
+/* ── Panel ── */
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; }
+.panel-head { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--surface2); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.panel-title { font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 700; color: var(--navy); }
+.panel-count { font-size: 11.5px; color: var(--muted); margin-left: auto; }
+
+/* ── Table ── */
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+thead { background: var(--navy); }
+thead th { color: #fff; font-family: 'Sora', sans-serif; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; padding: 10px 12px; text-align: left; white-space: nowrap; }
+tbody tr:nth-child(even) { background: var(--surface2); }
+tbody tr:hover { background: #eef3fc; }
+tbody td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+tbody tr:last-child td { border-bottom: none; }
+.row-sum { background: #edf2f8 !important; }
+.row-sum td { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 11.5px; }
+.row-sum:hover { background: #dce8f5 !important; }
+
+/* Task name */
+.tn { display: flex; align-items: center; gap: 4px; }
+.tn-pad { display: inline-block; flex-shrink: 0; }
+
+/* ── Badges ── */
+.badge { display: inline-flex; align-items: center; gap: 3px; padding: 3px 8px; border-radius: 20px; font-size: 10.5px; font-weight: 700; white-space: nowrap; }
+.b-g { background: var(--green-bg); color: var(--green); }
+.b-r { background: var(--red-bg); color: var(--red); }
+.b-o { background: var(--orange-bg); color: var(--orange); }
+.b-b { background: var(--blue-light); color: var(--blue-bright); }
+.b-x { background: var(--border); color: var(--muted); }
+
+/* Delay */
+.d-pos { color: var(--red); font-weight: 700; }
+.d-neg { color: var(--green); font-weight: 700; }
+.d-z { color: var(--muted); }
+
+/* ── Cover section ── */
+.cover-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; }
+.cover-hero { width: 100%; height: 260px; background: linear-gradient(135deg, var(--navy) 0%, #2a4a8e 100%); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+.cover-hero img { width: 100%; height: 100%; object-fit: cover; }
+.cover-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 40%, rgba(26,43,69,.82)); }
+.cover-body { padding: 28px 32px 26px; }
+.cover-logo { max-height: 50px; max-width: 170px; object-fit: contain; margin-bottom: 18px; }
+.cover-tipo { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--blue-bright); margin-bottom: 6px; }
+.cover-obra { font-family: 'Sora', sans-serif; font-size: 24px; font-weight: 800; color: var(--navy); margin-bottom: 18px; line-height: 1.2; }
+.cover-meta { display: flex; gap: 28px; flex-wrap: wrap; border-top: 1px solid var(--border); padding-top: 18px; }
+.cm-item { display: flex; flex-direction: column; gap: 3px; }
+.cm-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+.cm-val { font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 600; color: var(--navy); }
+
+/* ── Justificativas ── */
+.just-edit {
+  min-height: 54px; padding: 8px 10px; border-radius: 6px;
+  font-size: 12px; font-family: 'DM Sans', sans-serif; color: var(--text);
+  border: 1px solid transparent; transition: border .15s; line-height: 1.55; outline: none;
+}
+.just-edit:hover { border-color: var(--border); }
+.just-edit:focus { border-color: var(--blue-bright); background: #fafcff; }
+.just-edit:empty::before { content: attr(data-ph); color: var(--muted); font-style: italic; }
+
+/* ── Photos ── */
+.photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
+.photo-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); }
+.photo-img { width: 100%; height: 170px; object-fit: cover; }
+.photo-foot { padding: 10px 12px; display: flex; align-items: center; gap: 8px; }
+.photo-caption { flex: 1; border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-family: 'DM Sans', sans-serif; font-size: 12px; color: var(--text); outline: none; transition: border .15s; }
+.photo-caption:focus { border-color: var(--blue-bright); }
+.photo-rm { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 15px; padding: 2px; flex-shrink: 0; }
+.photo-rm:hover { color: var(--red); }
+.photo-add {
+  border: 2px dashed var(--border); border-radius: 10px; padding: 32px 20px;
+  text-align: center; cursor: pointer; transition: all .15s; background: var(--bg);
+  display: flex; flex-direction: column; align-items: center; gap: 8px; color: var(--muted);
+}
+.photo-add:hover { border-color: var(--blue-bright); background: #eef4fd; color: var(--blue-bright); }
+.photo-add input { display: none; }
+
+/* ── Empty state ── */
+.empty { text-align: center; padding: 48px 24px; color: var(--muted); }
+.empty-ico { font-size: 40px; margin-bottom: 12px; }
+.empty-ttl { font-family: 'Sora', sans-serif; font-size: 14px; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
+.empty-dsc { font-size: 12.5px; }
+
+/* ── Print ── */
+@media print {
+  @page { size: A4; margin: 15mm 12mm; }
+
+  body { background: #fff !important; padding-top: 0 !important; }
+  header, .side-nav, #intro-screen, #config-screen,
+  #author-footer, .hdr-actions, .photo-add, .photo-rm,
+  .panel-head .panel-count { display: none !important; }
+
+  .res-content { padding: 0 !important; }
+  .print-pg { page-break-before: always; padding-top: 6mm; }
+  .print-pg:first-child { page-break-before: avoid; }
+
+  .cover-hero { height: 190px; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .cover-obra { font-size: 20px; }
+  .panel, .kpi { box-shadow: none !important; }
+  .tbl-wrap { overflow: visible; }
+  table { font-size: 10.5px; }
+  thead th { font-size: 9.5px; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  tbody td { padding: 6px 8px; }
+  .just-edit { border: 1px solid #ccc !important; min-height: 40px !important; }
+  .photo-grid { grid-template-columns: 1fr 1fr; }
+  .photo-img { height: 130px; }
+  .badge { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .no-print, .photo-drag-handle { display: none !important; }
+}
+
+/* ── Utility ── */
+.hidden { display: none !important; }
+.author { max-width: 880px; margin: 0 auto; padding: 0 24px 32px; text-align: center; color: var(--muted); font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+.author-sep { width: 1px; height: 12px; background: var(--border); }
+
+/* ── PDF container & overlay ── */
+#pdf-container { position: fixed; left: -9999px; top: 0; background: #fff; z-index: -1; }
+.pdf-overlay { position: fixed; inset: 0; background: rgba(26,43,69,.88); z-index: 9000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.pdf-overlay-box { background: #fff; border-radius: 18px; padding: 36px 52px; text-align: center; max-width: 380px; width: 90%; box-shadow: 0 24px 64px rgba(26,43,69,.32); }
+.pdf-overlay-ttl { font-family: 'Sora', sans-serif; font-weight: 800; font-size: 18px; color: var(--navy); margin-bottom: 6px; }
+.pdf-overlay-sub { font-size: 13px; color: var(--muted); margin-bottom: 22px; line-height: 1.5; min-height: 40px; }
+.pdf-prog-bar { background: var(--border); border-radius: 8px; height: 10px; overflow: hidden; }
+.pdf-prog-fill { height: 100%; background: linear-gradient(90deg, var(--blue-bright), #F5C800); border-radius: 8px; transition: width .4s ease; }
+.pdf-prog-lbl { font-size: 11px; color: var(--muted); margin-top: 8px; font-weight: 600; }
+
+/* ── Photo drag-to-reorder ── */
+.photo-drag-handle { padding: 5px 12px 0; color: var(--muted); cursor: grab; font-size: 15px; user-select: none; text-align: center; letter-spacing: 3px; }
+.photo-drag-handle:active { cursor: grabbing; }
+.photo-card.drag-over { border-color: var(--blue-bright); box-shadow: 0 0 0 2px rgba(26,110,232,.3); transform: scale(1.01); }
+.photo-add.over { border-color: var(--blue-bright); background: #eef4fd; color: var(--blue-bright); }
+.img-zone.over { border-color: var(--blue-bright); background: #eef4fd; }
+
+/* ── Justificativas hierarquia ── */
+.row-group-header td { background: var(--blue-light) !important; padding: 8px 12px !important; border-bottom: 2px solid var(--blue-bright) !important; }
+.row-group-header td span { font-family: 'Sora', sans-serif; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--blue-bright); }
+.just-breadcrumb { font-size: 10px; color: var(--muted); margin-bottom: 3px; line-height: 1.3; }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+<header>
+  <a class="hdr-back" href="../../index.html">← Portal</a>
+  <h1>Relatório Semanal de Obra <span>· MS Project</span></h1>
+  <div class="hdr-actions">
+    <button class="btn btn-outline btn-sm hidden" id="btn-reconfig" onclick="showConfig()">↺ Alterar dados</button>
+  </div>
+</header>
+
+<!-- ════════════════════════════════════════════════════ INTRO ════ -->
+<div id="intro-screen" class="container">
+  <div class="intro-card">
+    <div class="intro-icon-wrap">📋</div>
+    <div class="intro-title">Relatório Semanal de Obra</div>
+    <div class="intro-desc">
+      Gere relatórios de acompanhamento de obra a partir de dois cronogramas do MS Project exportados em XML —
+      o <strong>cronograma base (R00)</strong> e o <strong>cronograma atual (R01)</strong>. A ferramenta compara
+      datas, calcula desvios, monta quadros de justificativas e prévia das próximas atividades, tudo pronto
+      para exportar em PDF.
+    </div>
+
+    <div class="intro-how">Como usar</div>
+    <div class="timeline">
+      <div class="tl-item">
+        <div class="tl-icon">📂</div>
+        <div>
+          <div class="tl-title">Abra os cronogramas no MS Project</div>
+          <div class="tl-sub">R00 (base inicial) e R01 (revisão atual)</div>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-icon">💾</div>
+        <div>
+          <div class="tl-title">Exporte o R00 como XML</div>
+          <div class="tl-sub">Arquivo → Salvar Como → Projeto XML (.xml)</div>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-icon">🔄</div>
+        <div>
+          <div class="tl-title">Repita para o R01</div>
+          <div class="tl-sub">Salve o cronograma atualizado também em .xml</div>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-icon">📝</div>
+        <div>
+          <div class="tl-title">Preencha as informações</div>
+          <div class="tl-sub">Nome da obra, período, logos e foto</div>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-icon">⬆️</div>
+        <div>
+          <div class="tl-title">Faça upload dos XMLs</div>
+          <div class="tl-sub">Os dois arquivos salvos no passo anterior</div>
+        </div>
+      </div>
+      <div class="tl-item">
+        <div class="tl-icon">📄</div>
+        <div>
+          <div class="tl-title">Exporte em PDF</div>
+          <div class="tl-sub">Preencha justificativas e imprima</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="intro-tip">
+      <strong>Dica:</strong> Não tem dois arquivos separados? Salve o mesmo cronograma como R00 antes de fazer
+      qualquer ajuste, e depois salve a versão atualizada como R01. A comparação sempre usa R00 como linha de
+      base e R01 como revisão atual.
+    </div>
+
+    <div style="display:flex;justify-content:center">
+      <button class="btn btn-primary" onclick="showConfig()" style="padding:12px 36px;font-size:14px">
+        Começar →
+      </button>
+    </div>
+
+    <div class="intro-footer">
+      <span>Desenvolvido por <strong>Mateus Monteiro</strong></span>
+      <div class="intro-sep"></div>
+      <span>(62) 99156-3421</span>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ CONFIG ════ -->
+<div id="config-screen" class="container hidden">
+  <div class="steps">
+
+    <!-- 1. Informações básicas -->
+    <div class="step-card">
+      <div class="step-head">
+        <div class="step-num" id="sn1">1</div>
+        <div class="step-label">
+          <div class="step-title">Informações da Obra</div>
+          <div class="step-hint">Nome, construtora e período do relatório</div>
+        </div>
+        <span class="step-tag" id="st1">Obrigatório</span>
+      </div>
+      <div class="step-body">
+        <div class="frow" style="margin-bottom:14px">
+          <div class="fgrp" style="flex:2">
+            <label class="flabel">Nome da Obra</label>
+            <input type="text" id="inp-obra" placeholder="Ex.: BE Garden — Obtenção Habite-se" oninput="checkReady()">
+          </div>
+          <div class="fgrp">
+            <label class="flabel">Construtora / Empresa</label>
+            <input type="text" id="inp-empresa" placeholder="Opcional">
+          </div>
+        </div>
+        <div class="frow">
+          <div class="fgrp">
+            <label class="flabel">Início do Período</label>
+            <input type="date" id="inp-ini" oninput="checkReady()">
+          </div>
+          <div class="fgrp">
+            <label class="flabel">Fim do Período</label>
+            <input type="date" id="inp-fim" oninput="checkReady()">
+          </div>
+          <div class="fgrp sm">
+            <label class="flabel">Revisão</label>
+            <input type="text" id="inp-rev" value="R01" placeholder="R01">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. XMLs -->
+    <div class="step-card">
+      <div class="step-head">
+        <div class="step-num" id="sn2">2</div>
+        <div class="step-label">
+          <div class="step-title">Cronogramas XML</div>
+          <div class="step-hint">No MS Project: Arquivo → Salvar Como → Projeto XML (.xml)</div>
+        </div>
+        <span class="step-tag" id="st2">Obrigatório</span>
+      </div>
+      <div class="step-body">
+        <div class="up-pair">
+          <div class="upzone" id="z-r00"
+            ondragover="event.preventDefault();this.classList.add('over')"
+            ondragleave="this.classList.remove('over')"
+            ondrop="dropXml(event,'r00')"
+            onclick="document.getElementById('f-r00').click()">
+            <div class="upzone-icon">📁</div>
+            <div class="upzone-text">
+              <strong id="r00-lbl">Cronograma Base (R00)</strong>
+              Arraste o .xml ou clique aqui
+            </div>
+            <div class="upzone-fname" id="r00-fn"></div>
+            <input type="file" id="f-r00" accept=".xml" style="display:none" onchange="loadXml(this.files[0],'r00')">
+          </div>
+          <div class="upzone" id="z-r01"
+            ondragover="event.preventDefault();this.classList.add('over')"
+            ondragleave="this.classList.remove('over')"
+            ondrop="dropXml(event,'r01')"
+            onclick="document.getElementById('f-r01').click()">
+            <div class="upzone-icon">📁</div>
+            <div class="upzone-text">
+              <strong id="r01-lbl">Cronograma Atual (R01)</strong>
+              Arraste o .xml ou clique aqui
+            </div>
+            <div class="upzone-fname" id="r01-fn"></div>
+            <input type="file" id="f-r01" accept=".xml" style="display:none" onchange="loadXml(this.files[0],'r01')">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Imagens (opcional) -->
+    <div class="step-card">
+      <div class="step-head">
+        <div class="step-num" id="sn3">3</div>
+        <div class="step-label">
+          <div class="step-title">Identidade Visual</div>
+          <div class="step-hint">Logo e foto da obra para a capa do relatório</div>
+        </div>
+        <span class="step-tag">Opcional</span>
+      </div>
+      <div class="step-body">
+        <div class="frow">
+          <div class="fgrp" style="flex:0 0 200px">
+            <label class="flabel">Logo da Empresa</label>
+            <div class="img-zone" style="height:110px;justify-content:center"
+              ondragover="event.preventDefault();this.classList.add('over')"
+              ondragleave="this.classList.remove('over')"
+              ondrop="dropImg(event,'logo')"
+              onclick="document.getElementById('f-logo').click()">
+              <img id="prev-logo" class="img-prev hidden" alt="logo" style="height:80px;width:auto;object-fit:contain">
+              <span id="logo-ico" style="font-size:28px">🏢</span>
+              <span style="font-size:11.5px;color:var(--muted)">PNG, JPG ou SVG</span>
+              <input type="file" id="f-logo" accept="image/*" style="display:none" onchange="loadImg(this,'logo')">
+            </div>
+          </div>
+          <div class="fgrp">
+            <label class="flabel">Foto da Obra (capa)</label>
+            <div class="img-zone" style="flex-direction:row;gap:14px;height:110px;padding:12px 16px"
+              ondragover="event.preventDefault();this.classList.add('over')"
+              ondragleave="this.classList.remove('over')"
+              ondrop="dropImg(event,'foto')"
+              onclick="document.getElementById('f-foto').click()">
+              <img id="prev-foto" class="img-prev hidden" style="width:130px;height:80px;object-fit:cover;flex-shrink:0" alt="obra">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex:1">
+                <span style="font-size:28px">🏗️</span>
+                <span style="font-size:11.5px;color:var(--muted);text-align:center">Clique ou arraste<br>PNG, JPG</span>
+              </div>
+              <input type="file" id="f-foto" accept="image/*" style="display:none" onchange="loadImg(this,'foto')">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="cfg-actions">
+    <button class="btn btn-outline" onclick="showIntro()">← Voltar</button>
+    <button class="btn btn-primary" id="btn-gerar" onclick="gerar()" disabled>Gerar Relatório →</button>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════ RESULT ════ -->
+<div id="result-screen" class="hidden">
+  <nav class="side-nav">
+    <div class="sn-label">Seções</div>
+    <button class="sn-item active" data-sec="capa"          onclick="navTo('capa')">         <span class="ni">📄</span> Capa</button>
+    <button class="sn-item"        data-sec="comparativo"   onclick="navTo('comparativo')">  <span class="ni">📊</span> Quadro Comparativo</button>
+    <button class="sn-item"        data-sec="justificativas" onclick="navTo('justificativas')"><span class="ni">⚠️</span> Justificativas</button>
+    <button class="sn-item"        data-sec="fotos"         onclick="navTo('fotos')">        <span class="ni">📸</span> Fotos</button>
+    <button class="sn-item"        data-sec="proximas"      onclick="navTo('proximas')">     <span class="ni">📅</span> Próximas Atividades</button>
+    <div class="sn-sep"></div>
+    <button class="sn-item" id="btn-pdf" onclick="exportPDF()"><span class="ni">⬇️</span> Exportar PDF</button>
+  </nav>
+  <div class="res-content" id="res-content"></div>
+</div>
+
+<div id="pdf-container"></div>
+
+<div id="pdf-overlay" class="pdf-overlay hidden">
+  <div class="pdf-overlay-box">
+    <div style="font-size:44px;margin-bottom:14px">📄</div>
+    <div class="pdf-overlay-ttl">Gerando PDF</div>
+    <div class="pdf-overlay-sub" id="pdf-overlay-sub">Preparando páginas...</div>
+    <div class="pdf-prog-bar"><div class="pdf-prog-fill" id="pdf-prog-fill" style="width:0%"></div></div>
+    <div class="pdf-prog-lbl" id="pdf-prog-lbl">0%</div>
+  </div>
+</div>
+
+<div class="author" id="author-footer">
+  <span>Desenvolvido por <strong>Mateus Monteiro</strong></span>
+  <div class="author-sep"></div>
+  <span>(62) 99156-3421</span>
+</div>
+
+<script>
+// ════════════════════════════════ STATE ════════════════════════════════════════
+const S = {
+  r00: null, r01: null,
+  obra: '', empresa: '', revisao: 'R01',
+  pStart: null, pEnd: null,
+  nStart: null, nEnd: null,
+  logoUrl: null, fotoUrl: null,
+  fotos: [],           // [{url, caption}]
+  just: {},            // {uid: {just, plano}}
+  period: [],          // compared tasks filtered to period
+  next: [],            // compared tasks filtered to next period
+  compared: []         // all compared tasks
+};
+
+// ════════════════════════════════ XML PARSER ═══════════════════════════════════
+function child(el, tag) {
+  // Direct child lookup — avoids false positives inside <Baseline>
+  for (const ch of el.childNodes) {
+    if (ch.nodeType === 1 && ch.localName === tag) return ch.textContent.trim();
+  }
+  return '';
+}
+
+function childEl(el, tag) {
+  for (const ch of el.childNodes) {
+    if (ch.nodeType === 1 && ch.localName === tag) return ch;
+  }
+  return null;
+}
+
+function pd(s) { return (s && s !== 'NA') ? new Date(s) : null; }
+
+function parseMpp(xml) {
+  const doc = new DOMParser().parseFromString(xml, 'text/xml');
+  const root = doc.documentElement;
+  if (root.nodeName === 'parsererror' || root.querySelector('parsererror')) {
+    throw new Error('XML inválido ou corrompido.');
+  }
+
+  const info = {
+    statusDate: pd(child(root, 'StatusDate')),
+    title: child(root, 'Title') || child(root, 'Name')
+  };
+
+  const tasksEl = childEl(root, 'Tasks');
+  if (!tasksEl) return { tasks: [], info };
+
+  const tasks = [];
+  for (const ch of tasksEl.childNodes) {
+    if (ch.nodeType !== 1 || ch.localName !== 'Task') continue;
+    const uid = child(ch, 'UID');
+    if (uid === '0') continue; // skip project root
+
+    // Baseline 0
+    let bStart = null, bFinish = null;
+    for (const bch of ch.childNodes) {
+      if (bch.nodeType === 1 && bch.localName === 'Baseline' && child(bch, 'Number') === '0') {
+        bStart  = pd(child(bch, 'Start'));
+        bFinish = pd(child(bch, 'Finish'));
+        break;
+      }
+    }
+
+    tasks.push({
+      uid,
+      id:          child(ch, 'ID'),
+      name:        child(ch, 'Name'),
+      wbs:         child(ch, 'WBS'),
+      outlineLevel: parseInt(child(ch, 'OutlineLevel') || '1'),
+      isSummary:   child(ch, 'Summary') === '1',
+      isMilestone: child(ch, 'Milestone') === '1',
+      start:       pd(child(ch, 'Start')),
+      finish:      pd(child(ch, 'Finish')),
+      bStart, bFinish,
+      actualStart: pd(child(ch, 'ActualStart')),
+      pct:         parseInt(child(ch, 'PercentComplete') || '0')
+    });
+  }
+  return { tasks, info };
+}
+
+// ════════════════════════════════ COMPARISON ══════════════════════════════════
+function compare(tasks00, tasks01) {
+  const map = new Map(tasks00.map(t => [t.uid, t]));
+  return tasks01.map(t1 => {
+    const t0  = map.get(t1.uid);
+    const ps  = t0 ? t0.start : null;   // R00 planned start
+    const pf  = t0 ? t0.finish : null;  // R00 planned finish
+
+    let desvio = null;
+    if (pf && t1.finish) desvio = Math.round((t1.finish - pf) / 864e5);
+
+    let status;
+    if (t1.pct === 100) {
+      status = 'concluida';
+    } else if (desvio !== null && desvio > 0) {
+      status = 'atrasada';
+    } else if (t1.pct > 0 || t1.actualStart) {
+      status = 'andamento';
+    } else {
+      status = 'prevista';
+    }
+
+    return { ...t1, planStart: ps, planFinish: pf, desvio, status };
+  });
+}
+
+function filterPeriod(tasks, s, e) {
+  return tasks.filter(t => {
+    const ts = t.planStart || t.start;
+    const tf = t.planFinish || t.finish;
+    if (!ts || !tf) return false;
+    return ts <= e && tf >= s;
+  });
+}
+
+// ════════════════════════════════ FORMAT HELPERS ══════════════════════════════
+const fd = d => {
+  if (!d) return '—';
+  const D = String(d.getDate()).padStart(2,'0');
+  const M = String(d.getMonth()+1).padStart(2,'0');
+  return `${D}/${M}/${d.getFullYear()}`;
+};
+const fs = fd; // usa formato completo DD/MM/AAAA em todos os contextos
+const fp = (a,b) => a && b ? `${fd(a)} a ${fd(b)}` : '';
+const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+function badge(status) {
+  return {
+    concluida: `<span class="badge b-g">✓ Concluída</span>`,
+    atrasada:  `<span class="badge b-r">⚠ Atrasada</span>`,
+    andamento: `<span class="badge b-b">● Em Andamento</span>`,
+    prevista:  `<span class="badge b-x">◌ Prevista</span>`
+  }[status] || `<span class="badge b-x">${esc(status)}</span>`;
+}
+
+function desvioHtml(d) {
+  if (d === null) return '<span class="d-z">—</span>';
+  if (d === 0)   return '<span class="d-z">0 d</span>';
+  if (d > 0)     return `<span class="d-pos">+${d} d</span>`;
+  return `<span class="d-neg">${d} d</span>`;
+}
+
+function pad(level) {
+  return `<span class="tn-pad" style="width:${(level-1)*14}px"></span>`;
+}
+
+// ════════════════════════════════ SCREEN CONTROL ══════════════════════════════
+const $  = id => document.getElementById(id);
+const show = id => $(id)?.classList.remove('hidden');
+const hide = id => $(id)?.classList.add('hidden');
+
+function showIntro() {
+  show('intro-screen'); hide('config-screen'); hide('result-screen');
+  hide('btn-reconfig'); hide('btn-print'); show('author-footer');
+}
+function showConfig() {
+  hide('intro-screen'); show('config-screen'); hide('result-screen');
+  hide('btn-reconfig'); hide('btn-print'); show('author-footer');
+}
+function showResult() {
+  hide('intro-screen'); hide('config-screen'); show('result-screen');
+  show('btn-reconfig'); hide('author-footer');
+}
+
+// ════════════════════════════════ FILE UPLOAD ═════════════════════════════════
+function dropXml(ev, which) {
+  ev.preventDefault();
+  $(`z-${which}`).classList.remove('over');
+  const f = ev.dataTransfer.files[0];
+  if (f) loadXml(f, which);
+}
+
+function loadXml(file, which) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const { tasks } = parseMpp(e.target.result);
+      S[which] = tasks;
+      const zone = $(`z-${which}`);
+      zone.classList.add('done');
+      $(`${which}-lbl`).textContent = which === 'r00'
+        ? 'Cronograma Base (R00) ✓'
+        : 'Cronograma Atual (R01) ✓';
+      const fn = $(`${which}-fn`);
+      fn.textContent = file.name;
+      checkReady();
+    } catch(err) {
+      alert(`Erro ao ler o arquivo: ${err.message}`);
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function loadImg(input, which) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => applyImg(e.target.result, which);
+  reader.readAsDataURL(file);
+}
+
+function applyImg(url, which) {
+  if (which === 'logo') {
+    S.logoUrl = url;
+    const p = $('prev-logo'); p.src = url; p.classList.remove('hidden');
+    $('logo-ico').classList.add('hidden');
+  } else {
+    S.fotoUrl = url;
+    const p = $('prev-foto'); p.src = url; p.classList.remove('hidden');
+  }
+}
+
+function dropImg(ev, which) {
+  ev.preventDefault();
+  ev.currentTarget.classList.remove('over');
+  const f = ev.dataTransfer.files[0];
+  if (!f || !f.type.startsWith('image/')) return;
+  const reader = new FileReader();
+  reader.onload = e => applyImg(e.target.result, which);
+  reader.readAsDataURL(f);
+}
+
+// ════════════════════════════════ VALIDATION ══════════════════════════════════
+function checkReady() {
+  const ok = $('inp-obra').value.trim() &&
+             $('inp-ini').value && $('inp-fim').value &&
+             S.r00 && S.r01;
+  $('btn-gerar').disabled = !ok;
+}
+
+// ════════════════════════════════ GENERATE ════════════════════════════════════
+function gerar() {
+  S.obra    = $('inp-obra').value.trim();
+  S.empresa = $('inp-empresa').value.trim();
+  S.revisao = $('inp-rev').value.trim() || 'R01';
+  S.pStart  = new Date($('inp-ini').value + 'T00:00:00');
+  S.pEnd    = new Date($('inp-fim').value + 'T23:59:59');
+
+  const dur  = S.pEnd - S.pStart;
+  S.nStart   = new Date(S.pEnd.getTime() + 1000);
+  S.nEnd     = new Date(S.nStart.getTime() + dur);
+
+  S.compared = compare(S.r00, S.r01);
+  S.period   = filterPeriod(S.compared, S.pStart, S.pEnd);
+  S.next     = filterPeriod(S.compared, S.nStart, S.nEnd);
+
+  showResult();
+  navTo('capa');
+}
+
+// ════════════════════════════════ NAVIGATION ══════════════════════════════════
+function navTo(sec) {
+  document.querySelectorAll('.sn-item[data-sec]').forEach(el => {
+    el.classList.toggle('active', el.dataset.sec === sec);
+  });
+  $('res-content').innerHTML = render(sec);
+  if (sec === 'justificativas') setupJust();
+  if (sec === 'fotos') setupFotos();
+}
+
+// ════════════════════════════════ RENDERERS ════════════════════════════════════
+
+function render(sec) {
+  switch (sec) {
+    case 'capa':           return renderCapa();
+    case 'comparativo':    return renderComparativo();
+    case 'justificativas': return renderJust();
+    case 'fotos':          return renderFotos();
+    case 'proximas':       return renderProximas();
+    default: return '';
+  }
+}
+
+// ── Capa ─────────────────────────────────────────────────────────────────────
+function renderCapa() {
+  const heroContent = S.fotoUrl
+    ? `<img src="${S.fotoUrl}" style="width:100%;height:100%;object-fit:cover"><div class="cover-overlay"></div>`
+    : `<span style="font-size:72px;opacity:.2">🏗️</span>`;
+
+  const logoHtml = S.logoUrl
+    ? `<img class="cover-logo" src="${S.logoUrl}" alt="logo">`
+    : (S.empresa ? `<div style="font-family:'Sora',sans-serif;font-weight:700;font-size:14px;color:var(--muted);margin-bottom:18px">${esc(S.empresa)}</div>` : '');
+
+  return `
+<div class="print-pg">
+  <div class="sec-title">Capa</div>
+  <div class="sec-sub">Prévia da capa que será incluída no PDF exportado</div>
+  <div class="cover-wrap">
+    <div class="cover-hero">${heroContent}</div>
+    <div class="cover-body">
+      ${logoHtml}
+      <div class="cover-tipo">Relatório Semanal de Obra</div>
+      <div class="cover-obra">${esc(S.obra)}</div>
+      <div class="cover-meta">
+        <div class="cm-item">
+          <span class="cm-lbl">Período de Referência</span>
+          <span class="cm-val">${fp(S.pStart, S.pEnd)}</span>
+        </div>
+        <div class="cm-item">
+          <span class="cm-lbl">Revisão do Cronograma</span>
+          <span class="cm-val">${esc(S.revisao)}</span>
+        </div>
+        <div class="cm-item">
+          <span class="cm-lbl">Cronograma Base</span>
+          <span class="cm-val">R00</span>
+        </div>
+        ${S.empresa ? `<div class="cm-item"><span class="cm-lbl">Construtora</span><span class="cm-val">${esc(S.empresa)}</span></div>` : ''}
+        <div class="cm-item">
+          <span class="cm-lbl">Data de Emissão</span>
+          <span class="cm-val">${fd(new Date())}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>`;
+}
+
+// ── Quadro Comparativo ────────────────────────────────────────────────────────
+function renderComparativo() {
+  const tasks  = S.period;
+  const leaves = tasks.filter(t => !t.isSummary);
+  const tot    = leaves.length;
+  const conc   = leaves.filter(t => t.status === 'concluida').length;
+  const atr    = leaves.filter(t => t.status === 'atrasada').length;
+  const and    = leaves.filter(t => t.status === 'andamento').length;
+
+  const rows = tasks.map(t => {
+    const rc = t.isSummary ? ' class="row-sum"' : '';
+    const pre = t.isSummary ? '▶ ' : (t.isMilestone ? '◆ ' : '');
+    return `<tr${rc}>
+      <td style="color:var(--muted);font-size:11px;white-space:nowrap">${esc(t.wbs||t.id)}</td>
+      <td><div class="tn">${pad(t.outlineLevel)}<span>${pre}${esc(t.name)}</span></div></td>
+      <td style="white-space:nowrap">${fs(t.planStart)}</td>
+      <td style="white-space:nowrap">${fs(t.planFinish)}</td>
+      <td style="white-space:nowrap">${fs(t.start)}</td>
+      <td style="white-space:nowrap">${fs(t.finish)}</td>
+      <td style="text-align:center">${t.isSummary ? '' : t.pct+'%'}</td>
+      <td>${t.isSummary ? '' : desvioHtml(t.desvio)}</td>
+      <td>${t.isSummary ? '' : badge(t.status)}</td>
+    </tr>`;
+  }).join('');
+
+  const empty = `<div class="empty">
+    <div class="empty-ico">📭</div>
+    <div class="empty-ttl">Nenhuma atividade no período</div>
+    <div class="empty-dsc">Verifique as datas do período ou a correspondência entre R00 e R01.</div>
+  </div>`;
+
+  return `
+<div class="print-pg">
+  <div class="sec-title">Quadro Comparativo</div>
+  <div class="sec-sub">Atividades no período ${fp(S.pStart, S.pEnd)} — R00 × ${esc(S.revisao)}</div>
+
+  <div class="kpi-row">
+    <div class="kpi"><div class="kpi-lbl">Total</div><div class="kpi-val">${tot}</div></div>
+    <div class="kpi"><div class="kpi-lbl">Concluídas</div><div class="kpi-val g">${conc}</div></div>
+    <div class="kpi"><div class="kpi-lbl">Em Atraso</div><div class="kpi-val r">${atr}</div></div>
+    <div class="kpi"><div class="kpi-lbl">Em Andamento</div><div class="kpi-val o">${and}</div></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <span class="panel-title">Atividades do Período</span>
+      <span class="panel-count">${tasks.length} atividade${tasks.length!==1?'s':''}</span>
+    </div>
+    ${tasks.length ? `<div class="tbl-wrap"><table>
+      <thead><tr>
+        <th style="width:56px">WBS</th>
+        <th>Atividade</th>
+        <th>Início R00</th><th>Fim R00</th>
+        <th>Início ${esc(S.revisao)}</th><th>Fim ${esc(S.revisao)}</th>
+        <th style="width:56px;text-align:center">% Ex.</th>
+        <th style="width:66px">Desvio</th>
+        <th>Status</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>` : empty}
+  </div>
+</div>`;
+}
+
+// ── Helpers de hierarquia ──────────────────────────────────────────────────────
+function buildParentMap(tasks) {
+  const parentMap = new Map();
+  const stack = [];
+  for (const t of tasks) {
+    while (stack.length && stack[stack.length - 1].level >= t.outlineLevel) stack.pop();
+    if (stack.length) parentMap.set(t.uid, stack[stack.length - 1].uid);
+    stack.push({ level: t.outlineLevel, uid: t.uid });
+  }
+  return parentMap;
+}
+
+function getAncestors(uid, parentMap, taskMap) {
+  const ancestors = [];
+  let cur = parentMap.get(uid);
+  while (cur) {
+    const t = taskMap.get(cur);
+    if (t) ancestors.unshift(t);
+    cur = parentMap.get(cur);
+  }
+  return ancestors;
+}
+
+function buildJustRows(atrasadas, forPDF) {
+  const taskMap = new Map(S.compared.map(t => [t.uid, t]));
+  const parentMap = buildParentMap(S.compared);
+
+  const groups = new Map();
+  for (const t of atrasadas) {
+    const ancestors = getAncestors(t.uid, parentMap, taskMap);
+    const top = ancestors.length > 0 ? ancestors[0] : null;
+    const key = top ? top.uid : 'none';
+    if (!groups.has(key)) groups.set(key, { label: top ? top.name : '', items: [] });
+    groups.get(key).items.push({ t, ancestors });
+  }
+
+  let rows = '';
+  for (const [, group] of groups) {
+    if (group.label) {
+      rows += `<tr class="row-group-header"><td colspan="4"><span>${esc(group.label)}</span></td></tr>`;
+    }
+    for (const { t, ancestors } of group.items) {
+      const crumb = ancestors.slice(1).map(a => esc(a.name)).join(' › ');
+      const j = S.just[t.uid] || { just: '', plano: '' };
+      const justCell = forPDF
+        ? `<div style="min-height:36px;font-size:12px;line-height:1.5;border:1px solid #ccc;padding:6px 8px;border-radius:4px">${esc(j.just)}</div>`
+        : `<div class="just-edit" contenteditable="true" data-uid="${t.uid}" data-f="just" data-ph="Justificativa da construtora...">${esc(j.just)}</div>`;
+      const planoCell = forPDF
+        ? `<div style="min-height:36px;font-size:12px;line-height:1.5;border:1px solid #ccc;padding:6px 8px;border-radius:4px">${esc(j.plano)}</div>`
+        : `<div class="just-edit" contenteditable="true" data-uid="${t.uid}" data-f="plano" data-ph="Plano de ação para recuperação do prazo...">${esc(j.plano)}</div>`;
+      rows += `<tr>
+        <td style="min-width:200px;max-width:280px">
+          ${crumb ? `<div class="just-breadcrumb">${crumb}</div>` : ''}
+          <div class="tn"><strong>${esc(t.name)}</strong></div>
+          <div style="font-size:10.5px;color:var(--muted);margin-top:3px">Fim planejado: ${fd(t.planFinish)}</div>
+        </td>
+        <td style="width:76px;text-align:center">${desvioHtml(t.desvio)}</td>
+        <td style="min-width:200px">${justCell}</td>
+        <td style="min-width:200px">${planoCell}</td>
+      </tr>`;
+    }
+  }
+  return rows;
+}
+
+// ── Justificativas ────────────────────────────────────────────────────────────
+function renderJust() {
+  const atrasadas = S.period.filter(t => !t.isSummary && t.status === 'atrasada');
+
+  if (!atrasadas.length) return `
+<div class="print-pg">
+  <div class="sec-title">Justificativas e Plano de Ação</div>
+  <div class="sec-sub">Atividades com desvio no período ${fp(S.pStart, S.pEnd)}</div>
+  <div class="panel"><div class="empty">
+    <div class="empty-ico">✅</div>
+    <div class="empty-ttl">Nenhuma atividade em atraso</div>
+    <div class="empty-dsc">Todas as atividades do período estão dentro do prazo.</div>
+  </div></div>
+</div>`;
+
+  return `
+<div class="print-pg">
+  <div class="sec-title">Justificativas e Plano de Ação</div>
+  <div class="sec-sub">Clique nas células para preencher — o texto é salvo automaticamente e aparece no PDF</div>
+  <div class="panel">
+    <div class="panel-head">
+      <span class="panel-title">Atividades com Desvio</span>
+      <span class="panel-count">${atrasadas.length} ocorrência${atrasadas.length!==1?'s':''}</span>
+    </div>
+    <div class="tbl-wrap"><table>
+      <thead><tr>
+        <th>Atividade</th>
+        <th style="width:76px;text-align:center">Desvio</th>
+        <th>Justificativa da Construtora</th>
+        <th>Plano de Ação</th>
+      </tr></thead>
+      <tbody>${buildJustRows(atrasadas, false)}</tbody>
+    </table></div>
+  </div>
+</div>`;
+}
+
+function setupJust() {
+  document.querySelectorAll('.just-edit').forEach(el => {
+    el.addEventListener('input', () => {
+      const { uid, f } = el.dataset;
+      if (!S.just[uid]) S.just[uid] = { just: '', plano: '' };
+      S.just[uid][f] = el.textContent;
+    });
+  });
+}
+
+// ── Fotos ─────────────────────────────────────────────────────────────────────
+let _dragPhotoIdx = null;
+
+function photoDragStart(ev, i) {
+  _dragPhotoIdx = i;
+  ev.dataTransfer.effectAllowed = 'move';
+  ev.dataTransfer.setData('text/plain', String(i));
+}
+function photoDragOver(ev) {
+  ev.preventDefault();
+  ev.currentTarget.classList.add('drag-over');
+}
+function photoDragLeave(ev) {
+  ev.currentTarget.classList.remove('drag-over');
+}
+function photoDrop(ev, i) {
+  ev.preventDefault();
+  ev.currentTarget.classList.remove('drag-over');
+  if (_dragPhotoIdx === null || _dragPhotoIdx === i) { _dragPhotoIdx = null; return; }
+  const moved = S.fotos.splice(_dragPhotoIdx, 1)[0];
+  S.fotos.splice(i, 0, moved);
+  _dragPhotoIdx = null;
+  navTo('fotos');
+}
+
+function loadPhotoFiles(files) {
+  let loaded = 0;
+  const total = files.length;
+  files.forEach(f => {
+    const reader = new FileReader();
+    reader.onload = ev => {
+      S.fotos.push({ url: ev.target.result, caption: '' });
+      loaded++;
+      if (loaded === total) navTo('fotos');
+    };
+    reader.readAsDataURL(f);
+  });
+}
+
+function dropPhotos(ev) {
+  ev.preventDefault();
+  ev.currentTarget.classList.remove('over');
+  if (_dragPhotoIdx !== null) return;
+  const files = Array.from(ev.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+  if (files.length) loadPhotoFiles(files);
+}
+
+function renderFotos() {
+  const cards = S.fotos.map((f, i) => `
+    <div class="photo-card" draggable="true"
+      ondragstart="photoDragStart(event,${i})"
+      ondragover="photoDragOver(event)"
+      ondragleave="photoDragLeave(event)"
+      ondrop="photoDrop(event,${i})">
+      <div class="photo-drag-handle">⠿</div>
+      <img class="photo-img" src="${f.url}" alt="foto ${i+1}">
+      <div class="photo-foot">
+        <input class="photo-caption" type="text" placeholder="Legenda da foto..."
+          value="${esc(f.caption)}" oninput="S.fotos[${i}].caption=this.value">
+        <button class="photo-rm" onclick="event.stopPropagation();rmPhoto(${i})" title="Remover">✕</button>
+      </div>
+    </div>`).join('');
+
+  return `
+<div class="print-pg">
+  <div class="sec-title">Registro Fotográfico</div>
+  <div class="sec-sub">Fotos de execução do período — arraste os cards para reordenar</div>
+  <div class="photo-grid" id="photo-grid">
+    ${cards}
+    <div class="photo-add no-print"
+      ondragover="event.preventDefault();this.classList.add('over')"
+      ondragleave="this.classList.remove('over')"
+      ondrop="dropPhotos(event)"
+      onclick="document.getElementById('f-fotos-add').click()">
+      <span style="font-size:34px">📷</span>
+      <span style="font-size:13px">Adicionar fotos</span>
+      <span style="font-size:11.5px;color:var(--muted)">JPG, PNG — clique ou arraste</span>
+      <input type="file" id="f-fotos-add" accept="image/*" multiple style="display:none">
+    </div>
+  </div>
+</div>`;
+}
+
+function setupFotos() {
+  const inp = $('f-fotos-add');
+  if (inp) inp.addEventListener('change', e => {
+    const files = Array.from(e.target.files);
+    if (files.length) loadPhotoFiles(files);
+  });
+}
+
+function rmPhoto(i) { S.fotos.splice(i, 1); navTo('fotos'); }
+
+// ── Próximas Atividades ───────────────────────────────────────────────────────
+function renderProximasTable(tasks) {
+  const rows = tasks.map(t => {
+    const rc = t.isSummary ? ' class="row-sum"' : '';
+    const pre = t.isSummary ? '▶ ' : (t.isMilestone ? '◆ ' : '');
+    return `<tr${rc}>
+      <td style="color:var(--muted);font-size:11px;white-space:nowrap">${esc(t.wbs||t.id)}</td>
+      <td><div class="tn">${pad(t.outlineLevel)}<span>${pre}${esc(t.name)}</span></div></td>
+      <td style="white-space:nowrap">${fs(t.planStart)}</td>
+      <td style="white-space:nowrap">${fs(t.planFinish)}</td>
+      <td style="white-space:nowrap">${fs(t.start)}</td>
+      <td style="white-space:nowrap">${fs(t.finish)}</td>
+      <td style="text-align:center">${t.isSummary ? '' : t.pct+'%'}</td>
+    </tr>`;
+  }).join('');
+
+  return `<div class="panel">
+    <div class="panel-head">
+      <span class="panel-title">Atividades Previstas</span>
+      <span class="panel-count">${tasks.length} atividade${tasks.length!==1?'s':''}</span>
+    </div>
+    ${tasks.length ? `<div class="tbl-wrap"><table>
+      <thead><tr>
+        <th style="width:56px">WBS</th>
+        <th>Atividade</th>
+        <th>Início R00</th><th>Fim R00</th>
+        <th>Início ${esc(S.revisao)}</th><th>Fim ${esc(S.revisao)}</th>
+        <th style="width:56px;text-align:center">% Ex.</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>` : `<div class="empty">
+      <div class="empty-ico">📭</div>
+      <div class="empty-ttl">Nenhuma atividade no período informado</div>
+      <div class="empty-dsc">Ajuste o intervalo de datas acima.</div>
+    </div>`}
+  </div>`;
+}
+
+function updateProximas() {
+  const ini = $('prox-ini')?.value;
+  const fim = $('prox-fim')?.value;
+  if (!ini || !fim) return;
+  S.nStart = new Date(ini + 'T00:00:00');
+  S.nEnd   = new Date(fim + 'T23:59:59');
+  const tasks = filterPeriod(S.compared, S.nStart, S.nEnd);
+  const tbl = $('prox-table');
+  if (tbl) tbl.innerHTML = renderProximasTable(tasks);
+}
+
+function renderProximas() {
+  const tasks = filterPeriod(S.compared, S.nStart, S.nEnd);
+  const isoVal = d => d ? d.toISOString().split('T')[0] : '';
+
+  return `
+<div class="print-pg">
+  <div class="sec-title">Próximas Atividades</div>
+  <div class="sec-sub">Defina o período para visualizar as atividades previstas</div>
+
+  <div class="no-print" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-bottom:16px;display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap">
+    <div class="fgrp" style="flex:0 0 180px">
+      <label class="flabel">Início do Período</label>
+      <input type="date" id="prox-ini" value="${isoVal(S.nStart)}">
+    </div>
+    <div class="fgrp" style="flex:0 0 180px">
+      <label class="flabel">Fim do Período</label>
+      <input type="date" id="prox-fim" value="${isoVal(S.nEnd)}">
+    </div>
+    <button class="btn btn-outline btn-sm" onclick="updateProximas()">Filtrar</button>
+  </div>
+
+  <div id="prox-table">${renderProximasTable(tasks)}</div>
+</div>`;
+}
+
+// ════════════════════════════════ PDF EXPORT ══════════════════════════════════
+const _sleep = ms => new Promise(r => setTimeout(r, ms));
+
+function _showPdfOverlay() { $('pdf-overlay').classList.remove('hidden'); }
+function _hidePdfOverlay() { $('pdf-overlay').classList.add('hidden'); }
+function _setPdfProgress(pct, msg) {
+  $('pdf-prog-fill').style.width = pct + '%';
+  $('pdf-prog-lbl').textContent = pct + '%';
+  if (msg) $('pdf-overlay-sub').textContent = msg;
+}
+
+function _pdfHdr(secTitle, pgNum) {
+  const logo = S.logoUrl
+    ? `<img src="${S.logoUrl}" style="height:36px;max-width:120px;object-fit:contain">`
+    : `<div style="width:36px;height:36px;background:#1A6EE8;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:18px">🏗</div>`;
+  return `<div style="display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:60px;background:#1a2b45;flex-shrink:0">
+    <div style="display:flex;align-items:center;gap:12px">${logo}
+      <div style="color:#fff;font-family:'Sora',sans-serif;font-size:13px;font-weight:700;line-height:1.2">${esc(S.obra)}<br>
+        <span style="font-size:10px;font-weight:400;opacity:.7">${esc(S.revisao)} — ${fp(S.pStart,S.pEnd)}</span>
+      </div>
+    </div>
+    <div style="text-align:right;color:#fff">
+      <div style="font-size:10px;opacity:.6;margin-bottom:2px">${esc(secTitle)}</div>
+      <div style="font-size:11px;font-weight:700;opacity:.85">Pág. ${pgNum}</div>
+    </div>
+  </div>`;
+}
+
+function _pdfFoot() {
+  const emissao = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+  return `<div style="height:36px;background:#f0f4f8;border-top:1px solid #dde3ec;display:flex;align-items:center;justify-content:space-between;padding:0 28px;flex-shrink:0">
+    <span style="font-size:10px;color:#6b7a99">${esc(S.obra)}</span>
+    <span style="font-size:10px;color:#6b7a99">Emissão: ${emissao}</span>
+  </div>`;
+}
+
+function _pagePort(inner, secTitle, pgNum) {
+  return `<div style="width:794px;height:1123px;background:#fff;font-family:'DM Sans',sans-serif;color:#1a2b45;display:flex;flex-direction:column;overflow:hidden">
+    ${_pdfHdr(secTitle, pgNum)}
+    <div style="flex:1;overflow:hidden;padding:20px 28px">${inner}</div>
+    ${_pdfFoot()}
+  </div>`;
+}
+
+function buildCoverPagePDF() {
+  const foto = S.fotoUrl || '';
+  const logo = S.logoUrl ? `<img src="${S.logoUrl}" style="height:52px;max-width:180px;object-fit:contain">` : '';
+  const emissao = new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'});
+  return `<div style="width:1123px;height:794px;background:#1a2b45;position:relative;overflow:hidden;font-family:'DM Sans',sans-serif">
+    ${foto
+      ? `<div style="position:absolute;left:340px;top:0;right:0;bottom:0;overflow:hidden"><img src="${foto}" style="width:100%;height:100%;object-fit:cover"></div>`
+      : `<div style="position:absolute;left:340px;top:0;right:0;bottom:0;background:#0f2038"></div>`}
+    <div style="position:absolute;left:0;top:0;bottom:0;width:440px;background:#1a2b45;clip-path:polygon(0 0,100% 0,80% 100%,0 100%);z-index:2"></div>
+    <div style="position:absolute;top:0;left:0;right:0;height:4px;background:#F5C800;z-index:10"></div>
+    <div style="position:absolute;bottom:0;left:0;right:0;height:4px;background:#F5C800;z-index:10"></div>
+    ${logo ? `<div style="position:absolute;top:36px;left:36px;z-index:5">${logo}</div>` : ''}
+    <div style="position:absolute;bottom:44px;left:36px;max-width:300px;z-index:5">
+      <div style="font-size:11px;font-weight:600;letter-spacing:.12em;color:#F5C800;text-transform:uppercase;margin-bottom:10px">Relatório Semanal de Obra</div>
+      <div style="font-family:'Sora',sans-serif;font-size:24px;font-weight:800;color:#fff;line-height:1.15;margin-bottom:12px">${esc(S.obra)}</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.7);margin-bottom:4px">Período: ${fp(S.pStart,S.pEnd)}</div>
+      <div style="font-size:13px;color:rgba(255,255,255,.7)">Revisão: ${esc(S.revisao)}</div>
+    </div>
+    <div style="position:absolute;top:36px;right:52px;z-index:5;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:8px 16px;text-align:center">
+      <div style="font-size:10px;color:rgba(255,255,255,.6);margin-bottom:2px">Emissão</div>
+      <div style="font-size:12px;font-weight:700;color:#fff">${emissao}</div>
+    </div>
+  </div>`;
+}
+
+function buildComparativoPDFPages() {
+  const tasks = S.period;
+  if (!tasks.length) return [];
+
+  const atr   = tasks.filter(t=>!t.isSummary && t.status==='atrasada').length;
+  const ok    = tasks.filter(t=>!t.isSummary && t.status==='ok').length;
+  const ini   = tasks.filter(t=>!t.isSummary && t.status==='iniciada').length;
+  const total = tasks.filter(t=>!t.isSummary).length;
+
+  const kpis = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px">
+    ${[['Atividades no Período','📋',total,'#1A6EE8'],['Em Atraso','🔴',atr,'#d63a3a'],['No Prazo','🟢',ok,'#0f9b6e'],['Em Andamento','🟡',ini,'#d97706']]
+      .map(([lbl,ico,v,c])=>`<div style="background:#f8fafc;border:1px solid #e0e7ef;border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:8px">
+        <div style="font-size:22px;line-height:1">${ico}</div>
+        <div><div style="font-size:20px;font-weight:800;color:${c};font-family:'Sora',sans-serif;line-height:1">${v}</div>
+        <div style="font-size:9px;color:#6b7a99;margin-top:1px">${lbl}</div></div>
+      </div>`).join('')}
+  </div>`;
+
+  const thead = `<thead><tr style="background:#1a2b45;color:#fff">
+    <th style="padding:4px 6px;font-size:9px;font-weight:600;text-align:left;white-space:nowrap">WBS</th>
+    <th style="padding:4px 6px;font-size:9px;font-weight:600;text-align:left">Atividade</th>
+    <th style="padding:4px 6px;font-size:9px;font-weight:600;white-space:nowrap">Início R00</th>
+    <th style="padding:4px 6px;font-size:9px;font-weight:600;white-space:nowrap">Fim R00</th>
+    <th style="padding:4px 6px;font-size:9px;font-weight:600;white-space:nowrap">Início ${esc(S.revisao)}</th>
+    <th style="padding:4px 6px;font-size:9px;font-weight:600;white-space:nowrap">Fim ${esc(S.revisao)}</th>
+    <th style="padding:4px 6px;font-size:9px;font-weight:600;text-align:center">%</th>
+    <th style="padding:4px 6px;font-size:9px;font-weight:600;text-align:center">Desvio</th>
+    <th style="padding:4px 6px;font-size:9px;font-weight:600;text-align:center">Status</th>
+  </tr></thead>`;
+
+  const rowHtml = t => {
+    const bg = t.isSummary ? 'background:#f0f4f8;font-weight:600;' : '';
+    const pre = t.isSummary ? '▶ ' : (t.isMilestone ? '◆ ' : '');
+    const sc = t.status==='atrasada' ? '#d63a3a' : t.status==='ok' ? '#0f9b6e' : '#d97706';
+    const badge = t.isSummary ? '' : `<span style="display:inline-block;padding:1px 5px;border-radius:3px;font-size:8px;font-weight:700;background:${sc}22;color:${sc}">${t.status==='atrasada'?'ATRASO':t.status==='ok'?'OK':'ANDAMENTO'}</span>`;
+    const dev = t.desvio ? `<span style="color:${t.desvio>0?'#d63a3a':'#0f9b6e'};font-weight:700">${t.desvio>0?'+':''}${t.desvio}d</span>` : '—';
+    return `<tr style="${bg}border-bottom:1px solid #e8eef4">
+      <td style="padding:3px 6px;font-size:9px;color:#6b7a99;white-space:nowrap">${esc(t.wbs||t.id)}</td>
+      <td style="padding:3px 6px;font-size:10px">${pad(t.outlineLevel)}<span>${pre}${esc(t.name)}</span></td>
+      <td style="padding:3px 6px;font-size:9px;white-space:nowrap">${fs(t.planStart)}</td>
+      <td style="padding:3px 6px;font-size:9px;white-space:nowrap">${fs(t.planFinish)}</td>
+      <td style="padding:3px 6px;font-size:9px;white-space:nowrap">${fs(t.start)}</td>
+      <td style="padding:3px 6px;font-size:9px;white-space:nowrap">${fs(t.finish)}</td>
+      <td style="padding:3px 6px;font-size:9px;text-align:center">${t.isSummary ? '' : t.pct+'%'}</td>
+      <td style="padding:3px 6px;font-size:9px;text-align:center">${dev}</td>
+      <td style="padding:3px 6px;text-align:center">${badge}</td>
+    </tr>`;
+  };
+
+  const pages = [];
+  let pg = 1, i = 0;
+  while (i < tasks.length) {
+    const limit = pg === 1 ? 30 : 40;
+    const slice = tasks.slice(i, i + limit);
+    const inner = `${pg === 1 ? kpis : ''}
+      <div style="overflow:hidden;border:1px solid #e0e7ef;border-radius:8px">
+        <table style="width:100%;border-collapse:collapse;font-family:'DM Sans',sans-serif">
+          ${thead}<tbody>${slice.map(rowHtml).join('')}</tbody>
+        </table>
+      </div>`;
+    pages.push({ landscape: false, html: _pagePort(inner, 'Comparativo', pg) });
+    i += limit; pg++;
+  }
+  return pages;
+}
+
+function buildJustPDFPages() {
+  const atrasadas = S.period.filter(t => !t.isSummary && t.status === 'atrasada');
+  if (!atrasadas.length) {
+    const inner = `<div style="text-align:center;padding:60px 0">
+      <div style="font-size:44px;margin-bottom:12px">✅</div>
+      <div style="font-size:16px;font-weight:700;color:#1a2b45">Nenhuma atividade em atraso</div>
+    </div>`;
+    return [{ landscape: false, html: _pagePort(inner, 'Justificativas', 1) }];
+  }
+
+  const taskMap = new Map(S.compared.map(t => [t.uid, t]));
+  const parentMap = buildParentMap(S.compared);
+  const allRows = [];
+  const groups = new Map();
+  for (const t of atrasadas) {
+    const ancestors = getAncestors(t.uid, parentMap, taskMap);
+    const top = ancestors[0] || null;
+    const key = top ? top.uid : 'none';
+    if (!groups.has(key)) groups.set(key, { label: top ? top.name : '', items: [] });
+    groups.get(key).items.push({ t, ancestors });
+  }
+  for (const [, g] of groups) {
+    if (g.label) allRows.push({ type: 'hdr', label: g.label });
+    for (const { t, ancestors } of g.items) allRows.push({ type: 'row', t, crumb: ancestors.slice(1).map(a=>esc(a.name)).join(' › '), j: S.just[t.uid]||{just:'',plano:''} });
+  }
+
+  const thead = `<thead><tr style="background:#1a2b45;color:#fff">
+    <th style="padding:4px 8px;font-size:9px;font-weight:600;text-align:left">Atividade</th>
+    <th style="padding:4px 8px;font-size:9px;font-weight:600;text-align:center;width:60px">Desvio</th>
+    <th style="padding:4px 8px;font-size:9px;font-weight:600;text-align:left">Justificativa</th>
+    <th style="padding:4px 8px;font-size:9px;font-weight:600;text-align:left">Plano de Ação</th>
+  </tr></thead>`;
+
+  const renderR = r => {
+    if (r.type === 'hdr') return `<tr><td colspan="4" style="background:#eef4fd;padding:4px 8px;border-bottom:2px solid #1A6EE8"><span style="font-family:'Sora',sans-serif;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#1A6EE8">${esc(r.label)}</span></td></tr>`;
+    const dev = r.t.desvio ? `<span style="color:${r.t.desvio>0?'#d63a3a':'#0f9b6e'};font-weight:700">${r.t.desvio>0?'+':''}${r.t.desvio}d</span>` : '—';
+    return `<tr style="border-bottom:1px solid #e8eef4">
+      <td style="padding:4px 8px;font-size:10px;vertical-align:top">${r.crumb?`<div style="font-size:8px;color:#6b7a99;margin-bottom:1px">${r.crumb}</div>`:''}<strong>${esc(r.t.name)}</strong></td>
+      <td style="padding:4px 8px;font-size:10px;text-align:center;vertical-align:top;white-space:nowrap">${dev}</td>
+      <td style="padding:4px 8px;font-size:10px;vertical-align:top"><div style="min-height:24px;border:1px solid #dde3ec;border-radius:4px;padding:3px 5px;background:#fafafa">${esc(r.j.just)}</div></td>
+      <td style="padding:4px 8px;font-size:10px;vertical-align:top"><div style="min-height:24px;border:1px solid #dde3ec;border-radius:4px;padding:3px 5px;background:#fafafa">${esc(r.j.plano)}</div></td>
+    </tr>`;
+  };
+
+  const pages = [];
+  let pg = 1, i = 0;
+  while (i < allRows.length) {
+    const slice = allRows.slice(i, i + 14);
+    const inner = `<div style="overflow:hidden;border:1px solid #e0e7ef;border-radius:8px">
+      <table style="width:100%;border-collapse:collapse;font-family:'DM Sans',sans-serif">
+        ${thead}<tbody>${slice.map(renderR).join('')}</tbody>
+      </table>
+    </div>`;
+    pages.push({ landscape: false, html: _pagePort(inner, 'Justificativas', pg) });
+    i += 9; pg++;
+  }
+  return pages;
+}
+
+function buildFotosPDFPages() {
+  if (!S.fotos.length) return [];
+  const PER_PAGE = 6;
+  const pages = [];
+  let pg = 1;
+  for (let i = 0; i < S.fotos.length; i += PER_PAGE) {
+    const slice = S.fotos.slice(i, i + PER_PAGE);
+    const cards = slice.map(f => `<div style="border:1px solid #e0e7ef;border-radius:8px;overflow:hidden;display:flex;flex-direction:column">
+      <img src="${f.url}" style="width:100%;height:160px;object-fit:cover;display:block">
+      <div style="padding:8px 10px;font-size:11px;color:#1a2b45;min-height:28px;border-top:1px solid #e8eef4;background:#f8fafc">${esc(f.caption)||'&nbsp;'}</div>
+    </div>`).join('');
+    const inner = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">${cards}</div>`;
+    pages.push({ landscape: false, html: _pagePort(inner, 'Registro Fotográfico', pg) });
+    pg++;
+  }
+  return pages;
+}
+
+function buildProximasPDFPages() {
+  const tasks = filterPeriod(S.compared, S.nStart, S.nEnd);
+  if (!tasks.length) return [];
+
+  const thead = `<thead><tr style="background:#1a2b45;color:#fff">
+    <th style="padding:4px 6px;font-size:9px;font-weight:600;text-align:left;white-space:nowrap">WBS</th>
+    <th style="padding:4px 6px;font-size:9px;font-weight:600;text-align:left">Atividade</th>
+    <th style="padding:4px 6px;font-size:9px;font-weight:600;white-space:nowrap">Início R00</th>
+    <th style="padding:4px 6px;font-size:9px;font-weight:600;white-space:nowrap">Fim R00</th>
+    <th style="padding:4px 6px;font-size:9px;font-weight:600;white-space:nowrap">Início ${esc(S.revisao)}</th>
+    <th style="padding:4px 6px;font-size:9px;font-weight:600;white-space:nowrap">Fim ${esc(S.revisao)}</th>
+    <th style="padding:4px 6px;font-size:9px;font-weight:600;text-align:center">%</th>
+  </tr></thead>`;
+
+  const rowHtml = t => {
+    const bg = t.isSummary ? 'background:#f0f4f8;font-weight:600;' : '';
+    const pre = t.isSummary ? '▶ ' : (t.isMilestone ? '◆ ' : '');
+    return `<tr style="${bg}border-bottom:1px solid #e8eef4">
+      <td style="padding:3px 6px;font-size:9px;color:#6b7a99;white-space:nowrap">${esc(t.wbs||t.id)}</td>
+      <td style="padding:3px 6px;font-size:10px">${pad(t.outlineLevel)}<span>${pre}${esc(t.name)}</span></td>
+      <td style="padding:3px 6px;font-size:9px;white-space:nowrap">${fs(t.planStart)}</td>
+      <td style="padding:3px 6px;font-size:9px;white-space:nowrap">${fs(t.planFinish)}</td>
+      <td style="padding:3px 6px;font-size:9px;white-space:nowrap">${fs(t.start)}</td>
+      <td style="padding:3px 6px;font-size:9px;white-space:nowrap">${fs(t.finish)}</td>
+      <td style="padding:3px 6px;font-size:9px;text-align:center">${t.isSummary ? '' : t.pct+'%'}</td>
+    </tr>`;
+  };
+
+  const pages = [];
+  let pg = 1, i = 0;
+  while (i < tasks.length) {
+    const slice = tasks.slice(i, i + 40);
+    const inner = `<div style="overflow:hidden;border:1px solid #e0e7ef;border-radius:8px">
+      <table style="width:100%;border-collapse:collapse;font-family:'DM Sans',sans-serif">
+        ${thead}<tbody>${slice.map(rowHtml).join('')}</tbody>
+      </table>
+    </div>`;
+    pages.push({ landscape: false, html: _pagePort(inner, 'Próximas Atividades', pg) });
+    i += 26; pg++;
+  }
+  return pages;
+}
+
+function buildAllPdfPages() {
+  return [
+    { landscape: true,  html: buildCoverPagePDF() },
+    ...buildComparativoPDFPages(),
+    ...buildJustPDFPages(),
+    ...buildFotosPDFPages(),
+    ...buildProximasPDFPages(),
+  ];
+}
+
+async function exportPDF() {
+  if (!S.obra) { alert('Preencha o nome da obra antes de exportar.'); return; }
+  _showPdfOverlay();
+  _setPdfProgress(0, 'Preparando páginas...');
+  await _sleep(80);
+
+  const container = $('pdf-container');
+  let pdf = null;
+
+  try {
+    const { jsPDF } = window.jspdf;
+    const pages = buildAllPdfPages();
+
+    for (let i = 0; i < pages.length; i++) {
+      _setPdfProgress(Math.round((i / pages.length) * 88), `Renderizando página ${i+1} de ${pages.length}...`);
+      await _sleep(60);
+
+      container.innerHTML = '';
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = pages[i].html;
+      container.appendChild(wrapper.firstElementChild || wrapper);
+      await _sleep(120);
+
+      const isLand = pages[i].landscape;
+      const W = isLand ? 1123 : 794;
+      const H = isLand ? 794  : 1123;
+
+      const canvas = await html2canvas(container.firstElementChild || container, {
+        scale: 2, useCORS: true, allowTaint: true,
+        backgroundColor: '#ffffff', logging: false,
+        width: W, height: H, windowWidth: W,
+      });
+      const imgData = canvas.toDataURL('image/jpeg', 0.92);
+
+      if (i === 0) {
+        pdf = new jsPDF({ orientation: isLand ? 'landscape' : 'portrait', unit: 'mm', format: isLand ? [297, 210] : 'a4' });
+      } else {
+        pdf.addPage(isLand ? [297, 210] : 'a4', isLand ? 'landscape' : 'portrait');
+      }
+      pdf.addImage(imgData, 'JPEG', 0, 0, isLand ? 297 : 210, isLand ? 210 : 297);
+    }
+
+    _setPdfProgress(96, 'Finalizando...');
+    await _sleep(300);
+    container.innerHTML = '';
+
+    const nome = S.obra.replace(/[^a-zA-Z0-9]/g, '_').toUpperCase();
+    pdf.save(`RELATORIO_${nome}_${S.revisao}.pdf`);
+
+    _setPdfProgress(100, 'Concluído!');
+    await _sleep(500);
+    _hidePdfOverlay();
+  } catch (e) {
+    _hidePdfOverlay();
+    container.innerHTML = '';
+    alert('Erro ao gerar PDF: ' + e.message);
+    console.error(e);
+  }
+}
+
+// ════════════════════════════════ INIT ════════════════════════════════════════
+(function init() {
+  // Default period: current week Mon → Sun
+  const today = new Date();
+  const dow = today.getDay(); // 0=Sun
+  const toMon = dow === 0 ? -6 : 1 - dow;
+  const mon = new Date(today); mon.setDate(today.getDate() + toMon);
+  const sun = new Date(mon);   sun.setDate(mon.getDate() + 6);
+  const iso = d => d.toISOString().split('T')[0];
+  $('inp-ini').value = iso(mon);
+  $('inp-fim').value = iso(sun);
+})();
+</script>
+
+</body>
+</html>

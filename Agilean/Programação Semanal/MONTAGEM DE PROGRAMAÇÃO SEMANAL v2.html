@@ -480,8 +480,9 @@ const COL_DEFS={
   ip:          {lbl:'Início Plan.', align:'center'},
   fp:          {lbl:'Fim Plan.',    align:'center'},
   ir:          {lbl:'Início Real',  align:'center'},
+  fr:          {lbl:'Término Real', align:'center'},
 };
-const DEFAULT_COL_ORDER=['codigo','macroEtapa','unidade','local','atividade','peso','percPeriodo','ip','fp','ir'];
+const DEFAULT_COL_ORDER=['codigo','macroEtapa','unidade','local','atividade','peso','percPeriodo','ip','fp','ir','fr'];
 
 // ── ESTADO ───────────────────────────────────────────────
 const S={
@@ -1009,6 +1010,7 @@ function colCell(r,col){
     case 'ip':        return`<td>${fd(r.ip)}</td>`;
     case 'fp':        return`<td>${fd(r.fp)}</td>`;
     case 'ir':        return`<td>${r.ir?fd(r.ir):m}</td>`;
+    case 'fr':        return`<td style="background:#fffef5;border-left:2px solid #fde68a"></td>`;
     default: return'<td></td>';
   }
 }
@@ -1172,11 +1174,13 @@ async function exportarExcel(){
       ip:         {hdr:'INÍCIO PLAN.',  w:13, align:'center'},
       fp:         {hdr:'TÉRMINO PLAN.', w:13, align:'center'},
       ir:         {hdr:'INÍCIO REAL',   w:13, align:'center'},
+      fr:         {hdr:'TÉRMINO REAL',  w:13, align:'center'},
     };
     function xlVal(r,k){
       if(k==='percPeriodo') return S.totalPesoReferencia?(r.peso??0)/S.totalPesoReferencia:null;
       if(k==='peso')        return r.peso??null;
       if(k==='ip'||k==='fp'||k==='ir') return r[k]?fd(r[k]):null;
+      if(k==='fr') return null;
       return r[k]||null;
     }
 
