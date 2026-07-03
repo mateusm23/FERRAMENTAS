@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Preview — Ideias de Multisseleção</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+
+:root {
+  --navy:      #1a2b45;
+  --blue:      #1B6FBF;
+  --blue-bright:#1A6EE8;
+  --blue-light:#e8f1fc;
+  --bg:        #f0f4f9;
+  --surface:   #ffffff;
+  --surface2:  #f7fafd;
+  --border:    #d4dfe8;
+  --text:      #1a2b45;
+  --muted:     #6b80a0;
+  --green:     #0f9b6e;
+  --red:       #d63a3a;
+  --orange:    #d97706;
+  --green-bg:  #e6f7f2;
+  --red-bg:    #fdf0f0;
+  --orange-bg: #fef3c7;
+  --shadow:    0 2px 16px rgba(26,43,69,.08);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); padding: 28px 24px 60px; }
+.container { max-width: 1600px; margin: 0 auto; }
+.layout { display: flex; gap: 20px; align-items: flex-start; }
+.main-col { flex: 1 1 50%; min-width: 0; }
+.side-col { flex: 1 1 50%; min-width: 0; position: sticky; top: 20px; }
+
+/* Painel fixo: mini Linha de Balanço se formando ao vivo */
+.minilb-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; }
+.minilb-head { padding: 14px 18px; background: var(--surface2); border-bottom: 1px solid var(--border); }
+.minilb-head .t { font-family: 'Sora', sans-serif; font-size: 14px; font-weight: 700; color: var(--navy); }
+.minilb-head .s { font-size: 11.5px; color: var(--muted); margin-top: 3px; }
+.minilb-body { padding: 16px 18px; max-height: 700px; overflow-y: auto; }
+.minilb-sec-lbl { font-family: 'Sora', sans-serif; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin: 14px 0 8px; }
+.minilb-sec-lbl:first-child { margin-top: 0; }
+.minilb-row { display: flex; align-items: center; gap: 10px; font-size: 12.5px; padding: 4px 0; }
+.minilb-row .lbl { width: 68px; flex-shrink: 0; font-weight: 700; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.minilb-row .track { flex: 1; height: 20px; background: var(--surface2); border-radius: 4px; position: relative; overflow: hidden; }
+.minilb-row .seg { position: absolute; top: 2px; bottom: 2px; border-radius: 3px; opacity: .92; }
+.minilb-chip { display: flex; align-items: center; gap: 8px; font-size: 12.5px; padding: 4px 0; }
+.minilb-chip .sw { width: 13px; height: 13px; border-radius: 4px; flex-shrink: 0; }
+.minilb-empty { font-size: 12px; color: var(--muted); text-align: center; padding: 20px 10px; }
+
+.sec-title { font-family: 'Sora', sans-serif; font-size: 18px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+.sec-sub { font-size: 12.5px; color: var(--muted); margin-bottom: 16px; }
+
+.note {
+  background: var(--blue-light); border: 1px solid #cfe0fb; border-radius: 10px;
+  padding: 12px 16px; font-size: 12px; color: var(--blue); margin-bottom: 16px; line-height: 1.6;
+}
+.note strong { font-weight: 700; }
+.note ol { margin: 6px 0 0 18px; }
+
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; }
+.panel-head { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--surface2); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.panel-title { font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 700; color: var(--navy); }
+
+.toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; width: 100%; margin-top: 8px; }
+.search-box {
+  flex: 1; min-width: 180px; display: flex; align-items: center; gap: 7px;
+  border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; background: #fff;
+}
+.search-box input { border: none; outline: none; font-size: 12.5px; font-family: 'DM Sans', sans-serif; flex: 1; }
+.toggle-btn {
+  padding: 7px 13px; border-radius: 8px; font-size: 11.5px; font-weight: 600; font-family: 'Sora', sans-serif;
+  border: 1px solid var(--border); background: #fff; cursor: pointer; white-space: nowrap;
+}
+.toggle-btn.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+.kbd-hint { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.kbd-hint kbd {
+  display: inline-block; padding: 1px 6px; border-radius: 4px; background: var(--surface2);
+  border: 1px solid var(--border); font-family: 'Sora', sans-serif; font-weight: 700; font-size: 10.5px; color: var(--navy);
+}
+
+.filter-bar {
+  display: none; align-items: center; gap: 10px; padding: 9px 16px;
+  background: #fff7e6; border-bottom: 1px solid #f5d99a; font-size: 12px; color: #92510a;
+}
+.filter-bar.show { display: flex; }
+.filter-bar button {
+  padding: 6px 12px; border-radius: 6px; font-size: 11.5px; font-weight: 600; font-family: 'Sora', sans-serif;
+  border: 1px solid #f5c76a; background: #fff; cursor: pointer; margin-left: auto;
+}
+.filter-bar button:hover { background: var(--orange-bg); }
+
+table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+thead th { color: #fff; background: var(--navy); font-family: 'Sora', sans-serif; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; padding: 9px 12px; text-align: left; }
+tbody tr { cursor: pointer; }
+tbody tr:nth-child(even) { background: var(--surface2); }
+tbody tr:hover { background: #eef3fc; }
+tbody tr.focused { outline: 2px solid var(--blue-bright); outline-offset: -2px; background: var(--blue-light) !important; }
+tbody tr.range-selected { background: var(--blue-light) !important; }
+tbody td { padding: 7px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; user-select: none; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr.hidden-row { display: none; }
+
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 20px; font-size: 10.5px; font-weight: 700; white-space: nowrap; }
+.b-serv { background: var(--blue-light); color: var(--blue-bright); }
+.b-pav  { background: var(--green-bg); color: var(--green); }
+.b-ign  { background: var(--border); color: var(--muted); }
+.review-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; color: var(--orange); margin-left: 6px; }
+
+.empty-filtered { text-align: center; padding: 30px; color: var(--muted); font-size: 12.5px; }
+
+/* Botao "i" com popover mostrando onde o nome aparece no cronograma real */
+.info-btn {
+  width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--border); background: #fff;
+  color: var(--muted); font-size: 10.5px; font-weight: 700; cursor: pointer; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.info-btn:hover { border-color: var(--blue-bright); color: var(--blue-bright); }
+.info-pop {
+  position: fixed; display: none; background: #fff; color: var(--text); border: 1px solid var(--border); border-radius: 10px;
+  padding: 10px 12px; font-size: 11.5px; line-height: 1.7; z-index: 300; max-width: 340px;
+  box-shadow: 0 12px 30px rgba(26,43,69,.22);
+}
+.info-pop .linha-cron { user-select: text; cursor: text; padding: 3px 0; border-bottom: 1px dashed var(--border); }
+.info-pop .linha-cron:last-of-type { border-bottom: none; }
+.info-pop .copy-btn {
+  display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; padding: 5px 10px;
+  border-radius: 6px; font-size: 10.5px; font-weight: 700; font-family: 'Sora', sans-serif;
+  border: 1px solid var(--border); background: var(--surface2); color: var(--navy); cursor: pointer;
+}
+.info-pop .copy-btn:hover { border-color: var(--blue-bright); color: var(--blue-bright); }
+.info-pop .copy-btn.copied { border-color: var(--green); color: var(--green); background: var(--green-bg); }
+
+/* Bloco de sugestoes automaticas (alta confianca) pendentes de aprovacao */
+.approve-bar {
+  display: flex; align-items: center; gap: 10px; padding: 10px 16px;
+  background: var(--blue-light); border-bottom: 1px solid #cfe0fb; font-size: 12px; color: var(--blue);
+}
+.approve-bar button {
+  margin-left: auto; padding: 7px 14px; border-radius: 7px; font-size: 11.5px; font-weight: 700;
+  font-family: 'Sora', sans-serif; border: none; background: var(--blue-bright); color: #fff; cursor: pointer;
+}
+
+/* Resumo dos ja aprovados — kanban por tipo (colapsavel) */
+.approved-summary { border-bottom: 1px solid var(--border); }
+.approved-summary-head {
+  display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: var(--green-bg);
+  color: var(--green); font-size: 12px; font-weight: 700; cursor: pointer;
+}
+.approved-summary-head .chev { margin-left: auto; font-size: 10px; }
+.approved-summary-list { display: none; padding: 12px 16px 16px; background: #fbfffe; }
+.approved-summary-list.open { display: block; }
+
+.kanban-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.kanban-toolbar .lbl { font-size: 11px; color: var(--muted); }
+.kanban-sort-btn {
+  padding: 5px 11px; border-radius: 6px; font-size: 11px; font-weight: 600; font-family: 'Sora', sans-serif;
+  border: 1px solid var(--border); background: #fff; cursor: pointer;
+}
+.kanban-sort-btn.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+
+.kanban-board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.kanban-col { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.kanban-col-head {
+  padding: 9px 12px; font-family: 'Sora', sans-serif; font-size: 11.5px; font-weight: 700;
+  display: flex; align-items: center; gap: 6px; color: #fff;
+}
+.kanban-col-head .n { margin-left: auto; background: rgba(255,255,255,.25); border-radius: 10px; padding: 1px 8px; font-size: 10.5px; }
+.kanban-col.pavimento .kanban-col-head { background: var(--green); }
+.kanban-col.servico .kanban-col-head { background: var(--blue-bright); }
+.kanban-col.ignorar .kanban-col-head { background: var(--muted); }
+.kanban-col-body { padding: 8px; max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+.kanban-card {
+  background: #fff; border: 1px solid var(--border); border-radius: 7px; padding: 7px 9px;
+  font-size: 11.5px; display: flex; align-items: center; gap: 6px;
+}
+.kanban-card .undo { margin-left: auto; font-size: 10px; color: var(--muted); background: none; border: none; cursor: pointer; text-decoration: underline; white-space: nowrap; }
+.kanban-empty { font-size: 11px; color: var(--muted); text-align: center; padding: 14px 6px; }
+
+/* Barra de seleção fixa (checkbox e/ou arrastar) — fica acima da tabela, nao flutuante */
+.selection-bar {
+  display: flex; align-items: center; gap: 10px; padding: 9px 16px;
+  background: var(--blue-light); border-bottom: 1px solid #cfe0fb; font-size: 12px; color: var(--blue);
+}
+.selection-bar strong { font-family: 'Sora', sans-serif; }
+.sel-clear { font-size: 11px; color: var(--blue); background: none; border: none; cursor: pointer; text-decoration: underline; }
+.selection-actions { display: flex; gap: 6px; margin-left: auto; }
+.sel-btn {
+  padding: 6px 12px; border-radius: 6px; font-size: 11.5px; font-weight: 600;
+  font-family: 'Sora', sans-serif; border: 1px solid var(--border); background: #fff; cursor: pointer;
+}
+.sel-btn:hover { border-color: var(--blue-bright); }
+.sel-btn.serv:hover { background: var(--blue-light); color: var(--blue-bright); }
+.sel-btn.pav:hover { background: var(--green-bg); color: var(--green); }
+.sel-btn.ign:hover { background: var(--border); }
+
+td.cell-check { width: 30px; text-align: center; }
+td.cell-check input, thead th input[type=checkbox] { width: 14px; height: 14px; cursor: pointer; }
+tbody tr.row-selected { background: var(--blue-light) !important; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="sec-title">Preview — Ideias de Multisseleção</div>
+  <div class="sec-sub">Dados fictícios (43 nomes únicos) — classifique de qualquer forma e acompanhe a mini Linha de Balanço se formando ao vivo, ali do lado</div>
+
+  <div class="note">
+    <strong>Experimente as formas de classificar:</strong>
+    <ol>
+      <li><strong>Filtro por texto</strong> — digite "PAV" na busca acima da tabela e clique em "marcar todos os filtrados"</li>
+      <li><strong>Atalho de teclado</strong> — clique numa linha pra focar (fica com borda azul), aperte <kbd>S</kbd>/<kbd>P</kbd>/<kbd>I</kbd> pra classificar e já avança pra próxima; setas ↑↓ só navegam</li>
+      <li><strong>Arrastar na própria linha</strong> — clique e arraste sobre o nome de várias linhas seguidas; ao soltar aparece uma barrinha com os 3 botões de classificação</li>
+      <li><strong>Botão "i"</strong> — mostra onde aquele nome aparece de verdade no cronograma importado</li>
+    </ol>
+    Nomes já classificados (de qualquer forma) somem da lista e entram no resumo "✓ aprovados" — o que sobra na tabela é só o que ainda precisa da sua decisão. A lista fica em ordem alfabética.
+  </div>
+
+  <div class="layout">
+    <div class="main-col">
+      <div class="panel">
+        <div class="panel-head">
+          <span class="panel-title">Nomes do Escopo</span>
+          <div class="toolbar">
+            <div class="search-box">
+              <span>🔎</span>
+              <input type="text" id="searchInput" placeholder="Filtrar por nome... (ex.: PAV)">
+            </div>
+            <span class="kbd-hint">Foco + <kbd>S</kbd> <kbd>P</kbd> <kbd>I</kbd> classifica e avança</span>
+          </div>
+        </div>
+
+        <div class="approved-summary">
+          <div class="approved-summary-head" id="approvedHead">
+            <span>✓</span><span id="approvedCount">0 itens aprovados</span>
+            <span class="chev" id="approvedChev">▼ ver detalhes</span>
+          </div>
+          <div class="approved-summary-list" id="approvedList"></div>
+        </div>
+
+        <div class="approve-bar hidden-row" id="approveBar">
+          <span id="approveBarText"></span>
+          <button id="btnAprovarTodos">Aprovar todos</button>
+        </div>
+
+        <div class="filter-bar" id="filterBar">
+          <span id="filterCount"></span>
+          <button data-tipo="servico">Marcar filtrados como Serviço</button>
+          <button data-tipo="pavimento">Marcar filtrados como Pavimento</button>
+          <button data-tipo="ignorar">Marcar filtrados como Ignorar</button>
+        </div>
+
+        <div class="selection-bar hidden-row" id="selectionBar">
+          <span id="selectionCount"></span>
+          <button class="sel-clear" id="btnLimparSelecao">limpar seleção</button>
+          <div class="selection-actions">
+            <button class="sel-btn serv" data-tipo="servico">Marcar como Serviço</button>
+            <button class="sel-btn pav" data-tipo="pavimento">Marcar como Pavimento</button>
+            <button class="sel-btn ign" data-tipo="ignorar">Marcar como Ignorar</button>
+          </div>
+        </div>
+
+        <table>
+          <thead><tr>
+            <th style="width:30px"><input type="checkbox" id="checkAll"></th>
+            <th style="width:34px"></th>
+            <th>Nome (único)</th>
+            <th style="width:90px;text-align:center">Ocorrências</th>
+            <th style="width:160px">Classificação</th>
+          </tr></thead>
+          <tbody id="tbody"></tbody>
+        </table>
+        <div class="empty-filtered hidden-row" id="emptyMsg">Nenhum nome bate com esse filtro.</div>
+      </div>
+    </div>
+
+    <div class="side-col">
+      <div class="minilb-panel">
+        <div class="minilb-head">
+          <div class="t">📊 Preview da Linha de Balanço</div>
+          <div class="s" id="minilbSub">0 pavimentos · 0 serviços</div>
+        </div>
+        <div class="minilb-body" id="minilbBody"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="infoPop" class="info-pop"></div>
+
+<script>
+function rnd(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+function shuffle(arr){ const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+const pavimentos = Array.from({length:20}, (_,i)=>`${String(i+1).padStart(2,'0')}PAV`);
+const servicosNomes = ['Alvenaria','Elétrica/Hidráulica','Reboco','Revestimento Cerâmico','Pintura Interna','Pintura Externa','Impermeabilização','Contrapiso','Esquadrias de Alumínio','Granito','Luminárias','Paisagismo','Limpeza Final','Gesso'];
+const soltos = ['Entrega de Materiais (marco)','Vistoria Mensal','Reunião de Obra','Aprovação Projeto Estrutural','Habite-se','Checklist Final','Ajuste Contratual','Data de Corte','Mobilização Canteiro'];
+
+// Caminhos ficticios pra ilustrar o botao "i" (onde o nome aparece no cronograma real).
+// Gera exatamente "n" locais — o mesmo "n" usado no contador de ocorrencias da tabela,
+// pra nao dar numeros diferentes entre a coluna "Ocorrencias" e o popover.
+const AREAS_FAKE = ['BE GARDEN › ÁREA COMUM', 'BE GARDEN › TIPOS - APARTAMENTOS', 'BE GARDEN › FACHADA', 'BE GARDEN › HALL DE SERVIÇO'];
+function fakeLocais(nome, n) {
+  return Array.from({ length: n }, () => ({
+    linha: rnd(12, 920),
+    caminho: `${AREAS_FAKE[rnd(0, AREAS_FAKE.length - 1)]} › ${nome}`
+  })).sort((a, b) => a.linha - b.linha);
+}
+
+let dados = [];
+function addItem(nome, tipo, confianca, min, max) {
+  const n = rnd(min, max);
+  dados.push({ nome, tipo, confianca, count: n, aprovado: false, aprovadoSeq: null, locais: fakeLocais(nome, n) });
+}
+pavimentos.forEach(n => addItem(n, 'pavimento', 'alta', 8, 15));
+servicosNomes.forEach(n => addItem(n, 'servico', 'alta', 1, 3));
+soltos.forEach(n => addItem(n, 'ignorar', 'baixa', 1, 2));
+dados = shuffle(dados);
+
+const LABELS = { servico: 'Serviço', pavimento: 'Pavimento', ignorar: 'Ignorar' };
+const BADGE_CLASS = { servico: 'b-serv', pavimento: 'b-pav', ignorar: 'b-ign' };
+
+let focoIdx = -1;
+let approvedListAberta = false;
+let seqAprovacao = 0;
+let kanbanOrdem = 'alfabetica';
+
+function badgeHtml(item) {
+  const tag = item.confianca === 'baixa' ? `<span class="review-tag">⚠ revisar</span>` : '';
+  return `<span class="badge ${BADGE_CLASS[item.tipo]}">${LABELS[item.tipo]}</span>${tag}`;
+}
+
+function render() {
+  const termo = document.getElementById('searchInput').value.trim().toUpperCase();
+  const tbody = document.getElementById('tbody');
+
+  // So os pendentes (nao aprovados) entram na tabela, em ordem alfabetica
+  const pendentes = dados
+    .map((item, i) => ({ item, i }))
+    .filter(({ item }) => !item.aprovado)
+    .sort((a, b) => a.item.nome.localeCompare(b.item.nome, 'pt-BR'));
+
+  ordemIdx = pendentes.map(({ i }) => i);
+
+  tbody.innerHTML = pendentes.map(({ item, i }) => {
+    const visivel = !termo || item.nome.toUpperCase().includes(termo);
+    const marcado = selecionados.has(i);
+    return `<tr data-idx="${i}" class="${visivel ? '' : 'hidden-row'} ${marcado ? 'row-selected' : ''}">
+      <td class="cell-check"><input type="checkbox" class="row-check" data-idx="${i}" ${marcado ? 'checked' : ''}></td>
+      <td><button class="info-btn" data-idx="${i}" title="Onde aparece no cronograma">i</button></td>
+      <td>${item.nome}</td>
+      <td style="text-align:center;color:var(--muted)">${item.count}×</td>
+      <td class="cell-badge">${badgeHtml(item)}</td>
+    </tr>`;
+  }).join('');
+
+  const algumVisivel = pendentes.some(({ i }) => {
+    const tr = tbody.querySelector(`tr[data-idx="${i}"]`);
+    return tr && !tr.classList.contains('hidden-row');
+  });
+  document.getElementById('emptyMsg').classList.toggle('hidden-row', algumVisivel || pendentes.length === 0);
+
+  atualizarFilterBar();
+  attachRowEvents();
+  attachInfoButtons();
+  atualizarMiniLB();
+  atualizarApproveBar();
+  atualizarApprovedSummary();
+  atualizarSelectionBar();
+}
+
+// ── 5) Pre-classificacao: aprovar em massa + resumo colapsavel ──────────────────
+function atualizarApproveBar() {
+  const pendentesAltaConf = dados.filter(d => !d.aprovado && d.confianca === 'alta');
+  const bar = document.getElementById('approveBar');
+  if (pendentesAltaConf.length) {
+    bar.classList.remove('hidden-row');
+    document.getElementById('approveBarText').textContent =
+      `🔵 ${pendentesAltaConf.length} sugestão${pendentesAltaConf.length!==1?'ões':''} automática${pendentesAltaConf.length!==1?'s':''} com alta confiança`;
+  } else {
+    bar.classList.add('hidden-row');
+  }
+}
+
+document.getElementById('btnAprovarTodos').addEventListener('click', () => {
+  dados.forEach(d => { if (!d.aprovado && d.confianca === 'alta') aprovarItem(d); });
+  render();
+});
+
+function aprovarItem(item) {
+  item.aprovado = true;
+  item.aprovadoSeq = ++seqAprovacao;
+}
+
+// ── Kanban dos aprovados: 3 colunas por tipo, ordenacao alfabetica ou por ordem de aprovacao ──
+const KANBAN_COLS = [
+  { tipo: 'pavimento', label: 'Pavimento' },
+  { tipo: 'servico',   label: 'Serviço' },
+  { tipo: 'ignorar',   label: 'Ignorar' },
+];
+
+function atualizarApprovedSummary() {
+  const aprovados = dados.map((item,i) => ({item,i})).filter(({item}) => item.aprovado);
+  document.getElementById('approvedCount').textContent = `${aprovados.length} ite${aprovados.length!==1?'ns':'m'} aprovado${aprovados.length!==1?'s':''}`;
+  document.getElementById('approvedChev').textContent = approvedListAberta ? '▲ ocultar' : '▼ ver detalhes';
+
+  const list = document.getElementById('approvedList');
+  list.classList.toggle('open', approvedListAberta);
+  if (!approvedListAberta) return; // economiza trabalho enquanto fechado
+
+  const ordenar = (a, b) => kanbanOrdem === 'alfabetica'
+    ? a.item.nome.localeCompare(b.item.nome, 'pt-BR')
+    : a.item.aprovadoSeq - b.item.aprovadoSeq;
+
+  const colunasHtml = KANBAN_COLS.map(col => {
+    const itens = aprovados.filter(({item}) => item.tipo === col.tipo).sort(ordenar);
+    const cardsHtml = itens.map(({item,i}) =>
+      `<div class="kanban-card"><span>${item.nome}</span><button class="undo" data-idx="${i}">desfazer</button></div>`
+    ).join('') || `<div class="kanban-empty">Nenhum item</div>`;
+    return `<div class="kanban-col ${col.tipo}">
+      <div class="kanban-col-head">${col.label}<span class="n">${itens.length}</span></div>
+      <div class="kanban-col-body">${cardsHtml}</div>
+    </div>`;
+  }).join('');
+
+  list.innerHTML = `
+    <div class="kanban-toolbar">
+      <span class="lbl">Ordenar por:</span>
+      <button class="kanban-sort-btn ${kanbanOrdem==='alfabetica'?'active':''}" data-ordem="alfabetica">Alfabética</button>
+      <button class="kanban-sort-btn ${kanbanOrdem==='aprovacao'?'active':''}" data-ordem="aprovacao">Ordem de aprovação</button>
+    </div>
+    <div class="kanban-board">${colunasHtml}</div>`;
+
+  list.querySelectorAll('.undo').forEach(btn => {
+    btn.addEventListener('click', () => { dados[+btn.dataset.idx].aprovado = false; render(); });
+  });
+  list.querySelectorAll('.kanban-sort-btn').forEach(btn => {
+    btn.addEventListener('click', () => { kanbanOrdem = btn.dataset.ordem; atualizarApprovedSummary(); });
+  });
+}
+
+document.getElementById('approvedHead').addEventListener('click', () => {
+  approvedListAberta = !approvedListAberta;
+  atualizarApprovedSummary();
+});
+
+// ── 4) Botao "i": onde o nome aparece no cronograma real ────────────────────────
+function attachInfoButtons() {
+  document.querySelectorAll('.info-btn').forEach(btn => {
+    btn.addEventListener('click', ev => {
+      ev.stopPropagation();
+      const item = dados[+btn.dataset.idx];
+      const pop = document.getElementById('infoPop');
+      const texto = item.locais.map(l => `${l.linha}. ${l.caminho}`).join('\n');
+      pop.innerHTML = item.locais.map(l => `<div class="linha-cron"><strong>${l.linha}.</strong> ${l.caminho}</div>`).join('')
+        + `<button class="copy-btn" id="btnCopiarLinha">📋 Copiar</button>`;
+      const rect = btn.getBoundingClientRect();
+      pop.style.left = rect.left + 'px';
+      pop.style.top = (rect.bottom + 6) + 'px';
+      pop.style.display = 'block';
+
+      document.getElementById('btnCopiarLinha').addEventListener('click', () => {
+        navigator.clipboard.writeText(texto).then(() => {
+          const b = document.getElementById('btnCopiarLinha');
+          b.textContent = '✓ Copiado'; b.classList.add('copied');
+          setTimeout(() => { b.textContent = '📋 Copiar'; b.classList.remove('copied'); }, 1500);
+        });
+      });
+    });
+  });
+}
+document.addEventListener('click', ev => {
+  if (!ev.target.closest('.info-btn') && !ev.target.closest('#infoPop')) {
+    document.getElementById('infoPop').style.display = 'none';
+  }
+});
+
+// ── Painel lateral: mini Linha de Balanço se formando ao vivo ───────────────────
+const PALETA_MINILB = ['#0f9b6e','#d97706','#1A6EE8','#7c3aed','#d63a3a','#0e7c72','#c026d3','#ea580c'];
+const corServicoMap = new Map(); // nome do servico -> cor (fixa assim que classificado)
+
+function corDoServico(nome) {
+  if (!corServicoMap.has(nome)) corServicoMap.set(nome, PALETA_MINILB[corServicoMap.size % PALETA_MINILB.length]);
+  return corServicoMap.get(nome);
+}
+
+function atualizarMiniLB() {
+  const pavimentosClassificados = dados.filter(d => d.tipo === 'pavimento');
+  const servicosClassificados = dados.filter(d => d.tipo === 'servico');
+
+  document.getElementById('minilbSub').textContent =
+    `${pavimentosClassificados.length} pavimento${pavimentosClassificados.length!==1?'s':''} · ${servicosClassificados.length} serviço${servicosClassificados.length!==1?'s':''}`;
+
+  if (!pavimentosClassificados.length && !servicosClassificados.length) {
+    document.getElementById('minilbBody').innerHTML = `<div class="minilb-empty">Classifique alguns nomes na tabela pra ver a estrutura se formando aqui.</div>`;
+    return;
+  }
+
+  // Escalona a posição de cada serviço por pavimento (efeito diagonal, igual à Linha de Balanço
+  // de verdade) em vez de dividir a faixa em fatias iguais — só assim fica reconhecível como LB.
+  const numPav = pavimentosClassificados.length;
+  const numServ = servicosClassificados.length || 1;
+  const largura = Math.max(60 / numServ, 10);       // largura de cada barra, %
+  const passoLinha = numPav > 1 ? (100 - largura) / (numPav - 1 + numServ * 0.6) : 0;
+
+  const linhasHtml = pavimentosClassificados.map((p, pi) => {
+    const segs = servicosClassificados.map((s, si) => {
+      const inicio = Math.min((pi + si * 0.6) * passoLinha, 100 - largura);
+      return `<div class="seg" style="background:${corDoServico(s.nome)};left:${inicio}%;width:${largura}%"></div>`;
+    }).join('');
+    return `<div class="minilb-row"><span class="lbl">${p.nome}</span><div class="track">${segs}</div></div>`;
+  }).join('');
+
+  // Legenda dos servicos
+  const legendaHtml = servicosClassificados.map(s =>
+    `<div class="minilb-chip"><div class="sw" style="background:${corDoServico(s.nome)}"></div><span>${s.nome}</span></div>`
+  ).join('');
+
+  document.getElementById('minilbBody').innerHTML =
+    (pavimentosClassificados.length ? `<div class="minilb-sec-lbl">Pavimentos (eixo)</div>${linhasHtml}` : '') +
+    (servicosClassificados.length ? `<div class="minilb-sec-lbl">Serviços (legenda)</div>${legendaHtml}` : '');
+}
+
+function linhasVisiveis() {
+  return [...document.querySelectorAll('#tbody tr')].filter(tr => !tr.classList.contains('hidden-row'));
+}
+
+// ── 1) Filtro por texto + acao em lote ──────────────────────────────────────
+function atualizarFilterBar() {
+  const termo = document.getElementById('searchInput').value.trim();
+  const visiveis = linhasVisiveis();
+  const bar = document.getElementById('filterBar');
+  if (termo && visiveis.length) {
+    bar.classList.add('show');
+    document.getElementById('filterCount').textContent = `${visiveis.length} encontrado${visiveis.length!==1?'s':''} para "${termo}"`;
+  } else {
+    bar.classList.remove('show');
+  }
+}
+
+document.getElementById('searchInput').addEventListener('input', render);
+document.querySelectorAll('#filterBar button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    linhasVisiveis().forEach(tr => classificar(+tr.dataset.idx, btn.dataset.tipo));
+    render();
+  });
+});
+
+function classificar(idx, tipo) {
+  dados[idx].tipo = tipo;
+  aprovarItem(dados[idx]); // classificar = confirmar: some da lista e entra nos "aprovados"
+}
+
+// ── 2) Foco + atalho de teclado (classifica e avança) ───────────────────────
+function marcarFoco(idx) {
+  document.querySelectorAll('#tbody tr').forEach(tr => tr.classList.remove('focused'));
+  focoIdx = idx;
+  const tr = document.querySelector(`#tbody tr[data-idx="${idx}"]`);
+  if (tr) { tr.classList.add('focused'); tr.scrollIntoView({ block: 'nearest' }); }
+}
+
+document.addEventListener('keydown', ev => {
+  if (focoIdx === -1) return;
+  const visiveis = linhasVisiveis();
+  const posAtual = visiveis.findIndex(tr => +tr.dataset.idx === focoIdx);
+  if (posAtual === -1) return;
+
+  const tipoTecla = { s: 'servico', p: 'pavimento', i: 'ignorar' }[ev.key.toLowerCase()];
+  if (tipoTecla) {
+    classificar(focoIdx, tipoTecla);
+    render();
+    // avanca pro proximo visivel (a lista pode ter mudado apos o render, ex.: modo "so revisar")
+    const novasVisiveis = linhasVisiveis();
+    const proximo = novasVisiveis[Math.min(posAtual, novasVisiveis.length - 1)];
+    if (proximo) marcarFoco(+proximo.dataset.idx);
+    ev.preventDefault();
+  } else if (ev.key === 'ArrowDown') {
+    const prox = visiveis[posAtual + 1];
+    if (prox) marcarFoco(+prox.dataset.idx);
+    ev.preventDefault();
+  } else if (ev.key === 'ArrowUp') {
+    const ant = visiveis[posAtual - 1];
+    if (ant) marcarFoco(+ant.dataset.idx);
+    ev.preventDefault();
+  }
+});
+
+// ── 3) Seleção: checkbox + shift-clique + arrastar (todos alimentam o mesmo estado) ──
+const selecionados = new Set(); // indices (em dados) selecionados no momento
+let ordemIdx = [];              // ordem atual da tabela (para shift-clique e arrastar)
+let arrastando = false, idxInicioArraste = -1, marcarAoArrastar = true;
+
+function toggleSelecao(idx, marcar) {
+  if (marcar) selecionados.add(idx); else selecionados.delete(idx);
+  const tr = document.querySelector(`#tbody tr[data-idx="${idx}"]`);
+  if (tr) {
+    tr.classList.toggle('row-selected', marcar);
+    const cb = tr.querySelector('.row-check');
+    if (cb) cb.checked = marcar;
+  }
+}
+
+function limparSelecao() {
+  selecionados.clear();
+  document.querySelectorAll('#tbody tr.row-selected').forEach(tr => tr.classList.remove('row-selected'));
+  document.querySelectorAll('.row-check').forEach(cb => cb.checked = false);
+  document.getElementById('checkAll').checked = false;
+  atualizarSelectionBar();
+}
+
+function atualizarSelectionBar() {
+  const bar = document.getElementById('selectionBar');
+  const n = selecionados.size;
+  bar.classList.toggle('hidden-row', n === 0);
+  document.getElementById('selectionCount').innerHTML = `<strong>${n}</strong> selecionado${n!==1?'s':''}`;
+}
+
+function attachRowEvents() {
+  document.querySelectorAll('#tbody tr').forEach(tr => {
+    const idx = +tr.dataset.idx;
+
+    tr.addEventListener('click', ev => {
+      if (ev.target.closest('.row-check') || ev.target.closest('.info-btn')) return;
+      marcarFoco(idx);
+    });
+
+    tr.querySelector('.row-check').addEventListener('click', ev => {
+      const cb = ev.target;
+      if (ev.shiftKey && idxInicioArraste !== -1) {
+        const posIni = ordemIdx.indexOf(idxInicioArraste);
+        const posAtual = ordemIdx.indexOf(idx);
+        const [ini, fim] = posIni <= posAtual ? [posIni, posAtual] : [posAtual, posIni];
+        for (let i = ini; i <= fim; i++) toggleSelecao(ordemIdx[i], cb.checked);
+      } else {
+        toggleSelecao(idx, cb.checked);
+      }
+      idxInicioArraste = idx;
+      atualizarSelectionBar();
+    });
+
+    tr.addEventListener('mousedown', ev => {
+      if (ev.target.closest('.row-check') || ev.target.closest('.info-btn')) return;
+      arrastando = true;
+      idxInicioArraste = idx;
+      marcarAoArrastar = !selecionados.has(idx);
+      toggleSelecao(idx, marcarAoArrastar);
+      atualizarSelectionBar();
+    });
+
+    tr.addEventListener('mouseenter', () => {
+      if (!arrastando) return;
+      const posIni = ordemIdx.indexOf(idxInicioArraste);
+      const posAtual = ordemIdx.indexOf(idx);
+      if (posIni === -1 || posAtual === -1) return;
+      const [ini, fim] = posIni <= posAtual ? [posIni, posAtual] : [posAtual, posIni];
+      for (let i = ini; i <= fim; i++) toggleSelecao(ordemIdx[i], marcarAoArrastar);
+      atualizarSelectionBar();
+    });
+  });
+}
+
+document.addEventListener('mouseup', () => { arrastando = false; });
+
+document.getElementById('checkAll').addEventListener('change', ev => {
+  linhasVisiveis().forEach(tr => toggleSelecao(+tr.dataset.idx, ev.target.checked));
+  atualizarSelectionBar();
+});
+
+document.getElementById('btnLimparSelecao').addEventListener('click', limparSelecao);
+
+document.querySelectorAll('.sel-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    selecionados.forEach(idx => classificar(idx, btn.dataset.tipo));
+    selecionados.clear();
+    render();
+  });
+});
+
+render();
+</script>
+
+</body>
+</html>

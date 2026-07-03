@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Preview v4 — Linha de Balanço (completo)</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+
+:root {
+  --navy:      #1a2b45;
+  --blue:      #1B6FBF;
+  --blue-bright:#1A6EE8;
+  --blue-light:#e8f1fc;
+  --bg:        #f0f4f9;
+  --surface:   #ffffff;
+  --surface2:  #f7fafd;
+  --border:    #d4dfe8;
+  --text:      #1a2b45;
+  --muted:     #6b80a0;
+  --green:     #0f9b6e;
+  --red:       #d63a3a;
+  --shadow:    0 2px 16px rgba(26,43,69,.08);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); padding: 20px 20px 24px; display: flex; flex-direction: column; }
+.container { max-width: 1500px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; flex: 1; min-height: 0; }
+
+.sec-title { font-family: 'Sora', sans-serif; font-size: 17px; font-weight: 700; color: var(--navy); margin-bottom: 2px; }
+.sec-sub { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column; flex: 1; min-height: 0; }
+.panel-head { display: flex; align-items: center; gap: 10px; padding: 9px 14px; background: var(--surface2); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.panel-title { font-family: 'Sora', sans-serif; font-size: 12.5px; font-weight: 700; color: var(--navy); }
+
+.toolbar { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+.tbtn {
+  display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px;
+  border-radius: 7px; border: 1px solid var(--border); background: #fff; color: var(--navy);
+  font-size: 14px; font-weight: 700; cursor: pointer;
+}
+.tbtn:hover { background: var(--blue-light); border-color: var(--blue-bright); color: var(--blue-bright); }
+.zoom-pct { font-size: 11px; color: var(--muted); min-width: 38px; text-align: center; font-family: 'Sora', sans-serif; font-weight: 700; }
+.tsep { width: 1px; height: 16px; background: var(--border); margin: 0 2px; }
+.btn-export {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px;
+  border-radius: 7px; font-family: 'Sora', sans-serif; font-size: 11.5px;
+  font-weight: 600; cursor: pointer; border: none; background: var(--green); color: #fff;
+}
+.date-filter { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+.date-filter input[type=date] {
+  border: 1px solid var(--border); border-radius: 6px; padding: 4px 7px; font-size: 11.5px;
+  font-family: 'DM Sans', sans-serif; color: var(--text);
+}
+.date-filter button { font-size: 10.5px; color: var(--blue-bright); background: none; border: none; cursor: pointer; text-decoration: underline; }
+
+/* ── Grid com paineis fixos + pacotes na lateral direita ── */
+.lob-body { display: flex; flex: 1; min-height: 0; }
+.lob-grid {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  grid-template-rows: 70px 1fr;
+  flex: 1; min-width: 0;
+}
+.lob-corner {
+  grid-column: 1; grid-row: 1;
+  background: var(--surface2); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Sora', sans-serif; font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase;
+}
+.lob-header-wrap { grid-column: 2; grid-row: 1; overflow: hidden; position: relative; border-bottom: 1px solid var(--border); background: #fff; }
+.lob-sidebar-wrap { grid-column: 1; grid-row: 2; overflow: hidden; position: relative; border-right: 1px solid var(--border); background: #fff; }
+.lob-main-wrap { grid-column: 2; grid-row: 2; overflow: auto; position: relative; background: #fff; }
+#headerCanvas, #sidebarCanvas { position: absolute; top: 0; left: 0; }
+
+/* Pacotes (legenda) na lateral direita */
+.pkg-side {
+  width: 190px; flex-shrink: 0; border-left: 1px solid var(--border); background: var(--surface2);
+  display: flex; flex-direction: column; overflow-y: auto;
+}
+.pkg-side-head { padding: 10px 12px 6px; font-family: 'Sora', sans-serif; font-size: 10.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.pkg-item {
+  display: flex; align-items: center; gap: 8px; padding: 8px 12px; cursor: pointer;
+  border-left: 3px solid transparent; font-size: 12px; color: var(--text); transition: background .12s;
+}
+.pkg-item:hover { background: #eef3fc; }
+.pkg-item.active { background: #fff; border-left-color: var(--blue-bright); font-weight: 700; box-shadow: inset 0 0 0 1px var(--border); }
+.pkg-swatch { width: 13px; height: 13px; border-radius: 3px; flex-shrink: 0; }
+.pkg-item .pkg-count { margin-left: auto; font-size: 10.5px; color: var(--muted); }
+.pkg-clear { margin: 6px 12px 10px; font-size: 11px; color: var(--blue-bright); background: none; border: none; cursor: pointer; text-align: left; text-decoration: underline; }
+.pkg-crit-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 9.5px; font-weight: 700; color: var(--red); margin-left: auto; }
+
+#tooltip {
+  position: fixed; display: none; background: var(--navy); color: #fff; padding: 8px 12px;
+  border-radius: 8px; font-size: 11.5px; line-height: 1.5; pointer-events: none; z-index: 100;
+  box-shadow: 0 8px 24px rgba(0,0,0,.25); max-width: 250px;
+}
+#tooltip strong { display: block; font-family: 'Sora', sans-serif; font-size: 12px; margin-bottom: 2px; }
+#tooltip .crit { color: #ff8a8a; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="sec-title">Linha de Balanço — Preview v4 (completo)</div>
+  <div class="sec-sub">Dados fictícios · pacotes clicáveis, predecessora/sucessora ao passar o mouse, caminho crítico, raias otimizadas, marcos customizados, filtro de datas</div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <span class="panel-title">Fluxo de Produção — Pavimentos × Calendário</span>
+      <div class="toolbar">
+        <div class="date-filter">
+          <span>De</span>
+          <input type="date" id="filtroIni">
+          <span>até</span>
+          <input type="date" id="filtroFim">
+          <button id="btnLimparFiltroData">limpar</button>
+        </div>
+        <div class="tsep"></div>
+        <button class="tbtn" id="btnZoomOut" title="Diminuir zoom">−</button>
+        <span class="zoom-pct" id="zoomPct">100%</span>
+        <button class="tbtn" id="btnZoomIn" title="Aumentar zoom">+</button>
+        <button class="tbtn" id="btnZoomReset" title="Ajustar" style="width:auto;padding:0 10px;font-size:10.5px">Ajustar</button>
+        <div class="tsep"></div>
+        <button class="btn-export" onclick="alert('Na ferramenta real, isso gera um arquivo .xlsx de verdade com as mesmas cores e datas, pronto pra abrir no Excel.')">⬇ Exportar Excel</button>
+      </div>
+    </div>
+
+    <div class="lob-body">
+      <div class="lob-grid">
+        <div class="lob-corner">Pavimento</div>
+        <div class="lob-header-wrap"><canvas id="headerCanvas"></canvas></div>
+        <div class="lob-sidebar-wrap"><canvas id="sidebarCanvas"></canvas></div>
+        <div class="lob-main-wrap" id="mainWrap"><canvas id="mainCanvas"></canvas></div>
+      </div>
+      <div class="pkg-side">
+        <div class="pkg-side-head">Pacotes (clique para filtrar)</div>
+        <div id="pkgList"></div>
+        <button class="pkg-clear" id="btnLimparPkg">Limpar seleção</button>
+        <div class="pkg-side-head" style="margin-top:8px">Marcos</div>
+        <div id="milestoneList" style="padding:0 12px 12px;font-size:11.5px;color:var(--muted);line-height:1.9"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+// ═══════════════════════════════════ DADOS FICTÍCIOS ═══════════════════════════════════
+const projectStart = new Date(2026, 5, 1);
+const totalDays = 180;
+
+const pavimentos = Array.from({length: 16}, (_, i) => 'PAV ' + String(i + 1).padStart(2, '0'));
+
+const servicos = [
+  { id: 'alv', nome: 'Alvenaria',           cor: '#0f9b6e' },
+  { id: 'ele', nome: 'Elétrica/Hidráulica', cor: '#d97706' },
+  { id: 'reb', nome: 'Reboco',              cor: '#1A6EE8' },
+  { id: 'rev', nome: 'Revestimento',        cor: '#7c3aed' },
+  { id: 'pin', nome: 'Pintura',             cor: '#d63a3a' },
+];
+
+// Marcos customizados (substituem o "pulmão") — o usuário define quantos quiser
+const marcos = [
+  { dia: 70,  nome: 'Fim da Estrutura' },
+  { dia: 118, nome: 'Início Reboco Externo' },
+  { dia: 160, nome: 'Entrega Áreas Comuns' },
+];
+
+const feriados = [ { dia: 20 }, { dia: 95 } ];
+
+// Barras: cadeia sequencial por pavimento (cada serviço é predecessor do próximo no mesmo pavimento)
+const bars = [];
+let barId = 0;
+pavimentos.forEach((pav, pi) => {
+  let cursor = pi * 3.6; // defasagem entre pavimentos (ritmo de avanço)
+  servicos.forEach((sv, si) => {
+    const dur = 5 + (si % 3);
+    const startDay = Math.round(cursor);
+    const id = 'b' + (barId++);
+    bars.push({
+      id, pav: pi, servico: si, servicoId: sv.id, startDay, dur,
+      nome: sv.nome, cor: sv.cor, pavNome: pav,
+      predId: null, sucId: null,
+      critical: sv.id === 'reb', // demo: o servico "Reboco" forma o caminho critico
+    });
+    cursor += dur + 1.5; // folga entre servicos consecutivos no mesmo pavimento
+  });
+});
+// liga predecessor/sucessor dentro de cada pavimento (sequencia linear de servicos)
+pavimentos.forEach((pav, pi) => {
+  const doPav = bars.filter(b => b.pav === pi).sort((a,b) => a.servico - b.servico);
+  for (let i = 0; i < doPav.length - 1; i++) {
+    doPav[i].sucId = doPav[i+1].id;
+    doPav[i+1].predId = doPav[i].id;
+  }
+});
+const barById = Object.fromEntries(bars.map(b => [b.id, b]));
+
+// ═══════════════════════════════════ RAIAS OTIMIZADAS (lane packing) ═══════════════════
+// Para cada pavimento, empacota as barras em raias: só abre raia nova quando ha colisao de datas
+function packLanes(barsDoPavimento) {
+  const ordenado = [...barsDoPavimento].sort((a,b) => a.startDay - b.startDay);
+  const lanesFimPorRaia = []; // fim (em dias) da ultima barra de cada raia
+  ordenado.forEach(b => {
+    let raia = lanesFimPorRaia.findIndex(fim => fim <= b.startDay);
+    if (raia === -1) { raia = lanesFimPorRaia.length; lanesFimPorRaia.push(0); }
+    b.lane = raia;
+    lanesFimPorRaia[raia] = b.startDay + b.dur;
+  });
+  return lanesFimPorRaia.length; // total de raias necessarias nesse pavimento
+}
+
+const pavInfo = pavimentos.map((pav, pi) => {
+  const doPav = bars.filter(b => b.pav === pi);
+  const numLanes = packLanes(doPav);
+  return { nome: pav, numLanes: Math.max(numLanes, 1) };
+});
+
+// ═══════════════════════════════════ ESCALA / ZOOM ═══════════════════════════════════
+let zoom = 1;
+const BASE_DAY_W = 26, BASE_LANE_H = 30;
+const SIDEBAR_W = 150, HEADER_H = 70;
+let dayW, laneH;
+
+// offsets Y acumulados por pavimento (altura variavel = numLanes * laneH)
+let pavYOffset = [], pavHeight = [];
+
+function computeOffsets() {
+  let y = 0;
+  pavYOffset = []; pavHeight = [];
+  pavInfo.forEach(info => {
+    pavYOffset.push(y);
+    const h = info.numLanes * laneH;
+    pavHeight.push(h);
+    y += h;
+  });
+  return y; // altura total
+}
+
+function applyZoom() {
+  dayW = BASE_DAY_W * zoom;
+  laneH = BASE_LANE_H * zoom;
+  document.getElementById('zoomPct').textContent = Math.round(zoom * 100) + '%';
+  layout();
+}
+
+function layout() {
+  const contentW = totalDays * dayW;
+  const contentH = computeOffsets();
+
+  const mainCanvas = document.getElementById('mainCanvas');
+  mainCanvas.width = contentW; mainCanvas.height = contentH;
+  const headerCanvas = document.getElementById('headerCanvas');
+  headerCanvas.width = contentW; headerCanvas.height = HEADER_H;
+  const sidebarCanvas = document.getElementById('sidebarCanvas');
+  sidebarCanvas.width = SIDEBAR_W; sidebarCanvas.height = contentH;
+
+  drawHeader(); drawSidebar(); drawMain();
+  syncTransforms();
+}
+
+function dayToX(d) { return d * dayW; }
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y, x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x, y+h, r);
+  ctx.arcTo(x, y+h, x, y, r);
+  ctx.arcTo(x, y, x+w, y, r);
+  ctx.closePath();
+}
+
+function monthSpans() {
+  const spans = [];
+  let lastMonth = -1, spanStart = 0;
+  for (let d = 0; d <= totalDays; d++) {
+    const date = new Date(projectStart); date.setDate(date.getDate() + d);
+    const m = date.getMonth() + date.getFullYear()*12;
+    if (m !== lastMonth) {
+      if (lastMonth !== -1) spans.push({ start: spanStart, end: d, label: monthLabel(spanStart) });
+      lastMonth = m; spanStart = d;
+    }
+  }
+  spans.push({ start: spanStart, end: totalDays, label: monthLabel(spanStart) });
+  return spans;
+}
+function monthLabel(d) {
+  const date = new Date(projectStart); date.setDate(date.getDate() + d);
+  return date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase();
+}
+
+function drawHeader() {
+  const c = document.getElementById('headerCanvas');
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, c.width, c.height);
+
+  monthSpans().forEach(sp => {
+    // Mes centralizado no seu proprio bloco
+    ctx.font = 'bold 11px Sora, sans-serif';
+    ctx.fillStyle = '#1a2b45';
+    ctx.textAlign = 'center';
+    ctx.fillText(sp.label, dayToX(sp.start) + (sp.end - sp.start) * dayW / 2, 20);
+    ctx.textAlign = 'left';
+
+    ctx.strokeStyle = '#9aa9c0'; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(dayToX(sp.start), 28); ctx.lineTo(dayToX(sp.start), HEADER_H); ctx.stroke();
+  });
+
+  if (zoom >= 0.7) {
+    for (let d = 0; d < totalDays; d++) {
+      const date = new Date(projectStart); date.setDate(date.getDate() + d);
+      const dow = date.getDay();
+      ctx.font = '9px DM Sans, sans-serif';
+      ctx.fillStyle = (dow === 0 || dow === 6) ? '#c53030' : '#6b80a0';
+      ctx.textAlign = 'center';
+      ctx.fillText(String(date.getDate()).padStart(2,'0'), dayToX(d) + dayW/2, 42);
+      ctx.textAlign = 'left';
+    }
+  }
+  ctx.strokeStyle = '#d4dfe8'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, HEADER_H - 0.5); ctx.lineTo(c.width, HEADER_H - 0.5); ctx.stroke();
+}
+
+function drawSidebar() {
+  const c = document.getElementById('sidebarCanvas');
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, c.width, c.height);
+  pavimentos.forEach((pav, pi) => {
+    const y = pavYOffset[pi], h = pavHeight[pi];
+    ctx.fillStyle = pi % 2 === 0 ? '#f7fafd' : '#ffffff';
+    ctx.fillRect(0, y, c.width, h);
+    ctx.fillStyle = '#1a2b45';
+    ctx.font = 'bold 12px Sora, sans-serif';
+    ctx.fillText(pav, 14, y + h/2 + 4);
+    ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, y + h); ctx.lineTo(c.width, y + h); ctx.stroke();
+  });
+}
+
+let filtroIniDay = null, filtroFimDay = null;
+let pacoteFiltro = null;
+
+function barVisivelPeloFiltroData(b) {
+  if (filtroIniDay === null) return true;
+  return (b.startDay + b.dur - 1) >= filtroIniDay && b.startDay <= filtroFimDay;
+}
+
+function drawMain() {
+  const c = document.getElementById('mainCanvas');
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, c.width, c.height);
+
+  pavimentos.forEach((pav, pi) => {
+    ctx.fillStyle = pi % 2 === 0 ? '#f7fafd' : '#ffffff';
+    ctx.fillRect(0, pavYOffset[pi], c.width, pavHeight[pi]);
+  });
+
+  for (let d = 0; d < totalDays; d++) {
+    const date = new Date(projectStart); date.setDate(date.getDate() + d);
+    const dow = date.getDay();
+    if (dow === 0 || dow === 6) { ctx.fillStyle = 'rgba(107,128,160,.10)'; ctx.fillRect(dayToX(d), 0, dayW, c.height); }
+  }
+  feriados.forEach(f => { ctx.fillStyle = 'rgba(217,119,6,.18)'; ctx.fillRect(dayToX(f.dia), 0, dayW, c.height); });
+
+  // Filtro de data: escurece fora do intervalo
+  if (filtroIniDay !== null) {
+    ctx.fillStyle = 'rgba(26,43,69,.35)';
+    if (filtroIniDay > 0) ctx.fillRect(0, 0, dayToX(filtroIniDay), c.height);
+    if (filtroFimDay < totalDays) ctx.fillRect(dayToX(filtroFimDay+1), 0, c.width - dayToX(filtroFimDay+1), c.height);
+  }
+
+  // Marcos customizados
+  marcos.forEach(m => {
+    ctx.strokeStyle = '#1A6EE8'; ctx.lineWidth = 2; ctx.setLineDash([6,4]);
+    ctx.beginPath(); ctx.moveTo(dayToX(m.dia), 0); ctx.lineTo(dayToX(m.dia), c.height); ctx.stroke();
+    ctx.setLineDash([]);
+  });
+
+  pavimentos.forEach((pav, pi) => {
+    ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, pavYOffset[pi] + pavHeight[pi]); ctx.lineTo(c.width, pavYOffset[pi] + pavHeight[pi]); ctx.stroke();
+  });
+
+  monthSpans().forEach(sp => {
+    if (sp.start === 0) return;
+    ctx.strokeStyle = '#9aa9c0'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(dayToX(sp.start), 0); ctx.lineTo(dayToX(sp.start), c.height); ctx.stroke();
+  });
+
+  // Barras
+  bars.forEach(b => {
+    const x = dayToX(b.startDay);
+    const w = Math.max(b.dur * dayW, 3);
+    const y = pavYOffset[b.pav] + b.lane * laneH + 3;
+    const h = laneH - 6;
+
+    const atenuado = (pacoteFiltro && b.servicoId !== pacoteFiltro) || !barVisivelPeloFiltroData(b);
+
+    if (b.critical) {
+      ctx.save();
+      ctx.shadowColor = 'rgba(214,58,58,.55)';
+      ctx.shadowBlur = 10;
+      roundRect(ctx, x-1, y-1, w+2, h+2, Math.min(4, h/2));
+      ctx.fillStyle = 'rgba(214,58,58,.001)'; // so pra aplicar a sombra sem pintar por cima
+      ctx.fill();
+      ctx.restore();
+      ctx.strokeStyle = '#d63a3a'; ctx.lineWidth = 1.6;
+      roundRect(ctx, x-2, y-2, w+4, h+4, Math.min(5, h/2));
+      ctx.stroke();
+    }
+
+    ctx.globalAlpha = atenuado ? 0.18 : 1;
+    ctx.fillStyle = b.cor;
+    roundRect(ctx, x, y, w, h, Math.min(4, h/2));
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  });
+
+  // Linhas de predecessora/sucessora do item em hover
+  if (hoverBar) {
+    [hoverBar.predId, hoverBar.sucId].forEach(otherId => {
+      if (!otherId) return;
+      const other = barById[otherId];
+      const isPred = otherId === hoverBar.predId;
+      const from = isPred
+        ? { x: dayToX(other.startDay + other.dur), y: pavYOffset[other.pav] + other.lane*laneH + laneH/2 }
+        : { x: dayToX(hoverBar.startDay + hoverBar.dur), y: pavYOffset[hoverBar.pav] + hoverBar.lane*laneH + laneH/2 };
+      const to = isPred
+        ? { x: dayToX(hoverBar.startDay), y: pavYOffset[hoverBar.pav] + hoverBar.lane*laneH + laneH/2 }
+        : { x: dayToX(other.startDay), y: pavYOffset[other.pav] + other.lane*laneH + laneH/2 };
+
+      ctx.strokeStyle = '#1a2b45'; ctx.lineWidth = 1.8; ctx.setLineDash([4,3]);
+      ctx.beginPath();
+      ctx.moveTo(from.x, from.y);
+      ctx.lineTo(from.x + 10, from.y);
+      ctx.lineTo(to.x - 10, to.y);
+      ctx.lineTo(to.x, to.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // seta
+      ctx.fillStyle = '#1a2b45';
+      ctx.beginPath();
+      ctx.moveTo(to.x, to.y);
+      ctx.lineTo(to.x - 6, to.y - 4);
+      ctx.lineTo(to.x - 6, to.y + 4);
+      ctx.closePath();
+      ctx.fill();
+
+      // destaca a barra ligada
+      const ox = dayToX(other.startDay), ow = Math.max(other.dur*dayW,3);
+      const oy = pavYOffset[other.pav] + other.lane*laneH + 3, oh = laneH - 6;
+      ctx.strokeStyle = '#1a2b45'; ctx.lineWidth = 2;
+      roundRect(ctx, ox-1.5, oy-1.5, ow+3, oh+3, 4);
+      ctx.stroke();
+    });
+  }
+}
+
+let hoverBar = null;
+
+// ═══════════════════════════════════ SCROLL SYNC ═══════════════════════════════════
+function syncTransforms() {
+  const mainWrap = document.getElementById('mainWrap');
+  document.getElementById('headerCanvas').style.transform = `translateX(${-mainWrap.scrollLeft}px)`;
+  document.getElementById('sidebarCanvas').style.transform = `translateY(${-mainWrap.scrollTop}px)`;
+}
+document.getElementById('mainWrap').addEventListener('scroll', syncTransforms);
+
+// ═══════════════════════════════════ ZOOM ═══════════════════════════════════
+document.getElementById('btnZoomIn').onclick = () => { zoom = Math.min(zoom * 1.25, 3); applyZoom(); };
+document.getElementById('btnZoomOut').onclick = () => { zoom = Math.max(zoom / 1.25, 0.35); applyZoom(); };
+document.getElementById('btnZoomReset').onclick = () => { zoom = 1; applyZoom(); document.getElementById('mainWrap').scrollTo(0,0); };
+document.getElementById('mainWrap').addEventListener('wheel', ev => {
+  if (!ev.ctrlKey) return;
+  ev.preventDefault();
+  zoom = ev.deltaY < 0 ? Math.min(zoom * 1.1, 3) : Math.max(zoom / 1.1, 0.35);
+  applyZoom();
+}, { passive: false });
+
+// ═══════════════════════════════════ TOOLTIP + HOVER PRED/SUC ═══════════════════════════════════
+const tooltip = document.getElementById('tooltip');
+document.getElementById('mainWrap').addEventListener('mousemove', ev => {
+  const wrap = document.getElementById('mainWrap');
+  const rect = wrap.getBoundingClientRect();
+  const mx = ev.clientX - rect.left + wrap.scrollLeft;
+  const my = ev.clientY - rect.top + wrap.scrollTop;
+
+  const hit = bars.find(b => {
+    const x = dayToX(b.startDay), w = Math.max(b.dur * dayW, 3);
+    const y = pavYOffset[b.pav] + b.lane*laneH + 3, h = laneH - 6;
+    return mx >= x && mx <= x + w && my >= y && my <= y + h;
+  });
+
+  if (hit !== hoverBar) { hoverBar = hit || null; drawMain(); }
+
+  if (hit) {
+    const d1 = new Date(projectStart); d1.setDate(d1.getDate() + hit.startDay);
+    const d2 = new Date(projectStart); d2.setDate(d2.getDate() + hit.startDay + hit.dur - 1);
+    const fmt = d => d.toLocaleDateString('pt-BR');
+    const pred = hit.predId ? barById[hit.predId] : null;
+    const suc = hit.sucId ? barById[hit.sucId] : null;
+    tooltip.innerHTML = `<strong>${hit.nome}</strong>${hit.pavNome}<br>${fmt(d1)} a ${fmt(d2)} (${hit.dur}d)`
+      + (hit.critical ? `<br><span class="crit">⚠ Caminho crítico</span>` : '')
+      + (pred ? `<br>◀ Predecessor: ${pred.nome}` : '')
+      + (suc ? `<br>▶ Sucessor: ${suc.nome}` : '');
+    tooltip.style.display = 'block';
+    tooltip.style.left = (ev.clientX + 14) + 'px';
+    tooltip.style.top = (ev.clientY + 14) + 'px';
+    wrap.style.cursor = 'pointer';
+  } else {
+    tooltip.style.display = 'none';
+    wrap.style.cursor = 'default';
+  }
+});
+document.getElementById('mainWrap').addEventListener('mouseleave', () => {
+  tooltip.style.display = 'none';
+  if (hoverBar) { hoverBar = null; drawMain(); }
+});
+
+// ═══════════════════════════════════ FILTRO DE DATAS ═══════════════════════════════════
+function dateToDay(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  return Math.round((d - projectStart) / 864e5);
+}
+document.getElementById('filtroIni').addEventListener('change', atualizarFiltroData);
+document.getElementById('filtroFim').addEventListener('change', atualizarFiltroData);
+document.getElementById('btnLimparFiltroData').addEventListener('click', () => {
+  document.getElementById('filtroIni').value = '';
+  document.getElementById('filtroFim').value = '';
+  filtroIniDay = null; filtroFimDay = null;
+  drawMain();
+});
+function atualizarFiltroData() {
+  const ini = document.getElementById('filtroIni').value;
+  const fim = document.getElementById('filtroFim').value;
+  filtroIniDay = ini ? dateToDay(ini) : null;
+  filtroFimDay = fim ? dateToDay(fim) : totalDays;
+  drawMain();
+}
+
+// ═══════════════════════════════════ PACOTES (LEGENDA LATERAL CLICÁVEL) ═══════════════════════════════════
+function renderPkgList() {
+  const list = document.getElementById('pkgList');
+  list.innerHTML = servicos.map(s => {
+    const count = bars.filter(b => b.servicoId === s.id).length;
+    const active = pacoteFiltro === s.id;
+    const critTag = s.id === 'reb' ? `<span class="pkg-crit-tag">⚠ crítico</span>` : `<span class="pkg-count">${count}</span>`;
+    return `<div class="pkg-item ${active ? 'active' : ''}" data-id="${s.id}">
+      <div class="pkg-swatch" style="background:${s.cor}"></div>${s.nome}${critTag}
+    </div>`;
+  }).join('');
+  list.querySelectorAll('.pkg-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const id = el.dataset.id;
+      pacoteFiltro = (pacoteFiltro === id) ? null : id;
+      renderPkgList();
+      drawMain();
+    });
+  });
+}
+document.getElementById('btnLimparPkg').addEventListener('click', () => { pacoteFiltro = null; renderPkgList(); drawMain(); });
+
+// Marcos (lista lateral, so exibicao)
+document.getElementById('milestoneList').innerHTML = marcos.map(m => {
+  const d = new Date(projectStart); d.setDate(d.getDate() + m.dia);
+  return `◆ <strong style="color:var(--navy)">${m.nome}</strong><br><span style="padding-left:14px">${d.toLocaleDateString('pt-BR')}</span>`;
+}).join('<br>');
+
+renderPkgList();
+applyZoom();
+</script>
+
+</body>
+</html>

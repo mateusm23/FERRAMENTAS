@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Preview — Revisão da Classificação Automática</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+
+:root {
+  --navy:      #1a2b45;
+  --blue:      #1B6FBF;
+  --blue-bright:#1A6EE8;
+  --blue-light:#e8f1fc;
+  --bg:        #f0f4f9;
+  --surface:   #ffffff;
+  --surface2:  #f7fafd;
+  --border:    #d4dfe8;
+  --text:      #1a2b45;
+  --muted:     #6b80a0;
+  --green:     #0f9b6e;
+  --red:       #d63a3a;
+  --orange:    #d97706;
+  --green-bg:  #e6f7f2;
+  --red-bg:    #fdf0f0;
+  --orange-bg: #fef3c7;
+  --shadow:    0 2px 16px rgba(26,43,69,.08);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); padding: 32px 24px 60px; }
+.container { max-width: 980px; margin: 0 auto; }
+
+.sec-title { font-family: 'Sora', sans-serif; font-size: 18px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+.sec-sub { font-size: 12.5px; color: var(--muted); margin-bottom: 18px; }
+
+.note {
+  background: var(--blue-light); border: 1px solid #cfe0fb; border-radius: 10px;
+  padding: 12px 16px; font-size: 12px; color: var(--blue); margin-bottom: 18px; line-height: 1.55;
+}
+.note strong { font-weight: 700; }
+
+.kpi-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+.kpi { flex: 1; min-width: 120px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; box-shadow: var(--shadow); }
+.kpi-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 5px; }
+.kpi-val { font-family: 'Sora', sans-serif; font-size: 21px; font-weight: 700; color: var(--navy); }
+.kpi-val.b { color: var(--blue-bright); }
+.kpi-val.g { color: var(--green); }
+.kpi-val.o { color: var(--orange); }
+
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; margin-bottom: 18px; }
+.panel-head { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--surface2); border-bottom: 1px solid var(--border); }
+.panel-title { font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 700; color: var(--navy); }
+.panel-count { font-size: 11.5px; color: var(--muted); margin-left: auto; }
+
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+thead { background: var(--navy); }
+thead th { color: #fff; font-family: 'Sora', sans-serif; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; padding: 10px 12px; text-align: left; white-space: nowrap; }
+tbody tr:nth-child(even) { background: var(--surface2); }
+tbody tr:hover { background: #eef3fc; }
+tbody td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+tbody tr:last-child td { border-bottom: none; }
+.row-grp { background: #edf2f8 !important; }
+.row-grp td { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 12px; }
+
+.tn { display: flex; align-items: center; gap: 4px; }
+.tn-pad { display: inline-block; flex-shrink: 0; }
+
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 20px; font-size: 10.5px; font-weight: 700; white-space: nowrap; }
+.b-serv { background: var(--blue-light); color: var(--blue-bright); }
+.b-pav  { background: var(--green-bg); color: var(--green); }
+.b-ign  { background: var(--border); color: var(--muted); }
+
+.review-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; color: var(--orange); margin-left: 6px; }
+
+select.override {
+  border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; font-size: 11.5px;
+  font-family: 'DM Sans', sans-serif; color: var(--text); background: #fff; cursor: pointer; outline: none;
+}
+select.override:focus { border-color: var(--blue-bright); }
+select.override.was-fixed { border-color: var(--orange); background: var(--orange-bg); }
+
+.footer-actions { display: flex; justify-content: space-between; align-items: center; }
+.btn {
+  display: inline-flex; align-items: center; gap: 7px; padding: 10px 22px;
+  border-radius: 8px; font-family: 'Sora', sans-serif; font-size: 13px;
+  font-weight: 600; cursor: pointer; border: none;
+}
+.btn-primary { background: var(--blue-bright); color: #fff; }
+.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="sec-title">Revisão da Classificação Automática</div>
+  <div class="sec-sub">Conferimos a árvore do cronograma e sugerimos automaticamente o que é Serviço e o que é Pavimento — revise antes de continuar</div>
+
+  <div class="note">
+    <strong>Como funciona:</strong> comparamos os nomes das subtarefas entre os grupos — quando o mesmo conjunto de nomes
+    se repete (ex.: "PAV 01", "PAV 02"...) em vários grupos, esse é o eixo <strong>Pavimento</strong>, e o grupo pai é o
+    <strong>Serviço</strong>. Linhas com <span class="review-tag">⚠ revisar</span> tiveram baixa confiança na detecção —
+    troque manualmente no menu ao lado se estiver errado.
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi"><div class="kpi-lbl">Serviços Detectados</div><div class="kpi-val b" id="kpiServ">–</div></div>
+    <div class="kpi"><div class="kpi-lbl">Pavimentos Detectados</div><div class="kpi-val g" id="kpiPav">–</div></div>
+    <div class="kpi"><div class="kpi-lbl">Ignorados</div><div class="kpi-val" id="kpiIgn">–</div></div>
+    <div class="kpi"><div class="kpi-lbl">Revisão Sugerida</div><div class="kpi-val o" id="kpiRevisar">–</div></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-head">
+      <span class="panel-title">Árvore do Cronograma</span>
+      <span class="panel-count" id="panelCount"></span>
+    </div>
+    <table>
+      <thead><tr>
+        <th style="width:60px">WBS</th>
+        <th>Tarefa</th>
+        <th style="width:150px">Classificação Detectada</th>
+        <th style="width:170px">Ajustar Manualmente</th>
+      </tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <div class="footer-actions">
+    <button class="btn btn-outline">← Voltar</button>
+    <button class="btn btn-primary">Confirmar e Continuar →</button>
+  </div>
+</div>
+
+<script>
+// ═══ Árvore fictícia — com alguns erros de propósito pra testar o ajuste manual ═══
+const tree = [
+  { wbs: '1', level: 0, name: 'BE GARDEN', tipo: 'ignorar', confianca: 'alta' },
+
+  { wbs: '1.1', level: 1, name: 'Alvenaria', tipo: 'servico', confianca: 'alta' },
+  { wbs: '1.1.1', level: 2, name: 'PAV 01', tipo: 'pavimento', confianca: 'alta' },
+  { wbs: '1.1.2', level: 2, name: 'PAV 02', tipo: 'pavimento', confianca: 'alta' },
+  { wbs: '1.1.3', level: 2, name: 'PAV 03', tipo: 'pavimento', confianca: 'alta' },
+
+  { wbs: '1.2', level: 1, name: 'Elétrica/Hidráulica', tipo: 'servico', confianca: 'alta' },
+  { wbs: '1.2.1', level: 2, name: 'PAV 01', tipo: 'pavimento', confianca: 'alta' },
+  { wbs: '1.2.2', level: 2, name: 'PAV 02', tipo: 'pavimento', confianca: 'alta' },
+  { wbs: '1.2.3', level: 2, name: 'PAV 03', tipo: 'pavimento', confianca: 'alta' },
+
+  { wbs: '1.3', level: 1, name: 'Reboco', tipo: 'servico', confianca: 'alta' },
+  { wbs: '1.3.1', level: 2, name: 'PAV 01', tipo: 'pavimento', confianca: 'alta' },
+  { wbs: '1.3.2', level: 2, name: 'PAV 02', tipo: 'pavimento', confianca: 'alta' },
+  { wbs: '1.3.3', level: 2, name: 'PAV 03', tipo: 'pavimento', confianca: 'alta' },
+
+  // Grupo inteiro invertido de propósito (deveria ser Servico > Pavimento, veio Pavimento > Servico)
+  { wbs: '1.4', level: 1, name: 'Revestimento', tipo: 'pavimento', confianca: 'baixa', sugestaoCorreta: 'servico' },
+  { wbs: '1.4.1', level: 2, name: 'PAV 01', tipo: 'servico', confianca: 'baixa', sugestaoCorreta: 'pavimento' },
+  { wbs: '1.4.2', level: 2, name: 'PAV 02', tipo: 'servico', confianca: 'baixa', sugestaoCorreta: 'pavimento' },
+  { wbs: '1.4.3', level: 2, name: 'PAV 03', tipo: 'servico', confianca: 'baixa', sugestaoCorreta: 'pavimento' },
+
+  // Tarefas soltas sem repeticao — a deteccao caiu por padrao em "pavimento" mas deveriam ser ignoradas
+  { wbs: '1.5', level: 1, name: 'Entrega de Materiais (marco)', tipo: 'pavimento', confianca: 'baixa', sugestaoCorreta: 'ignorar' },
+  { wbs: '1.6', level: 1, name: 'Vistoria Técnica Mensal', tipo: 'pavimento', confianca: 'baixa', sugestaoCorreta: 'ignorar' },
+];
+
+const LABELS = { servico: 'Serviço', pavimento: 'Pavimento', ignorar: 'Ignorar' };
+const BADGE_CLASS = { servico: 'b-serv', pavimento: 'b-pav', ignorar: 'b-ign' };
+
+function pad(level) { return `<span class="tn-pad" style="width:${level*16}px"></span>`; }
+
+function renderRow(item, idx) {
+  const isGroup = item.level <= 1 && tree.some((t,i) => i > idx && t.level > item.level && tree[idx+1] && tree.slice(0, idx+1).filter(x=>x.level===item.level).length);
+  const rc = item.level === 0 ? ' class="row-grp"' : (item.level === 1 ? ' class="row-grp"' : '');
+  const reviewTag = item.confianca === 'baixa' ? `<span class="review-tag">⚠ revisar</span>` : '';
+  const options = ['servico','pavimento','ignorar'].map(v =>
+    `<option value="${v}" ${v === item.tipo ? 'selected' : ''}>${LABELS[v]}</option>`
+  ).join('');
+
+  return `<tr${rc} data-idx="${idx}">
+    <td style="color:var(--muted);font-size:11px;white-space:nowrap">${item.wbs}</td>
+    <td><div class="tn">${pad(item.level)}<span>${item.level <= 1 ? '▶ ' : ''}${item.name}</span></div></td>
+    <td><span class="badge ${BADGE_CLASS[item.tipo]}">${LABELS[item.tipo]}</span>${reviewTag}</td>
+    <td><select class="override" data-idx="${idx}">${options}</select></td>
+  </tr>`;
+}
+
+function render() {
+  document.getElementById('tbody').innerHTML = tree.map(renderRow).join('');
+  document.querySelectorAll('select.override').forEach(sel => {
+    sel.addEventListener('change', () => {
+      const idx = +sel.dataset.idx;
+      tree[idx].tipo = sel.value;
+      sel.classList.toggle('was-fixed', sel.value !== tree[idx].confianca && tree[idx].sugestaoCorreta === sel.value);
+      updateBadge(idx);
+      updateKpis();
+    });
+  });
+  updateKpis();
+}
+
+function updateBadge(idx) {
+  const tr = document.querySelector(`tr[data-idx="${idx}"]`);
+  const badgeCell = tr.children[2];
+  const item = tree[idx];
+  const reviewTag = item.confianca === 'baixa' ? `<span class="review-tag">✓ ajustado</span>` : '';
+  badgeCell.innerHTML = `<span class="badge ${BADGE_CLASS[item.tipo]}">${LABELS[item.tipo]}</span>${reviewTag}`;
+}
+
+function updateKpis() {
+  const serv = tree.filter(t => t.tipo === 'servico').length;
+  const pav = tree.filter(t => t.tipo === 'pavimento').length;
+  const ign = tree.filter(t => t.tipo === 'ignorar').length;
+  const revisar = tree.filter(t => t.confianca === 'baixa').length;
+  document.getElementById('kpiServ').textContent = serv;
+  document.getElementById('kpiPav').textContent = pav;
+  document.getElementById('kpiIgn').textContent = ign;
+  document.getElementById('kpiRevisar').textContent = revisar;
+  document.getElementById('panelCount').textContent = tree.length + ' tarefas';
+}
+
+render();
+</script>
+
+</body>
+</html>
