@@ -1,0 +1,2580 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerador de Linha de Balanço</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
+
+:root {
+  --navy:      #1a2b45;
+  --blue:      #1B6FBF;
+  --blue-bright:#1A6EE8;
+  --blue-light:#e8f1fc;
+  --bg:        #f0f4f9;
+  --surface:   #ffffff;
+  --surface2:  #f7fafd;
+  --border:    #d4dfe8;
+  --text:      #1a2b45;
+  --muted:     #6b80a0;
+  --green:     #0f9b6e;
+  --red:       #d63a3a;
+  --orange:    #d97706;
+  --green-bg:  #e6f7f2;
+  --red-bg:    #fdf0f0;
+  --orange-bg: #fef3c7;
+  --shadow:    0 2px 16px rgba(26,43,69,.08);
+  --hh:        64px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-top: var(--hh); }
+
+/* Modo "app travado" (sem scroll de página), ligado só na tela de Classificação,
+   onde a tabela e o Kanban precisam rolar internamente em vez da página inteira. */
+body.app-locked { height: 100vh; overflow: hidden; }
+body.app-locked .container { max-width: 100%; height: calc(100vh - var(--hh)); overflow: hidden; display: flex; flex-direction: column; padding: 22px 28px 18px; }
+#review-screen:not(.hidden) { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+#review-screen .layout { display: flex; gap: 18px; align-items: stretch; flex: 1; min-height: 0; margin-bottom: 14px; }
+#review-screen .main-col { flex: 1 1 42%; min-width: 0; display: flex; flex-direction: column; min-height: 0; }
+#review-screen .side-col { flex: 1 1 58%; min-width: 0; display: flex; flex-direction: column; gap: 14px; min-height: 0; }
+#review-screen .main-col .panel { flex: 1; margin-bottom: 0; }
+#review-screen .side-col .panel { flex: 1; min-height: 0; margin-bottom: 0; }
+#normalState { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+.tbl-scroll { flex: 1; min-height: 0; overflow-y: auto; }
+tbody tr.hidden-row { display: none; } /* só usar em <tr>, classe já causou bug quando aplicada fora dele */
+tbody tr.focused { outline: 2px solid var(--blue-bright); outline-offset: -2px; background: var(--blue-light) !important; }
+
+header {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  background: var(--navy); padding: 0 28px; height: var(--hh);
+  display: flex; align-items: center; gap: 14px;
+}
+.hdr-back {
+  display: flex; align-items: center; gap: 6px; color: rgba(255,255,255,.5);
+  font-size: 12px; text-decoration: none; padding: 5px 10px;
+  border-radius: 6px; border: 1px solid rgba(255,255,255,.12); transition: all .15s;
+}
+.hdr-back:hover { color: #fff; border-color: rgba(255,255,255,.3); background: rgba(255,255,255,.07); }
+header h1 { font-family: 'Sora', sans-serif; font-size: 17px; font-weight: 600; color: #fff; }
+header h1 span { font-size: 13px; color: rgba(255,255,255,.4); font-weight: 400; }
+
+.container { max-width: 980px; margin: 0 auto; padding: 32px 24px 60px; }
+
+.sec-title { font-family: 'Sora', sans-serif; font-size: 18px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+.sec-sub { font-size: 12.5px; color: var(--muted); margin-bottom: 18px; }
+
+.intro-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); padding: 36px 40px; }
+.intro-icon-wrap {
+  width: 52px; height: 52px; border-radius: 14px;
+  background: linear-gradient(135deg, var(--navy), var(--blue-bright));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; margin-bottom: 16px; box-shadow: 0 6px 18px rgba(26,110,232,.28);
+}
+.intro-title { font-family: 'Sora', sans-serif; font-size: 20px; font-weight: 800; color: var(--navy); margin-bottom: 8px; }
+.intro-desc { font-size: 13px; color: var(--muted); line-height: 1.7; max-width: 640px; margin-bottom: 26px; }
+
+.upzone {
+  border: 2px dashed var(--border); border-radius: 10px; padding: 34px 20px;
+  text-align: center; cursor: pointer; transition: all .15s; background: var(--bg); display: block;
+}
+.upzone:hover, .upzone.over { border-color: var(--blue-bright); background: #eef4fd; }
+.upzone.done { border-color: var(--green); background: var(--green-bg); border-style: solid; }
+.upzone input { display: none; }
+.upzone-icon { font-size: 30px; margin-bottom: 10px; }
+.upzone-text { font-size: 13px; color: var(--muted); line-height: 1.5; }
+.upzone-text strong { display: block; margin-bottom: 3px; color: var(--blue-bright); font-size: 14px; }
+.upzone.done .upzone-text strong { color: var(--green); }
+.upzone-fname { font-size: 11.5px; color: var(--green); margin-top: 6px; font-weight: 600; display: none; }
+.upzone.done .upzone-fname { display: block; }
+
+.note {
+  background: var(--blue-light); border: 1px solid #cfe0fb; border-radius: 10px;
+  padding: 12px 16px; font-size: 12px; color: var(--blue); margin-bottom: 18px; line-height: 1.55;
+}
+.note strong { font-weight: 700; }
+.note-warn { background: var(--orange-bg); border-color: #f5d29a; color: #92510a; }
+
+.sec-title-row { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+.btn-instrucoes {
+  font-size: 11.5px; font-weight: 600; font-family: 'Sora', sans-serif; color: var(--blue-bright);
+  background: var(--blue-light); border: 1px solid #cfe0fb; border-radius: 20px; padding: 4px 12px; cursor: pointer;
+  margin-left: auto;
+}
+.note-collapsible { display: none; }
+.note-collapsible.open { display: block; }
+
+.panel { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; margin-bottom: 18px; display: flex; flex-direction: column; min-height: 0; }
+.panel-head { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--surface2); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.panel-title { font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 700; color: var(--navy); }
+.panel-count { font-size: 11.5px; color: var(--muted); margin-left: auto; }
+
+.tbl-wrap { overflow: auto; max-height: 60vh; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+thead { background: var(--navy); position: sticky; top: 0; z-index: 2; }
+thead th { color: #fff; font-family: 'Sora', sans-serif; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; padding: 10px 12px; text-align: left; white-space: nowrap; }
+tbody tr:nth-child(even) { background: var(--surface2); }
+tbody tr:hover { background: #eef3fc; }
+tbody td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; user-select: none; }
+tbody tr:last-child td { border-bottom: none; }
+.row-grp { background: #edf2f8 !important; }
+.row-grp td { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 12px; }
+
+.tn { display: flex; align-items: center; gap: 4px; }
+.tn-pad { display: inline-block; flex-shrink: 0; }
+
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 20px; font-size: 10.5px; font-weight: 700; white-space: nowrap; }
+.b-serv { background: var(--blue-light); color: var(--blue-bright); }
+.b-pav  { background: var(--green-bg); color: var(--green); }
+.b-ign  { background: var(--border); color: var(--muted); }
+
+.review-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 700; color: var(--orange); margin-left: 6px; }
+
+/* Seleção múltipla (checkbox + shift-clique) e ações em lote */
+tbody tr.row-selected { background: var(--blue-light) !important; }
+td.cell-check { width: 34px; text-align: center; }
+td.cell-check input[type=checkbox], thead th input[type=checkbox] { width: 15px; height: 15px; cursor: pointer; }
+
+.selection-inline { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--blue); white-space: nowrap; }
+.selection-inline strong { font-family: 'Sora', sans-serif; }
+.sel-btn {
+  padding: 6px 12px; border-radius: 6px; font-size: 11.5px; font-weight: 600;
+  font-family: 'Sora', sans-serif; border: 1px solid var(--border); background: #fff; cursor: pointer;
+}
+.sel-btn:hover { border-color: var(--blue-bright); }
+.sel-btn.serv:hover { background: var(--blue-light); color: var(--blue-bright); }
+.sel-btn.pav:hover { background: var(--green-bg); color: var(--green); }
+.sel-btn.ign:hover { background: var(--border); }
+.sel-clear-x {
+  width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--border); background: #fff;
+  color: var(--muted); font-size: 11px; cursor: pointer; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.sel-clear-x:hover { border-color: var(--red); color: var(--red); }
+
+/* Busca por nome + atalho de teclado */
+.toolbar-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; width: 100%; margin-top: 8px; }
+.search-box {
+  flex: 1; min-width: 180px; display: flex; align-items: center; gap: 7px;
+  border: 1px solid var(--border); border-radius: 8px; padding: 7px 12px; background: #fff;
+}
+.search-box input { border: none; outline: none; font-size: 12.5px; font-family: 'DM Sans', sans-serif; flex: 1; }
+.kbd-hint { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.kbd-hint kbd {
+  display: inline-block; padding: 1px 6px; border-radius: 4px; background: var(--surface2);
+  border: 1px solid var(--border); font-family: 'Sora', sans-serif; font-weight: 700; font-size: 10.5px; color: var(--navy);
+}
+
+.filter-bar {
+  display: none; align-items: center; gap: 10px; padding: 9px 16px;
+  background: #fff7e6; border-bottom: 1px solid #f5d99a; font-size: 12px; color: #92510a;
+}
+.filter-bar.show { display: flex; }
+.filter-bar button {
+  padding: 6px 12px; border-radius: 6px; font-size: 11.5px; font-weight: 600; font-family: 'Sora', sans-serif;
+  border: 1px solid #f5c76a; background: #fff; cursor: pointer; margin-left: auto;
+}
+.filter-bar button:hover { background: var(--orange-bg); }
+
+/* Cabeçalhos ordenáveis */
+thead th.sortable { cursor: pointer; user-select: none; }
+thead th.sortable:hover { background: #24365a; }
+.sort-arrow { font-size: 9px; opacity: .85; }
+
+/* Botão "i" com popover mostrando onde o nome aparece de verdade no cronograma */
+.info-btn {
+  width: 18px; height: 18px; border-radius: 50%; border: 1px solid var(--border); background: #fff;
+  color: var(--muted); font-size: 10.5px; font-weight: 700; cursor: pointer; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.info-btn:hover { border-color: var(--blue-bright); color: var(--blue-bright); }
+.info-pop {
+  position: fixed; display: none; background: #fff; color: var(--text); border: 1px solid var(--border); border-radius: 10px;
+  padding: 10px 12px; font-size: 11.5px; line-height: 1.7; z-index: 300; max-width: 360px; max-height: 260px; overflow-y: auto;
+  box-shadow: 0 12px 30px rgba(26,43,69,.22);
+}
+.info-pop .linha-cron { user-select: text; cursor: text; padding: 3px 0; border-bottom: 1px dashed var(--border); }
+.info-pop .linha-cron:last-of-type { border-bottom: none; }
+.info-pop .copy-btn {
+  display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; padding: 5px 10px;
+  border-radius: 6px; font-size: 10.5px; font-weight: 700; font-family: 'Sora', sans-serif;
+  border: 1px solid var(--border); background: var(--surface2); color: var(--navy); cursor: pointer;
+}
+.info-pop .copy-btn:hover { border-color: var(--blue-bright); color: var(--blue-bright); }
+.info-pop .copy-btn.copied { border-color: var(--green); color: var(--green); background: var(--green-bg); }
+
+/* Popup inicial (uma vez só) sugerindo aprovar em lote os nomes de alta confiança */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(26,43,69,.5); z-index: 500;
+  display: flex; align-items: center; justify-content: center;
+}
+.modal-box {
+  background: #fff; border-radius: 14px; padding: 28px 30px; max-width: 420px; width: 90%;
+  box-shadow: 0 24px 60px rgba(26,43,69,.35); text-align: center;
+}
+.modal-box .ico { font-size: 34px; margin-bottom: 12px; }
+.modal-box .ttl { font-family: 'Sora', sans-serif; font-size: 16px; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+.modal-box .dsc { font-size: 12.5px; color: var(--muted); line-height: 1.6; margin-bottom: 22px; }
+.modal-actions { display: flex; gap: 10px; justify-content: center; }
+.modal-actions button {
+  padding: 10px 18px; border-radius: 8px; font-size: 12.5px; font-weight: 700; font-family: 'Sora', sans-serif; cursor: pointer;
+}
+.modal-actions .primary { border: none; background: var(--blue-bright); color: #fff; }
+.modal-actions .secondary { border: 1px solid var(--border); background: #fff; color: var(--muted); }
+
+/* Painel lateral: mini Linha de Balanço se formando ao vivo, com legenda fixa */
+.minilb-head { padding: 12px 16px; background: var(--surface2); border-bottom: 1px solid var(--border); }
+.minilb-head .t { font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 700; color: var(--navy); }
+.minilb-head .s { font-size: 11px; color: var(--muted); margin-top: 3px; }
+.minilb-body { display: flex; gap: 0; flex: 1; min-height: 0; }
+.minilb-rows-wrap { flex: 1; min-width: 0; min-height: 0; padding: 12px 14px; overflow-y: auto; }
+.minilb-row { display: flex; align-items: center; gap: 10px; font-size: 12px; margin-bottom: 9px; }
+.minilb-row:last-child { margin-bottom: 0; }
+.minilb-row .lbl { width: 110px; flex-shrink: 0; font-weight: 700; font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.minilb-row .track { flex: 1; height: 18px; background: var(--surface2); border-radius: 4px; position: relative; overflow: hidden; }
+.minilb-row .seg { position: absolute; top: 2px; bottom: 2px; border-radius: 3px; opacity: .92; }
+
+.minilb-legend-col {
+  width: 210px; flex-shrink: 0; min-height: 0; border-left: 1px solid var(--border); background: var(--surface2);
+  padding: 12px 12px; overflow: hidden; display: flex; flex-direction: column; gap: 7px;
+}
+.minilb-legend-col.expanded { overflow-y: auto; }
+.minilb-legend-lbl { font-family: 'Sora', sans-serif; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 2px; }
+.minilb-chip { display: flex; align-items: center; gap: 6px; font-size: 10.5px; }
+.minilb-chip .sw { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; }
+.minilb-chip span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.minilb-legend-more { font-size: 10px; color: var(--blue-bright); font-weight: 600; cursor: pointer; }
+.minilb-legend-more:hover { text-decoration: underline; }
+.minilb-legend-empty { font-size: 10px; color: var(--muted); font-style: italic; }
+.minilb-empty { font-size: 12px; color: var(--muted); text-align: center; padding: 26px 14px; width: 100%; }
+
+/* Kanban dos itens aprovados */
+.kanban-toolbar { display: flex; align-items: center; gap: 8px; padding: 9px 12px; border-bottom: 1px solid var(--border); background: var(--surface2); }
+.kanban-toolbar .lbl { font-size: 11px; color: var(--muted); }
+.kanban-sort-btn {
+  padding: 5px 11px; border-radius: 6px; font-size: 11px; font-weight: 600; font-family: 'Sora', sans-serif;
+  border: 1px solid var(--border); background: #fff; cursor: pointer;
+}
+.kanban-sort-btn.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+
+.kanban-board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px; flex: 1; min-height: 0; }
+.kanban-col { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
+.kanban-col-head {
+  padding: 7px 9px; font-family: 'Sora', sans-serif; font-size: 10.5px; font-weight: 700;
+  display: flex; align-items: center; gap: 6px; color: #fff; flex-shrink: 0;
+}
+.kanban-col-head .n { margin-left: auto; background: rgba(255,255,255,.25); border-radius: 10px; padding: 1px 7px; font-size: 10px; }
+.kanban-col.pavimento .kanban-col-head { background: var(--green); }
+.kanban-col.servico .kanban-col-head { background: var(--blue-bright); }
+.kanban-col.ignorar .kanban-col-head { background: var(--muted); }
+.kanban-col-body { padding: 6px; flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; }
+.kanban-card {
+  background: #fff; border: 1px solid var(--border); border-radius: 7px; padding: 6px 8px;
+  font-size: 10.5px; display: flex; align-items: center; gap: 6px;
+}
+.kanban-card span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kanban-card .undo {
+  margin-left: auto; width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 10px; color: var(--muted); background: var(--surface2); border: none; cursor: pointer;
+}
+.kanban-card .undo:hover { background: var(--red-bg); color: var(--red); }
+.kanban-empty { font-size: 10.5px; color: var(--muted); text-align: center; padding: 12px 6px; }
+
+/* Estado "tudo revisado" */
+.done-state { text-align: center; padding: 40px 24px; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.done-state .ico { font-size: 38px; margin-bottom: 12px; }
+.done-state .ttl { font-family: 'Sora', sans-serif; font-size: 15px; font-weight: 700; color: var(--navy); margin-bottom: 6px; }
+.done-state .dsc { font-size: 12.5px; color: var(--muted); }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 7px; padding: 10px 22px;
+  border-radius: 8px; font-family: 'Sora', sans-serif; font-size: 13px;
+  font-weight: 600; cursor: pointer; border: none;
+}
+.btn-primary { background: var(--blue-bright); color: #fff; }
+.btn-primary:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+.footer-actions { display: flex; justify-content: space-between; align-items: center; }
+
+.hidden { display: none !important; }
+.empty { text-align: center; padding: 48px 24px; color: var(--red); }
+
+/* Tela de escopo */
+.escopo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-bottom: 20px; }
+.escopo-card {
+  background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px;
+  padding: 18px 18px; cursor: pointer; transition: all .15s; box-shadow: var(--shadow);
+}
+.escopo-card:hover { border-color: var(--blue-bright); background: #f7fbff; transform: translateY(-1px); }
+.escopo-card-icon { font-size: 22px; margin-bottom: 8px; }
+.escopo-card-name { font-family: 'Sora', sans-serif; font-size: 14px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+.escopo-card-count { font-size: 11.5px; color: var(--muted); }
+.escopo-card-badge { display: inline-block; margin-top: 8px; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
+.escopo-card-badge.ok { background: var(--green-bg); color: var(--green); }
+.escopo-card-badge.warn { background: var(--orange-bg); color: var(--orange); }
+
+/* Tela de gráfico (Fase 2) */
+#chart-screen:not(.hidden) { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+#chart-screen .panel { flex: 1; }
+
+/* Tela de configuração de pacotes */
+#pkg-config-screen:not(.hidden) { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+#pkg-config-screen .panel { flex: 1; margin-bottom: 14px; }
+.pkgcfg-item { justify-content: space-between; }
+.pkgcfg-color { width: 26px; height: 26px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; padding: 0; background: none; flex-shrink: 0; }
+.pkgcfg-nome { flex: 1; min-width: 0; }
+.pkgcfg-count { color: var(--muted); font-weight: 400; font-size: 11px; }
+.pkgcfg-vis { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); flex-shrink: 0; cursor: pointer; user-select: none; }
+.pkgcfg-vis input { width: 14px; height: 14px; cursor: pointer; }
+.pkgcfg-item.oculto { opacity: .5; }
+
+/* Tela de configuração geral (hub) e módulos de Marcos/Feriados */
+#config-screen:not(.hidden), #marcos-screen:not(.hidden), #feriados-screen:not(.hidden) {
+  display: flex; flex-direction: column; flex: 1; min-height: 0;
+}
+#marcos-screen .panel, #feriados-screen .panel { flex: 1; margin-bottom: 14px; }
+.marcocfg-item, .feriadocfg-item { justify-content: flex-start; cursor: default; }
+.marcocfg-nome, .feriadocfg-nome {
+  flex: 1; min-width: 0; border: 1px solid var(--border); border-radius: 6px; padding: 6px 9px;
+  font-size: 12.5px; font-family: 'DM Sans', sans-serif; color: var(--text); outline: none;
+}
+.marcocfg-nome:focus, .feriadocfg-nome:focus { border-color: var(--blue-bright); }
+.marcocfg-data, .feriadocfg-data {
+  border: 1px solid var(--border); border-radius: 6px; padding: 6px 9px; font-size: 12px;
+  font-family: 'DM Sans', sans-serif; color: var(--text); flex-shrink: 0;
+}
+.chart-toolbar { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-wrap: wrap; }
+.tbtn {
+  display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px;
+  border-radius: 7px; border: 1px solid var(--border); background: #fff; color: var(--navy);
+  font-size: 14px; font-weight: 700; cursor: pointer;
+}
+.tbtn:hover { background: var(--blue-light); border-color: var(--blue-bright); color: var(--blue-bright); }
+.zoom-pct { font-size: 11px; color: var(--muted); min-width: 38px; text-align: center; font-family: 'Sora', sans-serif; font-weight: 700; }
+.tsep { width: 1px; height: 16px; background: var(--border); margin: 0 2px; }
+.btn-export {
+  display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px;
+  border-radius: 7px; font-family: 'Sora', sans-serif; font-size: 11.5px;
+  font-weight: 600; cursor: pointer; border: none; background: var(--green); color: #fff;
+}
+.date-filter { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+.date-filter input[type=date] {
+  border: 1px solid var(--border); border-radius: 6px; padding: 4px 7px; font-size: 11.5px;
+  font-family: 'DM Sans', sans-serif; color: var(--text);
+}
+.date-filter button { font-size: 10.5px; color: var(--blue-bright); background: none; border: none; cursor: pointer; text-decoration: underline; }
+
+.lob-body { display: flex; flex: 1; min-height: 0; }
+.lob-grid { display: grid; grid-template-columns: 150px 1fr; grid-template-rows: 70px 1fr; flex: 1; min-width: 0; }
+.lob-corner {
+  grid-column: 1; grid-row: 1;
+  background: var(--surface2); border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Sora', sans-serif; font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase;
+}
+.lob-header-wrap { grid-column: 2; grid-row: 1; overflow: hidden; position: relative; border-bottom: 1px solid var(--border); background: #fff; }
+.lob-sidebar-wrap { grid-column: 1; grid-row: 2; overflow: hidden; position: relative; border-right: 1px solid var(--border); background: #fff; }
+.lob-main-wrap { grid-column: 2; grid-row: 2; overflow: auto; position: relative; background: #fff; }
+#headerCanvas, #sidebarCanvas { position: absolute; top: 0; left: 0; }
+
+.pkg-side { width: 200px; flex-shrink: 0; border-left: 1px solid var(--border); background: var(--surface2); display: flex; flex-direction: column; overflow-y: auto; }
+.pkg-side-head { padding: 10px 12px 6px; font-family: 'Sora', sans-serif; font-size: 10.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.pkg-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; cursor: pointer; border-left: 3px solid transparent; font-size: 12px; color: var(--text); transition: background .12s; }
+.pkg-item:hover { background: #eef3fc; }
+.pkg-item.active { background: #fff; border-left-color: var(--blue-bright); font-weight: 700; box-shadow: inset 0 0 0 1px var(--border); }
+.pkg-swatch { width: 13px; height: 13px; border-radius: 3px; flex-shrink: 0; }
+.pkg-item .pkg-count { margin-left: auto; font-size: 10.5px; color: var(--muted); }
+.pkg-clear { margin: 6px 12px 10px; font-size: 11px; color: var(--blue-bright); background: none; border: none; cursor: pointer; text-align: left; text-decoration: underline; }
+.pkg-crit-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 9.5px; font-weight: 700; color: var(--red); margin-left: auto; }
+
+#lobTooltip {
+  position: fixed; display: none; background: #fff; color: var(--text); border: 1px solid var(--border); padding: 9px 13px;
+  border-radius: 8px; font-size: 11.5px; line-height: 1.6; pointer-events: none; z-index: 100;
+  box-shadow: 0 8px 24px rgba(26,43,69,.22); max-width: 280px;
+}
+#lobTooltip strong { display: block; font-family: 'Sora', sans-serif; font-size: 12px; margin-bottom: 2px; color: var(--navy); }
+#lobTooltip .crit { color: var(--red); font-weight: 700; }
+#lobTooltip .wbs { color: var(--muted); font-size: 10.5px; }
+
+
+.reorder-list { list-style: none; margin: 14px 0; max-height: 340px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; }
+.reorder-item {
+  display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #fff;
+  border-bottom: 1px solid var(--border); cursor: grab; font-size: 12.5px; user-select: none;
+}
+.reorder-item:last-child { border-bottom: none; }
+.reorder-item:nth-child(even) { background: var(--surface2); }
+.reorder-item.dragging { opacity: .35; }
+.reorder-item.selected { background: var(--blue-light) !important; }
+.reorder-item .handle { color: var(--muted); font-size: 13px; }
+.reorder-item .reorder-check { width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; }
+
+.quick-sort-btn {
+  padding: 5px 11px; border-radius: 6px; font-size: 11px; font-weight: 600; font-family: 'Sora', sans-serif;
+  border: 1px solid var(--border); background: #fff; cursor: pointer;
+}
+.quick-sort-btn:hover { border-color: var(--blue-bright); color: var(--blue-bright); }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="hdr-back" href="#" onclick="location.reload();return false;">← Recomeçar</a>
+  <h1>Gerador de Linha de Balanço</h1>
+</header>
+
+<div class="container">
+
+  <!-- ═══════════════ TELA 1: UPLOAD ═══════════════ -->
+  <div id="upload-screen">
+    <div class="intro-card">
+      <div class="intro-icon-wrap">📊</div>
+      <div class="intro-title">Gerador de Linha de Balanço</div>
+      <div class="intro-desc">
+        Suba o cronograma atual do MS Project (exportado em XML). A ferramenta detecta automaticamente
+        quais tarefas são <strong>Serviços</strong> (disciplinas/pacotes de trabalho) e quais são
+        <strong>Pavimentos</strong> (unidades repetitivas), e mostra uma tela de revisão antes de continuar.
+      </div>
+      <div class="upzone" id="z-xml"
+        ondragover="event.preventDefault();this.classList.add('over')"
+        ondragleave="this.classList.remove('over')"
+        ondrop="dropXml(event)"
+        onclick="document.getElementById('f-xml').click()">
+        <div class="upzone-icon">📁</div>
+        <div class="upzone-text">
+          <strong id="xml-lbl">Cronograma (MS Project XML)</strong>
+          Arraste o .xml ou clique aqui
+        </div>
+        <div class="upzone-fname" id="xml-fn"></div>
+        <input type="file" id="f-xml" accept=".xml" style="display:none" onchange="loadXml(this.files[0])">
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════ TELA 2: SELEÇÃO DE ESCOPO ═══════════════ -->
+  <div id="scope-screen" class="hidden">
+    <div class="sec-title">Selecione o Escopo</div>
+    <div class="sec-sub">Um mesmo cronograma pode conter várias frentes independentes. Escolha qual delas vai virar uma Linha de Balanço agora (dá pra gerar as outras depois, sem reimportar)</div>
+
+    <div class="note">
+      <strong>Por que escolher um escopo?</strong> Cada frente (torre, hall, fundação, área comum...) costuma ter seu
+      próprio padrão interno de Serviço × Pavimento, então comparar todas juntas de uma vez normalmente não faz sentido.
+      Escolhendo um escopo, a detecção automática roda só dentro dele.
+    </div>
+
+    <div class="escopo-grid" id="escopoGrid"></div>
+  </div>
+
+  <!-- ═══════════════ TELA 3: CLASSIFICAÇÃO ═══════════════ -->
+  <div id="review-screen" class="hidden">
+    <div class="sec-title-row">
+      <div class="sec-title">Revisão da Classificação Automática</div>
+      <button class="btn-instrucoes" id="btnInstrucoes">Ver instruções ▾</button>
+    </div>
+    <div class="sec-sub" id="reviewSub">Conferimos a árvore do cronograma e sugerimos automaticamente o que é Serviço e o que é Pavimento. Revise antes de continuar</div>
+
+    <div class="note note-collapsible" id="notePanel">
+      <strong>Como funciona:</strong> comparamos os nomes das subtarefas entre os grupos: quando o mesmo conjunto de nomes
+      se repete em vários grupos, esse é o eixo <strong>Pavimento</strong>, e o grupo pai é o <strong>Serviço</strong>.
+      Linhas com <span class="review-tag">⚠ revisar</span> tiveram baixa confiança na detecção. Reclassifique manualmente
+      (clique na linha e aperte S/P/I, marque várias e use os botões, ou filtre por texto) se estiver errado.
+    </div>
+
+    <div class="note" id="detectBanner" style="display:none"></div>
+
+    <div class="layout">
+      <div class="main-col">
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Nomes do Escopo</span>
+            <span class="panel-count" id="panelCount"></span>
+            <div class="toolbar-row">
+              <div class="search-box">
+                <span>🔎</span>
+                <input type="text" id="searchInput" placeholder="Filtrar por nome... (ex.: PAV)">
+              </div>
+              <span class="kbd-hint" id="kbdHint"><kbd>S</kbd> <kbd>P</kbd> <kbd>I</kbd> classifica a seleção (ou o item em foco, se nada selecionado)</span>
+              <div class="selection-inline hidden" id="selectionBar">
+                <span id="selectionCount"></span>
+                <button class="sel-btn pav" data-tipo="pavimento">Pavimento (P)</button>
+                <button class="sel-btn serv" data-tipo="servico">Serviço (S)</button>
+                <button class="sel-btn ign" data-tipo="ignorar">Ignorar (I)</button>
+                <button class="sel-clear-x" id="btnLimparSelecao" title="Limpar seleção">✕</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="normalState">
+            <div class="filter-bar" id="filterBar">
+              <span id="filterCount"></span>
+              <button data-tipo="servico">Marcar filtrados como Serviço</button>
+              <button data-tipo="pavimento">Marcar filtrados como Pavimento</button>
+              <button data-tipo="ignorar">Marcar filtrados como Ignorar</button>
+            </div>
+
+            <div class="tbl-scroll">
+              <table>
+                <thead><tr>
+                  <th style="width:30px"><input type="checkbox" id="checkAll"></th>
+                  <th style="width:34px"></th>
+                  <th class="sortable" data-col="nome">Nome (único) <span class="sort-arrow" id="arrow-nome"></span></th>
+                  <th class="sortable" data-col="count" style="width:90px;text-align:center">Ocorrências <span class="sort-arrow" id="arrow-count"></span></th>
+                  <th class="sortable" data-col="tipo" style="width:190px">Sugestão de Classificação <span class="sort-arrow" id="arrow-tipo"></span></th>
+                </tr></thead>
+                <tbody id="tbody"></tbody>
+              </table>
+              <div class="empty hidden" id="emptyMsg" style="padding:24px">Nenhum nome bate com esse filtro.</div>
+            </div>
+          </div>
+
+          <div id="doneState" class="done-state hidden">
+            <div class="ico">✅</div>
+            <div class="ttl">Revisão concluída</div>
+            <div class="dsc" id="doneStats">0 pavimentos · 0 serviços · 0 ignorados</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="side-col">
+        <div class="panel">
+          <div class="minilb-head">
+            <div class="t">📊 Preview da Linha de Balanço</div>
+            <div class="s" id="minilbSub">0 pavimentos · 0 serviços</div>
+          </div>
+          <div class="minilb-body" id="minilbBody"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head" style="justify-content:space-between">
+            <span class="panel-title">✓ Aprovados</span>
+            <span class="panel-title" id="approvedCount" style="color:var(--muted);font-weight:600">0 itens</span>
+          </div>
+          <div class="kanban-toolbar">
+            <span class="lbl">Ordenar por:</span>
+            <button class="kanban-sort-btn active" data-ordem="alfabetica">Alfabética</button>
+            <button class="kanban-sort-btn" data-ordem="aprovacao">Ordem de aprovação</button>
+          </div>
+          <div class="kanban-board" id="kanbanBoard"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-actions">
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-outline" onclick="location.reload()">← Recomeçar</button>
+        <button class="btn btn-outline" onclick="showScopeScreen()">← Escolher outro escopo</button>
+      </div>
+      <button class="btn btn-primary" id="btnContinuar" onclick="confirmarClassificacao()">Confirmar e Continuar →</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════ TELA 4: LINHA DE BALANÇO (Fase 2) ═══════════════ -->
+  <div id="chart-screen" class="hidden">
+    <div class="sec-title-row">
+      <div class="sec-title">Linha de Balanço</div>
+      <button class="btn-instrucoes" id="btnInstrucoesChart">Ver instruções ▾</button>
+    </div>
+    <div class="sec-sub" id="chartSub">Escopo: (carregando)</div>
+
+    <div class="note note-collapsible" id="notePanelChart">
+      <strong>Como usar:</strong> passe o mouse numa barra pra ver predecessora/sucessora e o período.
+      Clique num serviço na legenda pra destacar só ele. Barras com contorno vermelho estão no
+      <strong>caminho crítico</strong>. Use o filtro de datas ou <kbd>Ctrl</kbd> + roda do mouse pra dar zoom.
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-title">Fluxo de Produção: Pavimentos × Calendário</span>
+        <div class="chart-toolbar">
+          <div class="date-filter">
+            <span>De</span>
+            <input type="date" id="filtroIni">
+            <span>até</span>
+            <input type="date" id="filtroFim">
+            <button id="btnLimparFiltroData">limpar</button>
+          </div>
+          <div class="tsep"></div>
+          <button class="tbtn" id="btnZoomOut" title="Diminuir zoom">−</button>
+          <span class="zoom-pct" id="zoomPct">100%</span>
+          <button class="tbtn" id="btnZoomIn" title="Aumentar zoom">+</button>
+          <button class="tbtn" id="btnZoomReset" title="Voltar ao zoom padrão" style="width:auto;padding:0 10px;font-size:10.5px">Padrão</button>
+          <button class="tbtn" id="btnVerTudo" title="Ajustar pra ver a Linha de Balanço inteira, sem rolagem" style="width:auto;padding:0 10px;font-size:10.5px">⛶ Ver tudo</button>
+          <div class="tsep"></div>
+          <button class="tbtn" id="btnAbrirConfigGeral" title="Ordem, cores, marcos e feriados" style="width:auto;padding:0 10px;font-size:10.5px">⚙ Configurações</button>
+          <button class="btn-export" onclick="alert('Na ferramenta real, isso gera um arquivo .xlsx de verdade com as mesmas cores e datas, pronto pra abrir no Excel. (Ainda não implementado nesta fase.)')">⬇ Exportar Excel</button>
+        </div>
+      </div>
+
+      <div class="lob-body">
+        <div class="lob-grid">
+          <div class="lob-corner">Pavimento</div>
+          <div class="lob-header-wrap"><canvas id="headerCanvas"></canvas></div>
+          <div class="lob-sidebar-wrap" id="sidebarWrap"><canvas id="sidebarCanvas"></canvas></div>
+          <div class="lob-main-wrap" id="mainWrap"><canvas id="mainCanvas"></canvas></div>
+        </div>
+        <div class="pkg-side">
+          <div class="pkg-side-head">Serviços (clique pra filtrar)</div>
+          <div id="pkgList"></div>
+          <button class="pkg-clear" id="btnLimparPkg">Limpar seleção</button>
+          <div class="pkg-side-head" style="margin-top:8px">Marcos</div>
+          <div id="milestoneList" style="padding:0 12px 12px;font-size:11.5px;color:var(--muted);line-height:1.9">Nenhum marco definido ainda.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-actions">
+      <button class="btn btn-outline" onclick="voltarParaClassificacao()">← Voltar pra Classificação</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════ TELA 5: CONFIGURAÇÃO DE PACOTES (Serviços) ═══════════════ -->
+  <div id="pkg-config-screen" class="hidden">
+    <div class="sec-title-row">
+      <div class="sec-title">Configuração de Pacotes</div>
+      <button class="btn-instrucoes" id="btnInstrucoesPkgCfg">Ver instruções ▾</button>
+    </div>
+    <div class="sec-sub">Cor, ordem e visibilidade de cada serviço no gráfico da Linha de Balanço. Tudo se aplica na hora, ao voltar já está pronto.</div>
+
+    <div class="note note-collapsible" id="notePanelPkgCfg">
+      <strong>Como usar:</strong> arraste os itens pra reordenar (marque vários com o checkbox + shift pra mover em grupo, igual na tela de pavimentos),
+      clique no quadrado colorido pra trocar a cor, e desmarque "Visível" pra tirar um serviço do gráfico sem precisar reclassificar nada.
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-title">Serviços do Escopo</span>
+        <span class="panel-count" id="pkgCfgCount"></span>
+        <div style="display:flex;gap:8px;margin-left:auto">
+          <button class="quick-sort-btn" id="btnPkgCfgAZ">A → Z</button>
+          <button class="quick-sort-btn" id="btnPkgCfgZA">Z → A</button>
+        </div>
+      </div>
+      <div class="selection-inline hidden" id="pkgCfgSelectionBar" style="padding:8px 16px;border-bottom:1px solid var(--border)">
+        <span id="pkgCfgSelectionCount"></span>
+        <button class="sel-btn" id="btnPkgCfgOcultarSel">Ocultar selecionados</button>
+        <button class="sel-btn" id="btnPkgCfgMostrarSel">Mostrar selecionados</button>
+        <button class="sel-clear-x" id="btnPkgCfgLimparSelecao" title="Limpar seleção">✕</button>
+      </div>
+      <div class="tbl-scroll">
+        <ul id="pkgCfgList" class="reorder-list" style="margin:0;border:none;border-radius:0"></ul>
+      </div>
+    </div>
+
+    <div class="footer-actions">
+      <button class="btn btn-outline" onclick="voltarParaGraficoDeConfig()">← Voltar pro Gráfico</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════ TELA 6: CONFIGURAÇÃO GERAL (hub) ═══════════════ -->
+  <div id="config-screen" class="hidden">
+    <div class="sec-title-row">
+      <div class="sec-title">Configuração Geral</div>
+    </div>
+    <div class="sec-sub">Ajustes da Linha de Balanço: ordem dos pavimentos, cores dos serviços, marcos e feriados.</div>
+
+    <div class="escopo-grid">
+      <div class="escopo-card" id="cardCfgPavimentos">
+        <div class="escopo-card-icon">↕️</div>
+        <div class="escopo-card-name">Ordem de Pavimentos</div>
+        <div class="escopo-card-count">Arraste pra definir a ordem das linhas do gráfico</div>
+      </div>
+      <div class="escopo-card" id="cardCfgCores">
+        <div class="escopo-card-icon">🎨</div>
+        <div class="escopo-card-name">Cores e Serviços</div>
+        <div class="escopo-card-count">Cor, ordem e visibilidade de cada serviço</div>
+      </div>
+      <div class="escopo-card" id="cardCfgMarcos">
+        <div class="escopo-card-icon">🚩</div>
+        <div class="escopo-card-name">Marcos</div>
+        <div class="escopo-card-count">Datas importantes marcadas no gráfico</div>
+      </div>
+      <div class="escopo-card" id="cardCfgFeriados">
+        <div class="escopo-card-icon">📅</div>
+        <div class="escopo-card-name">Feriados</div>
+        <div class="escopo-card-count">Dias não úteis destacados no calendário</div>
+      </div>
+    </div>
+
+    <div class="footer-actions">
+      <button class="btn btn-outline" onclick="voltarDoConfigGeral()">← Voltar pro Gráfico</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════ TELA 7: MARCOS ═══════════════ -->
+  <div id="marcos-screen" class="hidden">
+    <div class="sec-title-row">
+      <div class="sec-title">Marcos</div>
+    </div>
+    <div class="sec-sub">Datas importantes marcadas como linha vertical no gráfico (ex.: "Fim da Estrutura"). Muda na hora, sem passo de aplicar.</div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-title">Marcos do Escopo</span>
+        <span class="panel-count" id="marcosCfgCount"></span>
+        <button class="quick-sort-btn" id="btnAddMarco" style="margin-left:auto">+ Adicionar marco</button>
+      </div>
+      <div class="tbl-scroll">
+        <ul id="marcosCfgList" class="reorder-list" style="margin:0;border:none;border-radius:0"></ul>
+      </div>
+    </div>
+
+    <div class="footer-actions">
+      <button class="btn btn-outline" onclick="voltarDoMarcosCfg()">← Voltar pro Gráfico</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════ TELA 8: FERIADOS ═══════════════ -->
+  <div id="feriados-screen" class="hidden">
+    <div class="sec-title-row">
+      <div class="sec-title">Feriados</div>
+    </div>
+    <div class="sec-sub">Dias não úteis, destacados em laranja no calendário do gráfico. Muda na hora, sem passo de aplicar.</div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <span class="panel-title">Feriados do Escopo</span>
+        <span class="panel-count" id="feriadosCfgCount"></span>
+        <button class="quick-sort-btn" id="btnAddFeriado" style="margin-left:auto">+ Adicionar feriado</button>
+      </div>
+      <div class="tbl-scroll">
+        <ul id="feriadosCfgList" class="reorder-list" style="margin:0;border:none;border-radius:0"></ul>
+      </div>
+    </div>
+
+    <div class="footer-actions">
+      <button class="btn btn-outline" onclick="voltarDoFeriadosCfg()">← Voltar pro Gráfico</button>
+    </div>
+  </div>
+
+  <div id="infoPop" class="info-pop"></div>
+  <div id="modalOverlay" class="modal-overlay hidden"></div>
+  <div id="lobTooltip"></div>
+
+  <div id="reorderModal" class="modal-overlay hidden">
+    <div class="modal-box" style="max-width:400px;text-align:left">
+      <div class="ttl">Reordenar Pavimentos</div>
+      <div class="dsc">Arraste os itens pra reordenar livremente, ou use os atalhos abaixo. Nada muda no gráfico até clicar em Aplicar.</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <button class="quick-sort-btn" id="btnOrdemAZ">A → Z</button>
+        <button class="quick-sort-btn" id="btnOrdemZA">Z → A</button>
+      </div>
+      <ul id="reorderList" class="reorder-list"></ul>
+      <div class="modal-actions">
+        <button class="secondary" id="btnCancelarReordenar">Cancelar</button>
+        <button class="primary" id="btnSalvarReordenar">Aplicar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="error-screen" class="hidden">
+    <div class="panel"><div class="empty">
+      <div style="font-size:40px;margin-bottom:12px">⚠️</div>
+      <div style="font-family:'Sora',sans-serif;font-weight:700;font-size:15px;margin-bottom:6px" id="errMsg"></div>
+      <button class="btn btn-outline" style="margin-top:16px" onclick="location.reload()">← Tentar de novo</button>
+    </div></div>
+  </div>
+
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+// ════════════════════════════════ XML PARSER (estendido: predecessoras + crítico) ═══
+function child(el, tag) {
+  for (const ch of el.childNodes) {
+    if (ch.nodeType === 1 && ch.localName === tag) return ch.textContent.trim();
+  }
+  return '';
+}
+function childEl(el, tag) {
+  for (const ch of el.childNodes) {
+    if (ch.nodeType === 1 && ch.localName === tag) return ch;
+  }
+  return null;
+}
+function childrenEls(el, tag) {
+  const out = [];
+  for (const ch of el.childNodes) {
+    if (ch.nodeType === 1 && ch.localName === tag) out.push(ch);
+  }
+  return out;
+}
+function pd(s) { return (s && s !== 'NA') ? new Date(s) : null; }
+
+function parseMpp(xml) {
+  const doc = new DOMParser().parseFromString(xml, 'text/xml');
+  const root = doc.documentElement;
+  if (root.nodeName === 'parsererror' || root.querySelector('parsererror')) {
+    throw new Error('XML inválido ou corrompido.');
+  }
+  const tasksEl = childEl(root, 'Tasks');
+  if (!tasksEl) throw new Error('Nenhuma tarefa encontrada no XML (estrutura inesperada).');
+
+  const tasks = [];
+  for (const ch of tasksEl.childNodes) {
+    if (ch.nodeType !== 1 || ch.localName !== 'Task') continue;
+    const uid = child(ch, 'UID');
+    if (uid === '0') continue; // raiz do projeto
+
+    const predecessors = childrenEls(ch, 'PredecessorLink').map(pl => ({
+      uid: child(pl, 'PredecessorUID'),
+      type: parseInt(child(pl, 'Type') || '1'), // 0=FF 1=FS 2=SF 3=SS
+      lag: parseInt(child(pl, 'LinkLag') || '0')
+    }));
+
+    tasks.push({
+      uid,
+      id:           child(ch, 'ID'),
+      name:         child(ch, 'Name'),
+      wbs:          child(ch, 'WBS'),
+      outlineLevel: parseInt(child(ch, 'OutlineLevel') || '1'),
+      isSummary:    child(ch, 'Summary') === '1',
+      isMilestone:  child(ch, 'Milestone') === '1',
+      critical:     child(ch, 'Critical') === '1',
+      start:        pd(child(ch, 'Start')),
+      finish:       pd(child(ch, 'Finish')),
+      actualStart:  pd(child(ch, 'ActualStart')),
+      pct:          parseInt(child(ch, 'PercentComplete') || '0'),
+      predecessors
+    });
+  }
+  return tasks;
+}
+
+// ════════════════════════════════ HIERARQUIA ═══════════════════════════════════════
+function buildParentMap(tasks) {
+  const parentMap = new Map();
+  const stack = [];
+  for (const t of tasks) {
+    while (stack.length && stack[stack.length - 1].level >= t.outlineLevel) stack.pop();
+    if (stack.length) parentMap.set(t.uid, stack[stack.length - 1].uid);
+    stack.push({ level: t.outlineLevel, uid: t.uid });
+  }
+  return parentMap;
+}
+
+// ════════════════════════════════ ESCOPOS (frentes independentes do cronograma) ═════
+// Um mesmo XML pode ter várias frentes (torre, hall, fundação...) sem relação entre si.
+// Descemos a partir do nível mínimo até achar o primeiro nível com 2+ grupos, esses
+// grupos viram os "escopos" que o usuário escolhe antes de rodar a detecção.
+function acharEscopos(tasks) {
+  let nivel = Math.min(...tasks.map(t => t.outlineLevel));
+  let grupos = tasks.filter(t => t.outlineLevel === nivel);
+  while (grupos.length === 1) {
+    const proxNivel = nivel + 1;
+    const proxGrupos = tasks.filter(t => t.outlineLevel === proxNivel);
+    if (!proxGrupos.length) break;
+    nivel = proxNivel;
+    grupos = proxGrupos;
+  }
+  return { nivel, escopos: grupos };
+}
+
+// Extrai o subtree de um UID (tasks estão em ordem de documento = ordem de WBS,
+// entao um filho de nivel > pai aparece logo depois dele ate encontrar algo <= nivel do pai)
+function getSubtree(tasks, rootUid) {
+  const idx = tasks.findIndex(t => t.uid === rootUid);
+  if (idx === -1) return [];
+  const rootLevel = tasks[idx].outlineLevel;
+  const out = [];
+  for (let i = idx + 1; i < tasks.length; i++) {
+    if (tasks[i].outlineLevel <= rootLevel) break;
+    out.push(tasks[i]);
+  }
+  return out;
+}
+
+// ════════════════════════════════ HEURÍSTICA DE DETECÇÃO AUTOMÁTICA ════════════════
+// Testa, em CADA nível presente na árvore, se os nomes dos filhos se repetem entre os
+// grupos daquele nível, e o nível com maior repetição vira o candidato a "Serviço"
+// (pai) / "Pavimento" (filho). Não assume que o padrão está logo abaixo da raiz,
+// porque cronogramas reais costumam ter um único task-resumo do projeto no topo.
+function pontuarNivel(tasks, parentMap, nivel) {
+  const grupos = tasks.filter(t => t.outlineLevel === nivel);
+  const childrenPorGrupo = grupos.map(g => ({
+    grupo: g,
+    filhos: tasks.filter(t => parentMap.get(t.uid) === g.uid)
+  })).filter(cg => cg.filhos.length > 0);
+
+  if (childrenPorGrupo.length < 2) return { score: 0, childrenPorGrupo };
+
+  const freqNome = new Map();
+  childrenPorGrupo.forEach(cg => {
+    const nomesUnicos = new Set(cg.filhos.map(f => f.name.trim().toUpperCase()));
+    nomesUnicos.forEach(n => freqNome.set(n, (freqNome.get(n) || 0) + 1));
+  });
+
+  const total = childrenPorGrupo.length;
+  const proporcoes = childrenPorGrupo.map(cg => {
+    const nomesUnicos = [...new Set(cg.filhos.map(f => f.name.trim().toUpperCase()))];
+    const mediaRepeticao = nomesUnicos.reduce((acc, n) => acc + (freqNome.get(n) || 0), 0) / nomesUnicos.length;
+    return mediaRepeticao / total;
+  });
+  const score = proporcoes.reduce((a,b) => a+b, 0) / proporcoes.length;
+  return { score, childrenPorGrupo, proporcoes };
+}
+
+function detectarClassificacao(tasks) {
+  const parentMap = buildParentMap(tasks);
+  const niveis = [...new Set(tasks.map(t => t.outlineLevel))].sort((a,b) => a-b);
+  const niveisPai = niveis.slice(0, -1); // o nivel mais profundo nunca tem filhos
+
+  let melhor = { nivel: null, score: 0 };
+  niveisPai.forEach(nv => {
+    const r = pontuarNivel(tasks, parentMap, nv);
+    if (r.score > melhor.score) melhor = { nivel: nv, score: r.score, ...r };
+  });
+
+  const classificacao = new Map(); // uid -> {tipo, confianca}
+  const LIMIAR = 0.5;
+
+  if (!melhor.nivel || melhor.score < LIMIAR) {
+    // Nenhum nivel mostrou repeticao forte o suficiente, sinaliza para revisao manual total
+    tasks.forEach(t => classificacao.set(t.uid, { tipo: 'ignorar', confianca: 'baixa' }));
+    return { classificacao, padraoEncontrado: false, nivelDetectado: null };
+  }
+
+  melhor.childrenPorGrupo.forEach((cg, i) => {
+    const ok = melhor.proporcoes[i] >= LIMIAR;
+    if (ok) {
+      classificacao.set(cg.grupo.uid, { tipo: 'servico', confianca: 'alta' });
+      cg.filhos.forEach(f => classificacao.set(f.uid, { tipo: 'pavimento', confianca: 'alta' }));
+    } else {
+      classificacao.set(cg.grupo.uid, { tipo: 'pavimento', confianca: 'baixa', sugestaoCorreta: 'servico' });
+      cg.filhos.forEach(f => classificacao.set(f.uid, { tipo: 'servico', confianca: 'baixa', sugestaoCorreta: 'pavimento' }));
+    }
+  });
+
+  // Demais tarefas (fora do nivel detectado, ou grupos sem filhos) ficam como Ignorar/baixa
+  tasks.forEach(t => {
+    if (!classificacao.has(t.uid)) classificacao.set(t.uid, { tipo: 'ignorar', confianca: 'baixa' });
+  });
+
+  return { classificacao, padraoEncontrado: true, nivelDetectado: melhor.nivel, score: melhor.score };
+}
+
+// ════════════════════════════════ UPLOAD / PARSE ═══════════════════════════════════
+let S = { tasks: [], classificacao: null, selecionados: new Set(), ordemChaves: [] };
+
+function dropXml(ev) {
+  ev.preventDefault();
+  $('z-xml').classList.remove('over');
+  const f = ev.dataTransfer.files[0];
+  if (f) loadXml(f);
+}
+
+function loadXml(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const tasks = parseMpp(e.target.result);
+      if (!tasks.length) throw new Error('O XML foi lido, mas nenhuma tarefa foi encontrada.');
+      S.tasks = tasks;
+      S.escopoInfo = acharEscopos(tasks);
+
+      $('z-xml').classList.add('done');
+      $('xml-lbl').textContent = 'Cronograma carregado ✓';
+      $('xml-fn').textContent = file.name;
+
+      setTimeout(() => showScopeScreen(), 350);
+    } catch (err) {
+      showError(err.message);
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function showError(msg) {
+  $('upload-screen').classList.add('hidden');
+  $('scope-screen').classList.add('hidden');
+  $('review-screen').classList.add('hidden');
+  $('error-screen').classList.remove('hidden');
+  document.body.classList.remove('app-locked');
+  $('errMsg').textContent = msg;
+}
+
+// ════════════════════════════════ TELA DE ESCOPO ═══════════════════════════════════
+function showScopeScreen() {
+  $('upload-screen').classList.add('hidden');
+  $('review-screen').classList.add('hidden');
+  $('scope-screen').classList.remove('hidden');
+  document.body.classList.remove('app-locked');
+
+  const { escopos } = S.escopoInfo;
+  $('escopoGrid').innerHTML = escopos.map(g => {
+    const sub = getSubtree(S.tasks, g.uid);
+    const preview = pontuarMelhorNivel(sub);
+    const badge = preview.padraoEncontrado
+      ? `<span class="escopo-card-badge ok">✓ padrão detectado</span>`
+      : `<span class="escopo-card-badge warn">⚠ revisão manual</span>`;
+    return `<div class="escopo-card" data-uid="${g.uid}">
+      <div class="escopo-card-icon">📦</div>
+      <div class="escopo-card-name">${escHtml(g.name)}</div>
+      <div class="escopo-card-count">${sub.length} tarefa${sub.length !== 1 ? 's' : ''}</div>
+      ${badge}
+    </div>`;
+  }).join('');
+
+  document.querySelectorAll('.escopo-card').forEach(el => {
+    el.addEventListener('click', () => selecionarEscopo(el.dataset.uid));
+  });
+}
+
+// Roda a heuristica so pra saber se DA pra detectar padrao (usado no preview dos cards)
+function pontuarMelhorNivel(subtreeTasks) {
+  if (!subtreeTasks.length) return { padraoEncontrado: false };
+  const det = detectarClassificacao(subtreeTasks);
+  return { padraoEncontrado: det.padraoEncontrado };
+}
+
+function selecionarEscopo(uid) {
+  const escopo = S.escopoInfo.escopos.find(g => g.uid === uid);
+  S.escopoAtual = escopo;
+  S.subtreeTasks = getSubtree(S.tasks, uid);
+
+  const det = detectarClassificacao(S.subtreeTasks);
+  S.classificacao = det.classificacao;
+  S.padraoEncontrado = det.padraoEncontrado;
+  S.nivelDetectado = det.nivelDetectado;
+  S.score = det.score;
+
+  $('reviewSub').textContent = `Escopo: ${escopo.name}. Conferimos a árvore e sugerimos automaticamente o que é Serviço e o que é Pavimento`;
+  showReview();
+}
+
+// ════════════════════════════════ TELA DE REVISÃO (agrupada por nome único) ════════
+// Classificar 500+ tarefas uma a uma é inviável, e "04PAV" se repete várias vezes
+// (uma por serviço), agrupamos por nome: o usuário classifica o nome uma vez e isso
+// se aplica a todas as tarefas que têm aquele nome dentro do escopo.
+const LABELS = { servico: 'Serviço', pavimento: 'Pavimento', ignorar: 'Ignorar' };
+const BADGE_CLASS = { servico: 'b-serv', pavimento: 'b-pav', ignorar: 'b-ign' };
+
+// Agrupa a classificação (por UID) em entradas por nome único (chave = nome em maiúsculo/trim)
+function agruparPorNome(tasks, classificacaoPorUid) {
+  const porNome = new Map(); // key -> { nome, tipo, confianca, uids:[], niveis:Set }
+  tasks.forEach(t => {
+    const key = t.name.trim().toUpperCase();
+    const cls = classificacaoPorUid.get(t.uid);
+    if (!porNome.has(key)) {
+      porNome.set(key, { nome: t.name.trim(), tipo: cls.tipo, confianca: cls.confianca, uids: [], niveis: new Set() });
+    }
+    const entry = porNome.get(key);
+    entry.uids.push(t.uid);
+    entry.niveis.add(t.outlineLevel);
+  });
+  return porNome;
+}
+
+function showReview() {
+  $('upload-screen').classList.add('hidden');
+  $('scope-screen').classList.add('hidden');
+  $('review-screen').classList.remove('hidden');
+  document.body.classList.add('app-locked');
+  $('notePanel').classList.remove('open');
+  $('btnInstrucoes').textContent = 'Ver instruções ▾';
+
+  const banner = $('detectBanner');
+  if (!S.padraoEncontrado) {
+    banner.classList.add('note-warn');
+    banner.style.display = 'block';
+    banner.innerHTML = `<strong>⚠ Não conseguimos detectar um padrão de repetição forte neste cronograma.</strong>
+      Isso costuma acontecer quando a estrutura não segue o formato Serviço → Pavimento repetido em vários grupos
+      (ex.: um cronograma organizado por área/local, com fases específicas de cada uma). Todos os nomes foram
+      marcados como <strong>Ignorar</strong> por padrão. Revise manualmente o que for relevante para a Linha de Balanço.`;
+  } else {
+    banner.style.display = 'none';
+  }
+
+  S.porNome = agruparPorNome(S.subtreeTasks, S.classificacao);
+  S.porNome.forEach(entry => { entry.aprovado = false; entry.aprovadoSeq = null; });
+  S.taskByUid = new Map(S.subtreeTasks.map(t => [t.uid, t]));
+  S.parentMap = buildParentMap(S.subtreeTasks);
+  S.selecionados = new Set();
+  S.ultimoClicado = null;
+  S.focoKey = null;
+  S.seqAprovacao = 0;
+  S.kanbanOrdem = 'alfabetica';
+  S.sortCol = 'nome';
+  S.sortDir = 'asc';
+  S.legendaExpandida = false;
+  S.corServicoMap = new Map();
+  S.ordemChaves = [];
+
+  $('searchInput').value = '';
+  render();
+  mostrarPopupInicial();
+}
+
+function badgeCellHtml(entry) {
+  const reviewTag = entry.confianca === 'baixa' ? `<span class="review-tag">⚠ revisar</span>` : '';
+  return `<span class="badge ${BADGE_CLASS[entry.tipo]}">${LABELS[entry.tipo]}</span>${reviewTag}`;
+}
+
+// ════════════════════════════════ ORDENAÇÃO DA TABELA ══════════════════════════════
+const SORT_DEFAULT_DIR = { nome: 'asc', count: 'desc', tipo: 'asc' };
+function setSort(col) {
+  if (S.sortCol === col) S.sortDir = S.sortDir === 'asc' ? 'desc' : 'asc';
+  else { S.sortCol = col; S.sortDir = SORT_DEFAULT_DIR[col]; }
+  render();
+}
+function ordenarPendentes(pendentes) {
+  const mult = S.sortDir === 'asc' ? 1 : -1;
+  return pendentes.sort((a, b) => {
+    if (S.sortCol === 'count') return (a.entry.uids.length - b.entry.uids.length) * mult;
+    if (S.sortCol === 'tipo') return LABELS[a.entry.tipo].localeCompare(LABELS[b.entry.tipo], 'pt-BR') * mult
+      || a.entry.nome.localeCompare(b.entry.nome, 'pt-BR');
+    return a.entry.nome.localeCompare(b.entry.nome, 'pt-BR') * mult;
+  });
+}
+function atualizarSortArrows() {
+  ['nome', 'count', 'tipo'].forEach(col => {
+    $('arrow-' + col).textContent = S.sortCol === col ? (S.sortDir === 'asc' ? '▲' : '▼') : '';
+  });
+}
+document.querySelectorAll('th.sortable').forEach(th => {
+  th.addEventListener('click', () => setSort(th.dataset.col));
+});
+
+// ════════════════════════════════ RENDER PRINCIPAL ══════════════════════════════════
+function render() {
+  const pendentes = ordenarPendentes(
+    [...S.porNome.entries()].filter(([, entry]) => !entry.aprovado).map(([key, entry]) => ({ key, entry }))
+  );
+  atualizarSortArrows();
+  S.ordemChaves = pendentes.map(({ key }) => key);
+
+  const normal = $('normalState'), done = $('doneState');
+  if (pendentes.length === 0) {
+    normal.classList.add('hidden');
+    done.classList.remove('hidden');
+    const vals = [...S.porNome.values()];
+    const p = vals.filter(v => v.tipo === 'pavimento').length;
+    const s = vals.filter(v => v.tipo === 'servico').length;
+    const ig = vals.filter(v => v.tipo === 'ignorar').length;
+    $('doneStats').textContent = `${p} pavimentos · ${s} serviços · ${ig} ignorados`;
+  } else {
+    normal.classList.remove('hidden');
+    done.classList.add('hidden');
+    renderTabela(pendentes);
+  }
+
+  atualizarMiniLB();
+  atualizarKanban();
+}
+
+function renderTabela(pendentes) {
+  const termo = $('searchInput').value.trim().toUpperCase();
+  const tbody = $('tbody');
+
+  tbody.innerHTML = pendentes.map(({ key, entry }) => {
+    const visivel = !termo || entry.nome.toUpperCase().includes(termo);
+    const marcado = S.selecionados.has(key);
+    return `<tr data-key="${escHtml(key)}" class="${visivel ? '' : 'hidden-row'} ${marcado ? 'row-selected' : ''}">
+      <td class="cell-check"><input type="checkbox" class="row-check" data-key="${escHtml(key)}" ${marcado ? 'checked' : ''}></td>
+      <td><button class="info-btn" data-key="${escHtml(key)}" title="Onde aparece no cronograma">i</button></td>
+      <td>${escHtml(entry.nome)}</td>
+      <td style="text-align:center;color:var(--muted)">${entry.uids.length}×</td>
+      <td class="cell-badge">${badgeCellHtml(entry)}</td>
+    </tr>`;
+  }).join('');
+
+  const algumVisivel = linhasVisiveis().length > 0;
+  $('emptyMsg').classList.toggle('hidden', algumVisivel);
+
+  $('panelCount').textContent = `${pendentes.length} pendente${pendentes.length!==1?'s':''} · ${S.subtreeTasks.length} tarefas no total`;
+
+  atualizarFilterBar();
+  attachRowEvents();
+  attachInfoButtons();
+  atualizarSelectionBar();
+}
+
+function linhasVisiveis() {
+  return [...document.querySelectorAll('#tbody tr')].filter(tr => !tr.classList.contains('hidden-row'));
+}
+
+// ════════════════════════════════ FILTRO POR TEXTO ═════════════════════════════════
+function atualizarFilterBar() {
+  const termo = $('searchInput').value.trim();
+  const visiveis = linhasVisiveis();
+  const bar = $('filterBar');
+  if (termo && visiveis.length) {
+    bar.classList.add('show');
+    $('filterCount').textContent = `${visiveis.length} encontrado${visiveis.length!==1?'s':''} para "${termo}"`;
+  } else {
+    bar.classList.remove('show');
+  }
+}
+$('searchInput').addEventListener('input', render);
+document.querySelectorAll('#filterBar button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    linhasVisiveis().forEach(tr => classificar(tr.dataset.key, btn.dataset.tipo));
+    render();
+  });
+});
+
+// ════════════════════════════════ CLASSIFICAR / APROVAR (propaga p/ todos os UIDs) ══
+function classificar(key, tipo) {
+  const entry = S.porNome.get(key);
+  entry.tipo = tipo;
+  entry.uids.forEach(uid => { S.classificacao.get(uid).tipo = tipo; });
+  entry.aprovado = true;
+  entry.aprovadoSeq = ++S.seqAprovacao;
+}
+
+// ════════════════════════════════ FOCO + ATALHO DE TECLADO ═════════════════════════
+function marcarFoco(key) {
+  document.querySelectorAll('#tbody tr').forEach(tr => tr.classList.remove('focused'));
+  S.focoKey = key;
+  const tr = document.querySelector(`#tbody tr[data-key="${CSS.escape(key)}"]`);
+  if (tr) { tr.classList.add('focused'); tr.scrollIntoView({ block: 'nearest' }); }
+}
+
+document.addEventListener('keydown', ev => {
+  if ($('review-screen').classList.contains('hidden')) return;
+  const tipoTecla = { s: 'servico', p: 'pavimento', i: 'ignorar' }[ev.key.toLowerCase()];
+
+  if (tipoTecla) {
+    if (S.selecionados.size > 0) {
+      [...S.selecionados].forEach(key => classificar(key, tipoTecla));
+      S.selecionados.clear();
+      render();
+      ev.preventDefault();
+      return;
+    }
+    if (S.focoKey === null) return;
+    const visiveis = linhasVisiveis();
+    const posAtual = visiveis.findIndex(tr => tr.dataset.key === S.focoKey);
+    if (posAtual === -1) return;
+    classificar(S.focoKey, tipoTecla);
+    render();
+    const novasVisiveis = linhasVisiveis();
+    const proximo = novasVisiveis[Math.min(posAtual, novasVisiveis.length - 1)];
+    if (proximo) marcarFoco(proximo.dataset.key);
+    ev.preventDefault();
+    return;
+  }
+
+  if (S.focoKey === null) return;
+  const visiveis = linhasVisiveis();
+  const posAtual = visiveis.findIndex(tr => tr.dataset.key === S.focoKey);
+  if (posAtual === -1) return;
+  if (ev.key === 'ArrowDown') {
+    const prox = visiveis[posAtual + 1];
+    if (prox) marcarFoco(prox.dataset.key);
+    ev.preventDefault();
+  } else if (ev.key === 'ArrowUp') {
+    const ant = visiveis[posAtual - 1];
+    if (ant) marcarFoco(ant.dataset.key);
+    ev.preventDefault();
+  }
+});
+
+// ════════════════════════════════ SELEÇÃO: checkbox + shift-clique ═════════════════
+function toggleSelecao(key, marcar) {
+  if (marcar) S.selecionados.add(key); else S.selecionados.delete(key);
+  const tr = document.querySelector(`#tbody tr[data-key="${CSS.escape(key)}"]`);
+  if (tr) {
+    tr.classList.toggle('row-selected', marcar);
+    const cb = tr.querySelector('.row-check');
+    if (cb) cb.checked = marcar;
+  }
+}
+
+function limparSelecao() {
+  S.selecionados.clear();
+  document.querySelectorAll('#tbody tr.row-selected').forEach(tr => tr.classList.remove('row-selected'));
+  document.querySelectorAll('.row-check').forEach(cb => cb.checked = false);
+  $('checkAll').checked = false;
+  atualizarSelectionBar();
+}
+
+function atualizarSelectionBar() {
+  const n = S.selecionados.size;
+  $('selectionBar').classList.toggle('hidden', n === 0);
+  $('kbdHint').classList.toggle('hidden', n > 0);
+  $('selectionCount').innerHTML = `<strong>${n}</strong> selecionado${n !== 1 ? 's' : ''}`;
+}
+
+let arrastando = false, marcarAoArrastar = true;
+
+function attachRowEvents() {
+  document.querySelectorAll('#tbody tr').forEach(tr => {
+    const key = tr.dataset.key;
+
+    tr.addEventListener('click', ev => {
+      if (ev.target.closest('.row-check') || ev.target.closest('.info-btn')) return;
+      marcarFoco(key);
+    });
+
+    tr.querySelector('.row-check').addEventListener('click', ev => {
+      const cb = ev.target;
+      if (ev.shiftKey && S.ultimoClicado) {
+        const posIni = S.ordemChaves.indexOf(S.ultimoClicado);
+        const posAtual = S.ordemChaves.indexOf(key);
+        const [ini, fim] = posIni <= posAtual ? [posIni, posAtual] : [posAtual, posIni];
+        for (let i = ini; i <= fim; i++) toggleSelecao(S.ordemChaves[i], cb.checked);
+      } else {
+        toggleSelecao(key, cb.checked);
+      }
+      S.ultimoClicado = key;
+      atualizarSelectionBar();
+    });
+
+    tr.addEventListener('mousedown', ev => {
+      if (ev.target.closest('.row-check') || ev.target.closest('.info-btn')) return;
+      arrastando = true;
+      S.ultimoClicado = key;
+      marcarAoArrastar = !S.selecionados.has(key);
+      toggleSelecao(key, marcarAoArrastar);
+      atualizarSelectionBar();
+    });
+
+    tr.addEventListener('mouseenter', () => {
+      if (!arrastando) return;
+      const posIni = S.ordemChaves.indexOf(S.ultimoClicado);
+      const posAtual = S.ordemChaves.indexOf(key);
+      if (posIni === -1 || posAtual === -1) return;
+      const [ini, fim] = posIni <= posAtual ? [posIni, posAtual] : [posAtual, posIni];
+      for (let i = ini; i <= fim; i++) toggleSelecao(S.ordemChaves[i], marcarAoArrastar);
+      atualizarSelectionBar();
+    });
+  });
+}
+document.addEventListener('mouseup', () => { arrastando = false; });
+
+$('checkAll').addEventListener('change', ev => {
+  linhasVisiveis().forEach(tr => toggleSelecao(tr.dataset.key, ev.target.checked));
+  atualizarSelectionBar();
+});
+$('btnLimparSelecao').addEventListener('click', limparSelecao);
+document.querySelectorAll('.sel-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    S.selecionados.forEach(key => classificar(key, btn.dataset.tipo));
+    S.selecionados.clear();
+    render();
+  });
+});
+
+// ════════════════════════════════ BOTÃO "i": onde aparece no cronograma real ═══════
+function getCaminho(uid) {
+  const nomes = [];
+  let cur = S.parentMap.get(uid);
+  while (cur) {
+    const t = S.taskByUid.get(cur);
+    if (t) nomes.unshift(t.name.trim());
+    cur = S.parentMap.get(cur);
+  }
+  return nomes;
+}
+
+function attachInfoButtons() {
+  document.querySelectorAll('.info-btn').forEach(btn => {
+    btn.addEventListener('click', ev => {
+      ev.stopPropagation();
+      const entry = S.porNome.get(btn.dataset.key);
+      const linhas = entry.uids.map(uid => {
+        const t = S.taskByUid.get(uid);
+        const caminho = [S.escopoAtual.name, ...getCaminho(uid), t.name.trim()].join(' › ');
+        return { ref: t.wbs || t.id, caminho };
+      }).sort((a, b) => a.ref.localeCompare(b.ref, undefined, { numeric: true }));
+
+      const pop = $('infoPop');
+      const texto = linhas.map(l => `${l.ref}. ${l.caminho}`).join('\n');
+      pop.innerHTML = linhas.map(l => `<div class="linha-cron"><strong>${escHtml(l.ref)}.</strong> ${escHtml(l.caminho)}</div>`).join('')
+        + `<button class="copy-btn" id="btnCopiarLinha">📋 Copiar</button>`;
+      const rect = btn.getBoundingClientRect();
+      pop.style.left = rect.left + 'px';
+      pop.style.top = (rect.bottom + 6) + 'px';
+      pop.style.display = 'block';
+
+      $('btnCopiarLinha').addEventListener('click', () => {
+        navigator.clipboard.writeText(texto).then(() => {
+          const b = $('btnCopiarLinha');
+          b.textContent = '✓ Copiado'; b.classList.add('copied');
+          setTimeout(() => { b.textContent = '📋 Copiar'; b.classList.remove('copied'); }, 1500);
+        });
+      });
+    });
+  });
+}
+document.addEventListener('click', ev => {
+  if (!ev.target.closest('.info-btn') && !ev.target.closest('#infoPop')) {
+    $('infoPop').style.display = 'none';
+  }
+});
+
+// ════════════════════════════════ MINI LINHA DE BALANÇO (preview ao vivo) ══════════
+const PALETA_MINILB = ['#0f9b6e','#d97706','#1A6EE8','#7c3aed','#d63a3a','#0e7c72','#c026d3','#ea580c','#0891b2','#be185d','#65a30d','#9333ea','#b45309','#0d9488','#dc2626','#4338ca'];
+function corDoServico(nome) {
+  if (!S.corServicoMap.has(nome)) S.corServicoMap.set(nome, PALETA_MINILB[S.corServicoMap.size % PALETA_MINILB.length]);
+  return S.corServicoMap.get(nome);
+}
+const MAX_LEGENDA_VISIVEL = 9;
+
+function atualizarMiniLB() {
+  // Preview reflete só o que já foi APROVADO (Kanban). Enquanto está na tabela de
+  // revisão é apenas uma sugestão, ainda não vira estrutura da Linha de Balanço.
+  const entradas = [...S.porNome.values()].filter(e => e.aprovado);
+  const pavimentosClassificados = entradas.filter(e => e.tipo === 'pavimento');
+  const servicosClassificados = entradas.filter(e => e.tipo === 'servico');
+
+  $('minilbSub').textContent =
+    `${pavimentosClassificados.length} pavimento${pavimentosClassificados.length!==1?'s':''} · ${servicosClassificados.length} serviço${servicosClassificados.length!==1?'s':''}`;
+
+  const body = $('minilbBody');
+  if (!pavimentosClassificados.length && !servicosClassificados.length) {
+    body.innerHTML = `<div class="minilb-empty">Aprove alguns nomes na tabela (viram Kanban) pra ver a estrutura se formando aqui.</div>`;
+    return;
+  }
+
+  const numPav = pavimentosClassificados.length || 1;
+  const numServ = servicosClassificados.length || 1;
+  const largura = Math.max(60 / numServ, 10);
+  const passoLinha = numPav > 1 ? (100 - largura) / (numPav - 1 + numServ * 0.6) : 0;
+  // Vagão precisa ser mais estreito que o passo entre um serviço e o próximo NA MESMA
+  // linha, senão o vagão seguinte cobre o de trás e some o respiro (bug anterior).
+  const passoDentroLinha = 0.6 * passoLinha || largura;
+  const larguraVisual = Math.max(passoDentroLinha * 0.72, 1.5);
+
+  const linhasHtml = pavimentosClassificados.map((p, pi) => {
+    const segs = servicosClassificados.map((s, si) => {
+      const inicio = Math.min((pi + si * 0.6) * passoLinha, 100 - largura);
+      return `<div class="seg" style="background:${corDoServico(s.nome)};left:${inicio}%;width:${larguraVisual}%"></div>`;
+    }).join('');
+    return `<div class="minilb-row"><span class="lbl" title="${escHtml(p.nome)}">${escHtml(p.nome)}</span><div class="track">${segs}</div></div>`;
+  }).join('') || `<div class="minilb-empty">Nenhum pavimento aprovado ainda.</div>`;
+
+  const temMais = servicosClassificados.length > MAX_LEGENDA_VISIVEL;
+  const visiveisLegenda = S.legendaExpandida ? servicosClassificados : servicosClassificados.slice(0, MAX_LEGENDA_VISIVEL);
+  const restoLegenda = servicosClassificados.length - visiveisLegenda.length;
+
+  const chipsHtml = visiveisLegenda.map(s =>
+    `<div class="minilb-chip"><div class="sw" style="background:${corDoServico(s.nome)}"></div><span title="${escHtml(s.nome)}">${escHtml(s.nome)}</span></div>`
+  ).join('');
+
+  let rodapeLegenda = '';
+  if (!servicosClassificados.length) {
+    rodapeLegenda = `<div class="minilb-legend-empty">Nenhum ainda</div>`;
+  } else if (S.legendaExpandida && temMais) {
+    rodapeLegenda = `<div class="minilb-legend-more" id="btnLegendaToggle">▲ mostrar menos</div>`;
+  } else if (restoLegenda > 0) {
+    rodapeLegenda = `<div class="minilb-legend-more" id="btnLegendaToggle">⋯ +${restoLegenda} serviço${restoLegenda!==1?'s':''}</div>`;
+  }
+
+  body.innerHTML = `
+    <div class="minilb-rows-wrap">${linhasHtml}</div>
+    <div class="minilb-legend-col${S.legendaExpandida ? ' expanded' : ''}">
+      <div class="minilb-legend-lbl">Serviços</div>
+      ${chipsHtml}${rodapeLegenda}
+    </div>`;
+
+  const btnToggle = $('btnLegendaToggle');
+  if (btnToggle) btnToggle.addEventListener('click', () => { S.legendaExpandida = !S.legendaExpandida; atualizarMiniLB(); });
+}
+
+// ════════════════════════════════ KANBAN DOS APROVADOS ═════════════════════════════
+const KANBAN_COLS = [
+  { tipo: 'pavimento', label: 'Pavimento' },
+  { tipo: 'servico',   label: 'Serviço' },
+  { tipo: 'ignorar',   label: 'Ignorar' },
+];
+
+function atualizarKanban() {
+  const aprovados = [...S.porNome.entries()].filter(([, e]) => e.aprovado);
+  $('approvedCount').textContent = `${aprovados.length} ite${aprovados.length!==1?'ns':'m'}`;
+
+  const ordenar = (a, b) => S.kanbanOrdem === 'alfabetica'
+    ? a[1].nome.localeCompare(b[1].nome, 'pt-BR')
+    : a[1].aprovadoSeq - b[1].aprovadoSeq;
+
+  $('kanbanBoard').innerHTML = KANBAN_COLS.map(col => {
+    const itens = aprovados.filter(([, e]) => e.tipo === col.tipo).sort(ordenar);
+    const cardsHtml = itens.map(([key, e]) =>
+      `<div class="kanban-card"><span title="${escHtml(e.nome)}">${escHtml(e.nome)}</span><button class="undo" data-key="${escHtml(key)}" title="Desfazer">✕</button></div>`
+    ).join('') || `<div class="kanban-empty">Nenhum item</div>`;
+    return `<div class="kanban-col ${col.tipo}">
+      <div class="kanban-col-head">${col.label}<span class="n">${itens.length}</span></div>
+      <div class="kanban-col-body">${cardsHtml}</div>
+    </div>`;
+  }).join('');
+
+  $('kanbanBoard').querySelectorAll('.undo').forEach(btn => {
+    btn.addEventListener('click', () => { S.porNome.get(btn.dataset.key).aprovado = false; render(); });
+  });
+}
+
+document.querySelectorAll('.kanban-sort-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    S.kanbanOrdem = btn.dataset.ordem;
+    document.querySelectorAll('.kanban-sort-btn').forEach(b => b.classList.toggle('active', b === btn));
+    atualizarKanban();
+  });
+});
+
+// ════════════════════════════════ INSTRUÇÕES EXPANSÍVEIS ═══════════════════════════
+$('btnInstrucoes').addEventListener('click', () => {
+  const aberto = $('notePanel').classList.toggle('open');
+  $('btnInstrucoes').textContent = aberto ? 'Ocultar instruções ▴' : 'Ver instruções ▾';
+});
+
+// ════════════════════════════════ POPUP INICIAL (uma vez só por escopo) ════════════
+function mostrarPopupInicial() {
+  const altaConfPendentes = [...S.porNome.entries()].filter(([, e]) => !e.aprovado && e.confianca === 'alta');
+  if (!altaConfPendentes.length) return;
+
+  const overlay = $('modalOverlay');
+  overlay.innerHTML = `<div class="modal-box">
+    <div class="ico">🔵</div>
+    <div class="ttl">Classificação automática pronta</div>
+    <div class="dsc">Encontramos um padrão de repetição forte neste escopo e já classificamos
+      <strong>${altaConfPendentes.length}</strong> nomes com alta confiança. Quer aprovar todos agora e revisar só o resto?</div>
+    <div class="modal-actions">
+      <button class="secondary" id="btnRevisarManual">Revisar manualmente</button>
+      <button class="primary" id="btnAprovarTodosModal">Aprovar todos (${altaConfPendentes.length})</button>
+    </div>
+  </div>`;
+  overlay.classList.remove('hidden');
+
+  $('btnRevisarManual').addEventListener('click', () => overlay.classList.add('hidden'));
+  $('btnAprovarTodosModal').addEventListener('click', () => {
+    altaConfPendentes.forEach(([key]) => classificar(key, S.porNome.get(key).tipo));
+    overlay.classList.add('hidden');
+    render();
+  });
+}
+
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function confirmarClassificacao() {
+  $('review-screen').classList.add('hidden');
+  $('chart-screen').classList.remove('hidden');
+  initLob();
+}
+
+function voltarParaClassificacao() {
+  $('chart-screen').classList.add('hidden');
+  $('review-screen').classList.remove('hidden');
+}
+
+// ════════════════════════════════ LINHA DE BALANÇO (Fase 2, dado real) ═════════════
+// Acha o ancestral mais proximo (a partir da propria tarefa-folha, subindo) classificado
+// como o tipo pedido. Cobre as duas orientacoes possiveis (pai=Servico/filho=Pavimento
+// ou o inverso) sem assumir qual delas o cronograma usa.
+function acharAncestralClassificado(uid, tipoAlvo) {
+  let cur = uid;
+  while (cur) {
+    const c = S.classificacao.get(cur);
+    if (c && c.tipo === tipoAlvo) return S.taskByUid.get(cur);
+    cur = S.parentMap.get(cur);
+  }
+  return null;
+}
+
+// Uma barra por tarefa classificada como Pavimento (não por tarefa-folha real). Se essa
+// tarefa for um resumo (ex.: "ETAPA - 01" agrupando vários andares por baixo, marcados como
+// Ignorar), usamos a data própria dela, que o MS Project já calcula como o intervalo agregado
+// (início mais cedo ao término mais tarde) das folhas. Sem isso, cada folha vira uma raia
+// separada e a Etapa vira uma pilha de dezenas de barrinhas em vez de uma barra só.
+function construirBars() {
+  const bars = [];
+  S.subtreeTasks.forEach(t => {
+    const cls = S.classificacao.get(t.uid);
+    if (!cls || cls.tipo !== 'pavimento' || !t.start || !t.finish) return;
+    const servTask = acharAncestralClassificado(t.uid, 'servico');
+    if (!servTask) return;
+    bars.push({
+      uid: t.uid, wbs: t.wbs || t.id, pavNome: t.name.trim(), servNome: servTask.name.trim(),
+      start: t.start, finish: t.finish, critical: t.critical, predecessors: t.predecessors || []
+    });
+  });
+  return bars;
+}
+
+// Empacota as barras de um pavimento em raias, minimizando o total de raias, mas quando há
+// mais de uma raia livre pra escolher, pega a que foi liberada por ÚLTIMO (mais recente), não
+// a primeira/mais antiga. Isso faz a barra mais antiga ficar sozinha embaixo, e a corrente mais
+// recente empilhar acima dela, sem abrir raia à toa. Comparação por DIA inteiro (startDay/dur,
+// que já inclui o dia final): se uma tarefa termina no mesmo dia em que a próxima começa, as
+// duas contam como simultâneas naquele dia e não podem dividir a mesma raia.
+function packLanes(barsDoPavimento) {
+  const ordenado = [...barsDoPavimento].sort((a, b) => a.startDay - b.startDay);
+  const lanesFimPorRaia = [];
+  ordenado.forEach(b => {
+    let melhorRaia = -1, melhorFim = -Infinity;
+    lanesFimPorRaia.forEach((fim, i) => {
+      if (fim <= b.startDay && fim > melhorFim) { melhorRaia = i; melhorFim = fim; }
+    });
+    if (melhorRaia === -1) { melhorRaia = lanesFimPorRaia.length; lanesFimPorRaia.push(0); }
+    b.lane = melhorRaia;
+    lanesFimPorRaia[melhorRaia] = b.startDay + b.dur;
+  });
+  return lanesFimPorRaia.length;
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+const LOB_BASE_DAY_W = 26, LOB_BASE_LANE_H = 21, LOB_SIDEBAR_W_MIN = 110, LOB_SIDEBAR_W_MAX = 260, LOB_HEADER_H = 70;
+const LOB_SIDEBAR_FONT = 'bold 12px Sora, sans-serif';
+const LOB = {
+  bars: [], pavimentos: [], servicos: [], pavInfo: [], barById: new Map(),
+  dayW: 0, laneH: 0, pavYOffset: [], pavHeight: [], sidebarW: LOB_SIDEBAR_W_MIN,
+  linhasVisiveis: [], pavIndexParaLinha: new Map(),
+  diasOrigem: 0, diasTotalVisivel: 1,
+  projectStart: new Date(), totalDays: 1,
+  filtroIniDay: null, filtroFimDay: null, pacoteFiltro: null, hoverBar: null,
+  marcos: [], feriados: [], servicosOcultos: new Set()
+};
+
+// Largura da coluna de pavimento se ajusta ao nome mais comprido (até um teto), em vez de
+// ficar fixa, assim a maioria dos nomes cabe inteiro e todo mundo fica na mesma régua.
+function calcularLargSidebar() {
+  const c = document.createElement('canvas');
+  const ctx = c.getContext('2d');
+  ctx.font = LOB_SIDEBAR_FONT;
+  const maiorTexto = Math.max(0, ...LOB.pavimentos.map(nome => ctx.measureText(nome).width));
+  LOB.sidebarW = Math.min(Math.max(maiorTexto + 28, LOB_SIDEBAR_W_MIN), LOB_SIDEBAR_W_MAX);
+  document.querySelector('.lob-grid').style.gridTemplateColumns = `${LOB.sidebarW}px 1fr`;
+}
+
+// Trunca com "..." só o suficiente pra caber em maxWidth, sem cortar no meio de uma letra à toa.
+function truncarTexto(ctx, texto, maxWidth) {
+  if (ctx.measureText(texto).width <= maxWidth) return texto;
+  let cortado = texto;
+  while (cortado.length > 1 && ctx.measureText(cortado + '…').width > maxWidth) {
+    cortado = cortado.slice(0, -1);
+  }
+  return cortado + '…';
+}
+
+function ordenarPavimentosAlfabetico(nomes) {
+  return [...nomes].sort((a, b) => a.localeCompare(b, 'pt-BR', { numeric: true }));
+}
+
+// Ordem automática inicial: quem começa primeiro fica embaixo (raia 0 do gráfico é o
+// topo da tela), formando a mesma escadinha diagonal que já usamos dentro de cada raia.
+function ordenarPavimentosPorInicio(nomes, bars) {
+  const inicioPorPav = new Map();
+  nomes.forEach(nome => {
+    const tempos = bars.filter(b => b.pavNome === nome).map(b => b.start.getTime());
+    inicioPorPav.set(nome, Math.min(...tempos));
+  });
+  return [...nomes].sort((a, b) => inicioPorPav.get(b) - inicioPorPav.get(a));
+}
+
+// Quais tarefas contam pra um pavimento "ter conteúdo" com os filtros atuais (oculto,
+// serviço filtrado na legenda, período de datas).
+function lobBarRelevante(b) {
+  return !LOB.servicosOcultos.has(b.servNome) && (!LOB.pacoteFiltro || b.servNome === LOB.pacoteFiltro) && lobBarVisivel(b);
+}
+
+// Quais linhas de pavimento aparecem no gráfico. Sem nenhum filtro ativo, mostra todas
+// (inclusive as genuinamente vazias). Com filtro de data e/ou de serviço, some a linha
+// inteira quando nenhuma barra dela sobra visível: não só escurece, remove a raia mesmo.
+function atualizarLinhasVisiveis() {
+  const semFiltro = LOB.filtroIniDay === null && !LOB.pacoteFiltro;
+  LOB.linhasVisiveis = LOB.pavimentos
+    .map((_, pi) => pi)
+    .filter(pi => semFiltro || LOB.bars.some(b => b.pav === pi && lobBarRelevante(b)));
+}
+
+// Janela de dias que o calendário de fato desenha. Sem filtro de data, é o cronograma
+// inteiro. Com filtro, corta pro período escolhido em vez de só escurecer os dois lados.
+function atualizarJanelaDias() {
+  if (LOB.filtroIniDay === null) {
+    LOB.diasOrigem = 0;
+    LOB.diasTotalVisivel = LOB.totalDays;
+  } else {
+    LOB.diasOrigem = Math.max(LOB.filtroIniDay, 0);
+    const fim = Math.min(LOB.filtroFimDay, LOB.totalDays - 1);
+    LOB.diasTotalVisivel = Math.max(fim - LOB.diasOrigem + 1, 1);
+  }
+}
+
+// Recalcula o índice de linha (pav) de cada barra e o nº de raias por pavimento a partir
+// da ordem ATUAL de LOB.pavimentos. Chamado toda vez que essa ordem ou os filtros mudam.
+// Quando um serviço está filtrado na legenda (LOB.pacoteFiltro) ou um período de datas está
+// ativo, as raias contam só as barras que passam nesse filtro, então as linhas encolhem pro
+// que realmente está sendo mostrado (e "Ver tudo" cabe certo, sem sobrar espaço vazio).
+function reindexarPavimentos() {
+  LOB.bars.forEach(b => { b.pav = LOB.pavimentos.indexOf(b.pavNome); });
+  LOB.pavInfo = LOB.pavimentos.map((_, pi) => {
+    const doPav = LOB.bars.filter(b => b.pav === pi && lobBarRelevante(b));
+    return { numLanes: Math.max(packLanes(doPav), 1) };
+  });
+  atualizarLinhasVisiveis();
+  atualizarJanelaDias();
+}
+
+function initLob() {
+  const brutas = construirBars();
+  const nomesPav = [...new Set(brutas.map(b => b.pavNome))];
+  LOB.pavimentos = ordenarPavimentosPorInicio(nomesPav, brutas);
+
+  const nomesServ = [...new Set(brutas.map(b => b.servNome))]; // ordem de primeira aparicao no cronograma
+  LOB.servicos = nomesServ.map(nome => ({ nome, cor: corDoServico(nome) }));
+  LOB.servicosOcultos = new Set();
+
+  LOB.projectStart = brutas.length ? new Date(Math.min(...brutas.map(b => b.start.getTime()))) : new Date();
+  const fimMax = brutas.length ? Math.max(...brutas.map(b => b.finish.getTime())) : LOB.projectStart.getTime();
+  LOB.totalDays = Math.max(Math.round((fimMax - LOB.projectStart) / 864e5) + 1, 1);
+
+  LOB.barById = new Map();
+  LOB.bars = brutas.map(b => {
+    const servico = nomesServ.indexOf(b.servNome);
+    const startDay = Math.round((b.start - LOB.projectStart) / 864e5);
+    const dur = Math.max(Math.round((b.finish - b.start) / 864e5) + 1, 1);
+    const bar = { ...b, pav: 0, servico, cor: LOB.servicos[servico].cor, startDay, dur, lane: 0, predUids: [], sucUids: [] };
+    LOB.barById.set(bar.uid, bar);
+    return bar;
+  });
+  LOB.bars.forEach(b => { b.predUids = b.predecessors.map(p => p.uid).filter(uid => LOB.barById.has(uid)); });
+  LOB.bars.forEach(b => { b.sucUids = LOB.bars.filter(b2 => b2.predUids.includes(b.uid)).map(b2 => b2.uid); });
+
+  LOB.dayW = LOB_BASE_DAY_W; LOB.laneH = LOB_BASE_LANE_H;
+  LOB.filtroIniDay = null; LOB.filtroFimDay = null; LOB.pacoteFiltro = null; LOB.hoverBar = null;
+  $('filtroIni').value = ''; $('filtroFim').value = '';
+
+  calcularLargSidebar();
+  reindexarPavimentos();
+
+  LOB.marcos = []; LOB.feriados = [];
+  marcoIdSeq = 0; feriadoIdSeq = 0;
+
+  $('chartSub').textContent = `Escopo: ${S.escopoAtual.name} · ${LOB.bars.length} tarefas · ${LOB.pavimentos.length} pavimentos · ${LOB.servicos.length} serviços`;
+  atualizarMilestoneList();
+
+  renderPkgList();
+  atualizarZoomPct();
+  layoutLob();
+  $('mainWrap').scrollTo(0, 0);
+}
+
+// pavYOffset/pavHeight ficam indexados pela POSIÇÃO NA LISTA VISÍVEL (não pelo índice
+// original do pavimento), já que linhas ocultas pelos filtros não entram no layout.
+function computeLobOffsets() {
+  let y = 0;
+  LOB.pavYOffset = []; LOB.pavHeight = []; LOB.pavIndexParaLinha = new Map();
+  LOB.linhasVisiveis.forEach((pi, linha) => {
+    LOB.pavIndexParaLinha.set(pi, linha);
+    LOB.pavYOffset.push(y);
+    const h = LOB.pavInfo[pi].numLanes * LOB.laneH;
+    LOB.pavHeight.push(h);
+    y += h;
+  });
+  return y;
+}
+
+// O zoom% exibido é só um indicador aproximado (baseado na largura do dia). Largura e
+// altura passaram a ser independentes, então não existe mais um "zoom único" de verdade.
+function atualizarZoomPct() {
+  $('zoomPct').textContent = Math.round((LOB.dayW / LOB_BASE_DAY_W) * 100) + '%';
+}
+
+// "Ver tudo": ajusta largura do dia e altura da raia de forma INDEPENDENTE pra caber tudo
+// na área visível, sem rolagem. Com filtro de serviço e/ou de datas ativo, cabe só no que
+// está sendo mostrado de verdade (linhas ocultas já não entram, via LOB.linhasVisiveis).
+function verLobTudo() {
+  const wrap = $('mainWrap');
+  const totalRaias = LOB.linhasVisiveis.reduce((soma, pi) => soma + LOB.pavInfo[pi].numLanes, 0) || 1;
+
+  const barsRelevantes = LOB.bars.filter(lobBarRelevante);
+  let inicioDia = 0, totalDiasAlvo = LOB.totalDays;
+  if ((LOB.pacoteFiltro || LOB.filtroIniDay !== null) && barsRelevantes.length) {
+    inicioDia = Math.min(...barsRelevantes.map(b => b.startDay));
+    const fimDia = Math.max(...barsRelevantes.map(b => b.startDay + b.dur));
+    totalDiasAlvo = Math.max(fimDia - inicioDia, 1);
+  }
+
+  LOB.dayW = Math.max(wrap.clientWidth / totalDiasAlvo, 3);
+  LOB.laneH = Math.max(wrap.clientHeight / totalRaias, 8);
+  atualizarZoomPct();
+  layoutLob();
+  wrap.scrollTo(Math.max(lobDayToX(inicioDia) - 12, 0), 0);
+}
+
+function layoutLob() {
+  const contentW = LOB.diasTotalVisivel * LOB.dayW;
+  const contentH = computeLobOffsets();
+
+  const mainCanvas = $('mainCanvas');
+  mainCanvas.width = contentW; mainCanvas.height = contentH;
+  const headerCanvas = $('headerCanvas');
+  headerCanvas.width = contentW; headerCanvas.height = LOB_HEADER_H;
+  const sidebarCanvas = $('sidebarCanvas');
+  sidebarCanvas.width = LOB.sidebarW; sidebarCanvas.height = contentH;
+
+  drawLobHeader(); drawLobSidebar(); drawLobMain();
+  syncLobTransforms();
+}
+
+function lobDayToX(d) { return (d - LOB.diasOrigem) * LOB.dayW; }
+
+// Raia 0 fica na base do bloco do pavimento (mais antiga embaixo), raias maiores sobem.
+// Canvas cresce pra baixo, então isso significa inverter: raia 0 = mais perto do fundo.
+// "pav" é o índice ORIGINAL do pavimento; traduz pra posição na lista visível antes de
+// buscar o offset (linhas ocultas pelos filtros não têm posição, chamador deve checar antes).
+function lobLaneY(pav, lane) {
+  const linha = LOB.pavIndexParaLinha.get(pav);
+  const numLanes = LOB.pavInfo[pav].numLanes;
+  return LOB.pavYOffset[linha] + (numLanes - 1 - lane) * LOB.laneH;
+}
+
+function lobMonthSpans() {
+  const spans = [];
+  const fim = LOB.diasOrigem + LOB.diasTotalVisivel;
+  let lastMonth = -1, spanStart = LOB.diasOrigem;
+  for (let d = LOB.diasOrigem; d <= fim; d++) {
+    const date = new Date(LOB.projectStart); date.setDate(date.getDate() + d);
+    const m = date.getMonth() + date.getFullYear() * 12;
+    if (m !== lastMonth) {
+      if (lastMonth !== -1) spans.push({ start: spanStart, end: d, label: lobMonthLabel(spanStart) });
+      lastMonth = m; spanStart = d;
+    }
+  }
+  spans.push({ start: spanStart, end: fim, label: lobMonthLabel(spanStart) });
+  return spans;
+}
+function lobMonthLabel(d) {
+  const date = new Date(LOB.projectStart); date.setDate(date.getDate() + d);
+  return date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase();
+}
+
+function drawLobHeader() {
+  const c = $('headerCanvas');
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, c.width, c.height);
+
+  lobMonthSpans().forEach(sp => {
+    ctx.font = 'bold 11px Sora, sans-serif';
+    ctx.fillStyle = '#1a2b45';
+    ctx.textAlign = 'center';
+    ctx.fillText(sp.label, lobDayToX(sp.start) + (sp.end - sp.start) * LOB.dayW / 2, 20);
+    ctx.textAlign = 'left';
+
+    ctx.strokeStyle = '#9aa9c0'; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(lobDayToX(sp.start), 28); ctx.lineTo(lobDayToX(sp.start), LOB_HEADER_H); ctx.stroke();
+  });
+
+  if (LOB.dayW >= LOB_BASE_DAY_W * 0.7) {
+    for (let d = LOB.diasOrigem; d < LOB.diasOrigem + LOB.diasTotalVisivel; d++) {
+      const date = new Date(LOB.projectStart); date.setDate(date.getDate() + d);
+      const dow = date.getDay();
+      ctx.font = '9px DM Sans, sans-serif';
+      ctx.fillStyle = (dow === 0 || dow === 6) ? '#c53030' : '#6b80a0';
+      ctx.textAlign = 'center';
+      ctx.fillText(String(date.getDate()).padStart(2, '0'), lobDayToX(d) + LOB.dayW / 2, 42);
+      ctx.textAlign = 'left';
+    }
+  }
+  ctx.strokeStyle = '#d4dfe8'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, LOB_HEADER_H - 0.5); ctx.lineTo(c.width, LOB_HEADER_H - 0.5); ctx.stroke();
+}
+
+function drawLobSidebar() {
+  const c = $('sidebarCanvas');
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, c.width, c.height);
+  ctx.font = LOB_SIDEBAR_FONT;
+  const larguraDisponivel = LOB.sidebarW - 20;
+  LOB.linhasVisiveis.forEach((pi, linha) => {
+    const nome = LOB.pavimentos[pi];
+    const y = LOB.pavYOffset[linha], h = LOB.pavHeight[linha];
+    ctx.fillStyle = linha % 2 === 0 ? '#f7fafd' : '#ffffff';
+    ctx.fillRect(0, y, c.width, h);
+    ctx.fillStyle = '#1a2b45';
+    ctx.fillText(truncarTexto(ctx, nome, larguraDisponivel), 14, y + h / 2 + 4);
+    ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, y + h); ctx.lineTo(c.width, y + h); ctx.stroke();
+  });
+}
+
+function lobBarVisivel(b) {
+  if (LOB.filtroIniDay === null) return true;
+  return (b.startDay + b.dur - 1) >= LOB.filtroIniDay && b.startDay <= LOB.filtroFimDay;
+}
+
+function drawLobMain() {
+  const c = $('mainCanvas');
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, c.width, c.height);
+
+  LOB.linhasVisiveis.forEach((pi, linha) => {
+    ctx.fillStyle = linha % 2 === 0 ? '#f7fafd' : '#ffffff';
+    ctx.fillRect(0, LOB.pavYOffset[linha], c.width, LOB.pavHeight[linha]);
+  });
+
+  for (let d = LOB.diasOrigem; d < LOB.diasOrigem + LOB.diasTotalVisivel; d++) {
+    const date = new Date(LOB.projectStart); date.setDate(date.getDate() + d);
+    const dow = date.getDay();
+    if (dow === 0 || dow === 6) { ctx.fillStyle = 'rgba(107,128,160,.10)'; ctx.fillRect(lobDayToX(d), 0, LOB.dayW, c.height); }
+  }
+  LOB.feriados.forEach(f => { ctx.fillStyle = 'rgba(217,119,6,.18)'; ctx.fillRect(lobDayToX(f.dia), 0, LOB.dayW, c.height); });
+
+  LOB.marcos.forEach(m => {
+    ctx.strokeStyle = '#1A6EE8'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
+    ctx.beginPath(); ctx.moveTo(lobDayToX(m.dia), 0); ctx.lineTo(lobDayToX(m.dia), c.height); ctx.stroke();
+    ctx.setLineDash([]);
+  });
+
+  LOB.linhasVisiveis.forEach((pi, linha) => {
+    ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, LOB.pavYOffset[linha] + LOB.pavHeight[linha]); ctx.lineTo(c.width, LOB.pavYOffset[linha] + LOB.pavHeight[linha]); ctx.stroke();
+  });
+
+  lobMonthSpans().forEach(sp => {
+    if (sp.start === 0) return;
+    ctx.strokeStyle = '#9aa9c0'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(lobDayToX(sp.start), 0); ctx.lineTo(lobDayToX(sp.start), c.height); ctx.stroke();
+  });
+
+  LOB.bars.forEach(b => {
+    if (LOB.servicosOcultos.has(b.servNome)) return;
+    if (!lobBarVisivel(b)) return; // fora do filtro de data: some de vez, não só escurece
+    if (!LOB.pavIndexParaLinha.has(b.pav)) return; // linha do pavimento está oculta
+    const x = lobDayToX(b.startDay);
+    const w = Math.max(b.dur * LOB.dayW, 3);
+    const y = lobLaneY(b.pav, b.lane) + 3;
+    const h = LOB.laneH - 6;
+
+    const atenuado = LOB.pacoteFiltro && b.servNome !== LOB.pacoteFiltro;
+
+    if (b.critical) {
+      ctx.save();
+      ctx.shadowColor = 'rgba(214,58,58,.55)';
+      ctx.shadowBlur = 10;
+      roundRect(ctx, x - 1, y - 1, w + 2, h + 2, Math.min(4, h / 2));
+      ctx.fillStyle = 'rgba(214,58,58,.001)';
+      ctx.fill();
+      ctx.restore();
+      ctx.strokeStyle = '#d63a3a'; ctx.lineWidth = 1.6;
+      roundRect(ctx, x - 2, y - 2, w + 4, h + 4, Math.min(5, h / 2));
+      ctx.stroke();
+    }
+
+    ctx.globalAlpha = atenuado ? 0.18 : 1;
+    ctx.fillStyle = b.cor;
+    roundRect(ctx, x, y, w, h, Math.min(4, h / 2));
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  });
+
+  const hoverBarVisivel = LOB.hoverBar && !LOB.servicosOcultos.has(LOB.hoverBar.servNome) &&
+    lobBarVisivel(LOB.hoverBar) && LOB.pavIndexParaLinha.has(LOB.hoverBar.pav);
+  if (hoverBarVisivel) {
+    const ligacoes = [
+      ...LOB.hoverBar.predUids.map(uid => ({ other: LOB.barById.get(uid), isPred: true })),
+      ...LOB.hoverBar.sucUids.map(uid => ({ other: LOB.barById.get(uid), isPred: false }))
+    ];
+    ligacoes.forEach(({ other, isPred }) => {
+      if (!other) return;
+      if (LOB.servicosOcultos.has(other.servNome) || !lobBarVisivel(other) || !LOB.pavIndexParaLinha.has(other.pav)) return;
+      const from = isPred
+        ? { x: lobDayToX(other.startDay + other.dur), y: lobLaneY(other.pav, other.lane) + LOB.laneH / 2 }
+        : { x: lobDayToX(LOB.hoverBar.startDay + LOB.hoverBar.dur), y: lobLaneY(LOB.hoverBar.pav, LOB.hoverBar.lane) + LOB.laneH / 2 };
+      const to = isPred
+        ? { x: lobDayToX(LOB.hoverBar.startDay), y: lobLaneY(LOB.hoverBar.pav, LOB.hoverBar.lane) + LOB.laneH / 2 }
+        : { x: lobDayToX(other.startDay), y: lobLaneY(other.pav, other.lane) + LOB.laneH / 2 };
+
+      ctx.strokeStyle = '#1a2b45'; ctx.lineWidth = 1.8; ctx.setLineDash([4, 3]);
+      ctx.beginPath();
+      ctx.moveTo(from.x, from.y);
+      ctx.lineTo(from.x + 10, from.y);
+      ctx.lineTo(to.x - 10, to.y);
+      ctx.lineTo(to.x, to.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#1a2b45';
+      ctx.beginPath();
+      ctx.moveTo(to.x, to.y);
+      ctx.lineTo(to.x - 6, to.y - 4);
+      ctx.lineTo(to.x - 6, to.y + 4);
+      ctx.closePath();
+      ctx.fill();
+
+      const ox = lobDayToX(other.startDay), ow = Math.max(other.dur * LOB.dayW, 3);
+      const oy = lobLaneY(other.pav, other.lane) + 3, oh = LOB.laneH - 6;
+      ctx.strokeStyle = '#1a2b45'; ctx.lineWidth = 2;
+      roundRect(ctx, ox - 1.5, oy - 1.5, ow + 3, oh + 3, 4);
+      ctx.stroke();
+    });
+  }
+}
+
+function syncLobTransforms() {
+  const mainWrap = $('mainWrap');
+  $('headerCanvas').style.transform = `translateX(${-mainWrap.scrollLeft}px)`;
+  $('sidebarCanvas').style.transform = `translateY(${-mainWrap.scrollTop}px)`;
+}
+$('mainWrap').addEventListener('scroll', syncLobTransforms);
+
+function zoomLobPor(fator) {
+  const min = 0.35, max = 3;
+  LOB.dayW = Math.min(Math.max(LOB.dayW * fator, LOB_BASE_DAY_W * min), LOB_BASE_DAY_W * max);
+  LOB.laneH = Math.min(Math.max(LOB.laneH * fator, LOB_BASE_LANE_H * min), LOB_BASE_LANE_H * max);
+  atualizarZoomPct();
+  layoutLob();
+}
+$('btnZoomIn').addEventListener('click', () => zoomLobPor(1.25));
+$('btnZoomOut').addEventListener('click', () => zoomLobPor(1 / 1.25));
+$('btnZoomReset').addEventListener('click', () => {
+  LOB.dayW = LOB_BASE_DAY_W; LOB.laneH = LOB_BASE_LANE_H;
+  atualizarZoomPct(); layoutLob(); $('mainWrap').scrollTo(0, 0);
+});
+$('btnVerTudo').addEventListener('click', verLobTudo);
+$('mainWrap').addEventListener('wheel', ev => {
+  if (!ev.ctrlKey) return;
+  ev.preventDefault();
+  zoomLobPor(ev.deltaY < 0 ? 1.1 : 1 / 1.1);
+}, { passive: false });
+
+$('mainWrap').addEventListener('mousemove', ev => {
+  const wrap = $('mainWrap');
+  const rect = wrap.getBoundingClientRect();
+  const mx = ev.clientX - rect.left + wrap.scrollLeft;
+  const my = ev.clientY - rect.top + wrap.scrollTop;
+
+  const hit = LOB.bars.find(b => {
+    if (LOB.servicosOcultos.has(b.servNome)) return false;
+    if (!lobBarVisivel(b) || !LOB.pavIndexParaLinha.has(b.pav)) return false;
+    const x = lobDayToX(b.startDay), w = Math.max(b.dur * LOB.dayW, 3);
+    const y = lobLaneY(b.pav, b.lane) + 3, h = LOB.laneH - 6;
+    return mx >= x && mx <= x + w && my >= y && my <= y + h;
+  });
+
+  if (hit !== LOB.hoverBar) { LOB.hoverBar = hit || null; drawLobMain(); }
+
+  const tooltip = $('lobTooltip');
+  if (hit) {
+    const d1 = new Date(LOB.projectStart); d1.setDate(d1.getDate() + hit.startDay);
+    const d2 = new Date(LOB.projectStart); d2.setDate(d2.getDate() + hit.startDay + hit.dur - 1);
+    const fmt = d => d.toLocaleDateString('pt-BR');
+    const preds = hit.predUids.map(uid => LOB.barById.get(uid)).filter(Boolean);
+    const sucs = hit.sucUids.map(uid => LOB.barById.get(uid)).filter(Boolean);
+    tooltip.innerHTML = `<strong>${escHtml(hit.servNome)}</strong>${escHtml(hit.pavNome)} <span class="wbs">· WBS ${escHtml(hit.wbs)}</span><br>${fmt(d1)} a ${fmt(d2)} (${hit.dur}d)`
+      + (hit.critical ? `<br><span class="crit">⚠ Caminho crítico</span>` : '')
+      + preds.map(p => `<br>◀ Predecessora: ${escHtml(p.servNome)} (${escHtml(p.pavNome)}) <span class="wbs">WBS ${escHtml(p.wbs)}</span>`).join('')
+      + sucs.map(s => `<br>▶ Sucessora: ${escHtml(s.servNome)} (${escHtml(s.pavNome)}) <span class="wbs">WBS ${escHtml(s.wbs)}</span>`).join('');
+    tooltip.style.display = 'block';
+    // Mede o tamanho real do tooltip e reposiciona pra nunca passar da borda da janela
+    const tw = tooltip.offsetWidth, th = tooltip.offsetHeight;
+    let left = ev.clientX + 14, top = ev.clientY + 14;
+    if (left + tw > window.innerWidth - 8) left = ev.clientX - tw - 14;
+    if (top + th > window.innerHeight - 8) top = ev.clientY - th - 14;
+    tooltip.style.left = Math.max(4, left) + 'px';
+    tooltip.style.top = Math.max(4, top) + 'px';
+    wrap.style.cursor = 'pointer';
+  } else {
+    tooltip.style.display = 'none';
+    wrap.style.cursor = 'default';
+  }
+});
+$('mainWrap').addEventListener('mouseleave', () => {
+  $('lobTooltip').style.display = 'none';
+  if (LOB.hoverBar) { LOB.hoverBar = null; drawLobMain(); }
+});
+
+// Nome completo do pavimento ao passar o mouse na sidebar, só quando ele estiver truncado
+$('sidebarWrap').addEventListener('mousemove', ev => {
+  const wrap = $('sidebarWrap');
+  const rect = wrap.getBoundingClientRect();
+  // sidebarCanvas não rola sozinho, é translate(-scrollTop do mainWrap) via syncLobTransforms
+  const my = ev.clientY - rect.top + $('mainWrap').scrollTop;
+
+  const linha = LOB.pavHeight.findIndex((_, i) => my >= LOB.pavYOffset[i] && my < LOB.pavYOffset[i] + LOB.pavHeight[i]);
+  const pi = linha !== -1 ? LOB.linhasVisiveis[linha] : -1;
+  const nome = pi !== -1 ? LOB.pavimentos[pi] : null;
+
+  const ctxMedida = $('sidebarCanvas').getContext('2d');
+  ctxMedida.font = LOB_SIDEBAR_FONT;
+  const truncado = nome ? truncarTexto(ctxMedida, nome, LOB.sidebarW - 20) : null;
+
+  if (nome && truncado !== nome) {
+    const tooltip = $('lobTooltip');
+    tooltip.innerHTML = `<strong>${escHtml(nome)}</strong>`;
+    tooltip.style.display = 'block';
+    tooltip.style.left = (ev.clientX + 14) + 'px';
+    tooltip.style.top = (ev.clientY + 14) + 'px';
+  } else {
+    $('lobTooltip').style.display = 'none';
+  }
+});
+$('sidebarWrap').addEventListener('mouseleave', () => { $('lobTooltip').style.display = 'none'; });
+
+function lobDateToDay(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  return Math.round((d - LOB.projectStart) / 864e5);
+}
+// Inverso: dia (offset em relação ao início do escopo) -> string "AAAA-MM-DD" pro input date
+function lobDiaParaInput(dia) {
+  const d = new Date(LOB.projectStart); d.setDate(d.getDate() + dia);
+  return d.toISOString().slice(0, 10);
+}
+$('filtroIni').addEventListener('change', atualizarLobFiltroData);
+$('filtroFim').addEventListener('change', atualizarLobFiltroData);
+$('btnLimparFiltroData').addEventListener('click', () => {
+  $('filtroIni').value = ''; $('filtroFim').value = '';
+  LOB.filtroIniDay = null; LOB.filtroFimDay = null;
+  reindexarPavimentos();
+  layoutLob();
+});
+function atualizarLobFiltroData() {
+  const ini = $('filtroIni').value;
+  const fim = $('filtroFim').value;
+  LOB.filtroIniDay = ini ? lobDateToDay(ini) : null;
+  LOB.filtroFimDay = fim ? lobDateToDay(fim) : LOB.totalDays;
+  reindexarPavimentos();
+  layoutLob();
+}
+
+function renderPkgList() {
+  const list = $('pkgList');
+  list.innerHTML = LOB.servicos.filter(s => !LOB.servicosOcultos.has(s.nome)).map(s => {
+    const count = LOB.bars.filter(b => b.servNome === s.nome).length;
+    const active = LOB.pacoteFiltro === s.nome;
+    const critico = LOB.bars.some(b => b.servNome === s.nome && b.critical);
+    const tag = critico ? `<span class="pkg-crit-tag">⚠ crítico</span>` : `<span class="pkg-count">${count}</span>`;
+    return `<div class="pkg-item ${active ? 'active' : ''}" data-nome="${escHtml(s.nome)}">
+      <div class="pkg-swatch" style="background:${s.cor}"></div>${escHtml(s.nome)}${tag}
+    </div>`;
+  }).join('');
+  list.querySelectorAll('.pkg-item').forEach(el => {
+    el.addEventListener('click', () => {
+      const nome = el.dataset.nome;
+      LOB.pacoteFiltro = (LOB.pacoteFiltro === nome) ? null : nome;
+      reindexarPavimentos();
+      renderPkgList();
+      layoutLob();
+    });
+  });
+}
+$('btnLimparPkg').addEventListener('click', () => { LOB.pacoteFiltro = null; reindexarPavimentos(); renderPkgList(); layoutLob(); });
+
+// ════════════════════════════════ CONFIGURAÇÃO DE PACOTES (cor/ordem/visibilidade) ═══
+// Tela dedicada (não modal): toda mudança já aplica na hora, sem passo de "aplicar".
+// Ordem/cor/visibilidade viram efeito imediato no gráfico e na legenda.
+let pkgCfgSelecionados = new Set();
+let pkgCfgUltimoClicado = null;
+let pkgCfgDragNomes = [];
+
+function abrirPkgConfigScreen() {
+  $('chart-screen').classList.add('hidden');
+  $('config-screen').classList.add('hidden');
+  $('pkg-config-screen').classList.remove('hidden');
+  pkgCfgSelecionados = new Set();
+  pkgCfgUltimoClicado = null;
+  renderPkgConfigList();
+}
+function voltarParaGraficoDeConfig() {
+  $('pkg-config-screen').classList.add('hidden');
+  $('chart-screen').classList.remove('hidden');
+}
+
+// ════════════════════════════════ CONFIGURAÇÃO GERAL (hub) ═════════════════════════
+function abrirConfigGeral() {
+  $('chart-screen').classList.add('hidden');
+  $('config-screen').classList.remove('hidden');
+}
+function voltarDoConfigGeral() {
+  $('config-screen').classList.add('hidden');
+  $('chart-screen').classList.remove('hidden');
+}
+$('btnAbrirConfigGeral').addEventListener('click', abrirConfigGeral);
+$('cardCfgPavimentos').addEventListener('click', () => abrirReorderModal());
+$('cardCfgCores').addEventListener('click', abrirPkgConfigScreen);
+$('cardCfgMarcos').addEventListener('click', abrirMarcosScreen);
+$('cardCfgFeriados').addEventListener('click', abrirFeriadosScreen);
+
+// ════════════════════════════════ MARCOS (datas marcadas no gráfico) ═══════════════
+let marcoIdSeq = 0;
+
+function atualizarMilestoneList() {
+  $('milestoneList').innerHTML = LOB.marcos.length
+    ? [...LOB.marcos].sort((a, b) => a.dia - b.dia).map(m => `◆ <strong style="color:var(--navy)">${escHtml(m.nome || '(sem nome)')}</strong>`).join('<br>')
+    : 'Nenhum marco definido ainda.';
+}
+
+function abrirMarcosScreen() {
+  $('chart-screen').classList.add('hidden');
+  $('config-screen').classList.add('hidden');
+  $('marcos-screen').classList.remove('hidden');
+  renderMarcosList();
+}
+function voltarDoMarcosCfg() {
+  $('marcos-screen').classList.add('hidden');
+  $('chart-screen').classList.remove('hidden');
+}
+
+function renderMarcosList() {
+  $('marcosCfgCount').textContent = `${LOB.marcos.length} marco${LOB.marcos.length !== 1 ? 's' : ''}`;
+  const ordenados = [...LOB.marcos].sort((a, b) => a.dia - b.dia);
+  $('marcosCfgList').innerHTML = ordenados.length ? ordenados.map(m => `
+    <li class="reorder-item marcocfg-item" data-id="${m.id}">
+      <input type="text" class="marcocfg-nome" data-id="${m.id}" placeholder="Nome do marco (ex.: Fim da Estrutura)" value="${escHtml(m.nome)}">
+      <input type="date" class="marcocfg-data" data-id="${m.id}" value="${lobDiaParaInput(m.dia)}">
+      <button class="sel-clear-x" data-id="${m.id}" title="Remover">✕</button>
+    </li>`).join('') : `<li class="reorder-item" style="justify-content:center;color:var(--muted)">Nenhum marco ainda. Clique em "+ Adicionar marco".</li>`;
+  attachMarcosCfgEvents();
+}
+
+function attachMarcosCfgEvents() {
+  document.querySelectorAll('#marcosCfgList .marcocfg-item').forEach(item => {
+    const id = +item.dataset.id;
+    item.querySelector('.marcocfg-nome').addEventListener('input', ev => {
+      const m = LOB.marcos.find(x => x.id === id);
+      if (m) m.nome = ev.target.value;
+      atualizarMilestoneList();
+      drawLobMain();
+    });
+    item.querySelector('.marcocfg-data').addEventListener('change', ev => {
+      const m = LOB.marcos.find(x => x.id === id);
+      if (m && ev.target.value) m.dia = lobDateToDay(ev.target.value);
+      atualizarMilestoneList();
+      drawLobMain();
+      renderMarcosList();
+    });
+    item.querySelector('.sel-clear-x').addEventListener('click', () => {
+      LOB.marcos = LOB.marcos.filter(x => x.id !== id);
+      atualizarMilestoneList();
+      drawLobMain();
+      renderMarcosList();
+    });
+  });
+}
+
+$('btnAddMarco').addEventListener('click', () => {
+  LOB.marcos.push({ id: ++marcoIdSeq, nome: '', dia: LOB.diasOrigem || 0 });
+  renderMarcosList();
+});
+
+// ════════════════════════════════ FERIADOS (dias não úteis destacados) ═════════════
+let feriadoIdSeq = 0;
+
+function abrirFeriadosScreen() {
+  $('chart-screen').classList.add('hidden');
+  $('config-screen').classList.add('hidden');
+  $('feriados-screen').classList.remove('hidden');
+  renderFeriadosList();
+}
+function voltarDoFeriadosCfg() {
+  $('feriados-screen').classList.add('hidden');
+  $('chart-screen').classList.remove('hidden');
+}
+
+function renderFeriadosList() {
+  $('feriadosCfgCount').textContent = `${LOB.feriados.length} feriado${LOB.feriados.length !== 1 ? 's' : ''}`;
+  const ordenados = [...LOB.feriados].sort((a, b) => a.dia - b.dia);
+  $('feriadosCfgList').innerHTML = ordenados.length ? ordenados.map(f => `
+    <li class="reorder-item feriadocfg-item" data-id="${f.id}">
+      <input type="date" class="feriadocfg-data" data-id="${f.id}" value="${lobDiaParaInput(f.dia)}">
+      <input type="text" class="feriadocfg-nome" data-id="${f.id}" placeholder="Motivo (opcional, ex.: Natal)" value="${escHtml(f.nome || '')}">
+      <button class="sel-clear-x" data-id="${f.id}" title="Remover">✕</button>
+    </li>`).join('') : `<li class="reorder-item" style="justify-content:center;color:var(--muted)">Nenhum feriado ainda. Clique em "+ Adicionar feriado".</li>`;
+  attachFeriadosCfgEvents();
+}
+
+function attachFeriadosCfgEvents() {
+  document.querySelectorAll('#feriadosCfgList .feriadocfg-item').forEach(item => {
+    const id = +item.dataset.id;
+    item.querySelector('.feriadocfg-data').addEventListener('change', ev => {
+      const f = LOB.feriados.find(x => x.id === id);
+      if (f && ev.target.value) f.dia = lobDateToDay(ev.target.value);
+      drawLobMain();
+      renderFeriadosList();
+    });
+    item.querySelector('.feriadocfg-nome').addEventListener('input', ev => {
+      const f = LOB.feriados.find(x => x.id === id);
+      if (f) f.nome = ev.target.value;
+    });
+    item.querySelector('.sel-clear-x').addEventListener('click', () => {
+      LOB.feriados = LOB.feriados.filter(x => x.id !== id);
+      drawLobMain();
+      renderFeriadosList();
+    });
+  });
+}
+
+$('btnAddFeriado').addEventListener('click', () => {
+  LOB.feriados.push({ id: ++feriadoIdSeq, nome: '', dia: LOB.diasOrigem || 0 });
+  renderFeriadosList();
+});
+
+function renderPkgConfigList() {
+  $('pkgCfgCount').textContent = `${LOB.servicos.length} serviço${LOB.servicos.length !== 1 ? 's' : ''}`;
+  $('pkgCfgList').innerHTML = LOB.servicos.map(s => {
+    const oculto = LOB.servicosOcultos.has(s.nome);
+    const marcado = pkgCfgSelecionados.has(s.nome);
+    const count = LOB.bars.filter(b => b.servNome === s.nome).length;
+    return `<li class="reorder-item pkgcfg-item${marcado ? ' selected' : ''}${oculto ? ' oculto' : ''}" draggable="true" data-nome="${escHtml(s.nome)}">
+      <input type="checkbox" class="reorder-check" data-nome="${escHtml(s.nome)}" ${marcado ? 'checked' : ''}>
+      <span class="handle">⋮⋮</span>
+      <input type="color" class="pkgcfg-color" data-nome="${escHtml(s.nome)}" value="${s.cor}">
+      <span class="pkgcfg-nome">${escHtml(s.nome)} <span class="pkgcfg-count">(${count} barra${count !== 1 ? 's' : ''})</span></span>
+      <label class="pkgcfg-vis"><input type="checkbox" class="pkgcfg-vis-check" data-nome="${escHtml(s.nome)}" ${oculto ? '' : 'checked'}> Visível</label>
+    </li>`;
+  }).join('');
+  attachPkgCfgItemEvents();
+  atualizarPkgCfgSelectionBar();
+}
+
+function marcarPkgCfgItem(nome, marcar) {
+  if (marcar) pkgCfgSelecionados.add(nome); else pkgCfgSelecionados.delete(nome);
+  const li = document.querySelector(`#pkgCfgList .pkgcfg-item[data-nome="${CSS.escape(nome)}"]`);
+  if (li) {
+    li.classList.toggle('selected', marcar);
+    const cb = li.querySelector('.reorder-check');
+    if (cb) cb.checked = marcar;
+  }
+}
+
+function atualizarPkgCfgSelectionBar() {
+  const n = pkgCfgSelecionados.size;
+  $('pkgCfgSelectionBar').classList.toggle('hidden', n === 0);
+  $('pkgCfgSelectionCount').innerHTML = `<strong>${n}</strong> selecionado${n !== 1 ? 's' : ''}`;
+}
+
+function attachPkgCfgItemEvents() {
+  const itens = [...document.querySelectorAll('#pkgCfgList .pkgcfg-item')];
+  itens.forEach(item => {
+    const nome = item.dataset.nome;
+
+    item.querySelector('.reorder-check').addEventListener('click', ev => {
+      const cb = ev.target;
+      if (ev.shiftKey && pkgCfgUltimoClicado) {
+        const ordemAtual = itens.map(li => li.dataset.nome);
+        const iniIdx = ordemAtual.indexOf(pkgCfgUltimoClicado);
+        const fimIdx = ordemAtual.indexOf(nome);
+        const [a, b] = iniIdx <= fimIdx ? [iniIdx, fimIdx] : [fimIdx, iniIdx];
+        for (let i = a; i <= b; i++) marcarPkgCfgItem(ordemAtual[i], cb.checked);
+      } else {
+        marcarPkgCfgItem(nome, cb.checked);
+      }
+      pkgCfgUltimoClicado = nome;
+      atualizarPkgCfgSelectionBar();
+    });
+
+    item.querySelector('.pkgcfg-color').addEventListener('input', ev => {
+      const cor = ev.target.value;
+      const servico = LOB.servicos.find(s => s.nome === nome);
+      if (servico) servico.cor = cor;
+      LOB.bars.forEach(b => { if (b.servNome === nome) b.cor = cor; });
+      drawLobMain();
+      renderPkgList();
+    });
+
+    item.querySelector('.pkgcfg-vis-check').addEventListener('change', ev => {
+      if (ev.target.checked) LOB.servicosOcultos.delete(nome); else LOB.servicosOcultos.add(nome);
+      item.classList.toggle('oculto', !ev.target.checked);
+      reindexarPavimentos();
+      layoutLob();
+      renderPkgList();
+    });
+
+    item.addEventListener('dragstart', () => {
+      if (!pkgCfgSelecionados.has(nome)) {
+        pkgCfgSelecionados.forEach(n => marcarPkgCfgItem(n, false));
+        marcarPkgCfgItem(nome, true);
+      }
+      pkgCfgDragNomes = [...pkgCfgSelecionados];
+      pkgCfgDragNomes.forEach(n => {
+        const el = document.querySelector(`#pkgCfgList .pkgcfg-item[data-nome="${CSS.escape(n)}"]`);
+        if (el) el.classList.add('dragging');
+      });
+    });
+    item.addEventListener('dragend', () => {
+      document.querySelectorAll('#pkgCfgList .pkgcfg-item.dragging').forEach(el => el.classList.remove('dragging'));
+      pkgCfgDragNomes = [];
+      const novaOrdemNomes = [...document.querySelectorAll('#pkgCfgList .pkgcfg-item')].map(li => li.dataset.nome);
+      LOB.servicos = novaOrdemNomes.map(n => LOB.servicos.find(s => s.nome === n));
+      renderPkgList();
+    });
+  });
+}
+
+function elementoAposArrastePkgCfg(container, y) {
+  const els = [...container.querySelectorAll('.pkgcfg-item:not(.dragging)')];
+  return els.reduce((maisProximo, el) => {
+    const box = el.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    if (offset < 0 && offset > maisProximo.offset) return { offset, el };
+    return maisProximo;
+  }, { offset: -Infinity, el: null }).el;
+}
+
+$('pkgCfgList').addEventListener('dragover', ev => {
+  ev.preventDefault();
+  if (!pkgCfgDragNomes.length) return;
+  const lista = $('pkgCfgList');
+  const depois = elementoAposArrastePkgCfg(lista, ev.clientY);
+  const arrastados = [...lista.querySelectorAll('.pkgcfg-item')].filter(el => pkgCfgDragNomes.includes(el.dataset.nome));
+  arrastados.forEach(el => {
+    if (depois == null) lista.appendChild(el);
+    else lista.insertBefore(el, depois);
+  });
+});
+
+$('btnPkgCfgAZ').addEventListener('click', () => {
+  LOB.servicos = [...LOB.servicos].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR', { numeric: true }));
+  renderPkgConfigList();
+  renderPkgList();
+});
+$('btnPkgCfgZA').addEventListener('click', () => {
+  LOB.servicos = [...LOB.servicos].sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR', { numeric: true })).reverse();
+  renderPkgConfigList();
+  renderPkgList();
+});
+
+function limparPkgCfgSelecao() {
+  pkgCfgSelecionados.clear();
+  document.querySelectorAll('#pkgCfgList .pkgcfg-item.selected').forEach(el => el.classList.remove('selected'));
+  document.querySelectorAll('#pkgCfgList .reorder-check').forEach(cb => cb.checked = false);
+  atualizarPkgCfgSelectionBar();
+}
+$('btnPkgCfgLimparSelecao').addEventListener('click', limparPkgCfgSelecao);
+$('btnPkgCfgOcultarSel').addEventListener('click', () => {
+  pkgCfgSelecionados.forEach(nome => LOB.servicosOcultos.add(nome));
+  reindexarPavimentos(); layoutLob(); renderPkgConfigList(); renderPkgList();
+});
+$('btnPkgCfgMostrarSel').addEventListener('click', () => {
+  pkgCfgSelecionados.forEach(nome => LOB.servicosOcultos.delete(nome));
+  reindexarPavimentos(); layoutLob(); renderPkgConfigList(); renderPkgList();
+});
+
+$('btnInstrucoesPkgCfg').addEventListener('click', () => {
+  const aberto = $('notePanelPkgCfg').classList.toggle('open');
+  $('btnInstrucoesPkgCfg').textContent = aberto ? 'Ocultar instruções ▴' : 'Ver instruções ▾';
+});
+
+$('btnInstrucoesChart').addEventListener('click', () => {
+  const aberto = $('notePanelChart').classList.toggle('open');
+  $('btnInstrucoesChart').textContent = aberto ? 'Ocultar instruções ▴' : 'Ver instruções ▾';
+});
+
+// ════════════════════════════════ REORDENAR PAVIMENTOS (clique no cabeçalho) ═══════
+// Modal é só uma área de rascunho: A→Z / Z→A reordenam a LISTA do modal (sem tocar no
+// gráfico), arrastar também só mexe na lista, e nada é aplicado até clicar em "Aplicar".
+// Checkbox + shift-clique marca vários de uma vez (mesmo padrão da tela de classificação);
+// arrastar qualquer item selecionado move o grupo inteiro junto, mantendo a ordem relativa.
+let reorderSelecionados = new Set();
+let reorderUltimoClicado = null;
+let reorderDragNomes = [];
+
+function abrirReorderModal() {
+  reorderSelecionados = new Set();
+  reorderUltimoClicado = null;
+  renderReorderList(LOB.pavimentos);
+  $('reorderModal').classList.remove('hidden');
+}
+
+function renderReorderList(nomes) {
+  $('reorderList').innerHTML = nomes.map(nome => {
+    const marcado = reorderSelecionados.has(nome);
+    return `<li class="reorder-item${marcado ? ' selected' : ''}" draggable="true" data-nome="${escHtml(nome)}">
+      <input type="checkbox" class="reorder-check" data-nome="${escHtml(nome)}" ${marcado ? 'checked' : ''}>
+      <span class="handle">⋮⋮</span>${escHtml(nome)}
+    </li>`;
+  }).join('');
+  attachReorderItemEvents();
+}
+
+function marcarReorderItem(nome, marcar) {
+  if (marcar) reorderSelecionados.add(nome); else reorderSelecionados.delete(nome);
+  const li = document.querySelector(`.reorder-item[data-nome="${CSS.escape(nome)}"]`);
+  if (li) {
+    li.classList.toggle('selected', marcar);
+    const cb = li.querySelector('.reorder-check');
+    if (cb) cb.checked = marcar;
+  }
+}
+
+function attachReorderItemEvents() {
+  const itens = [...document.querySelectorAll('.reorder-item')];
+  itens.forEach(item => {
+    const nome = item.dataset.nome;
+
+    item.querySelector('.reorder-check').addEventListener('click', ev => {
+      const cb = ev.target;
+      if (ev.shiftKey && reorderUltimoClicado) {
+        const ordemAtual = itens.map(li => li.dataset.nome);
+        const iniIdx = ordemAtual.indexOf(reorderUltimoClicado);
+        const fimIdx = ordemAtual.indexOf(nome);
+        const [a, b] = iniIdx <= fimIdx ? [iniIdx, fimIdx] : [fimIdx, iniIdx];
+        for (let i = a; i <= b; i++) marcarReorderItem(ordemAtual[i], cb.checked);
+      } else {
+        marcarReorderItem(nome, cb.checked);
+      }
+      reorderUltimoClicado = nome;
+    });
+
+    item.addEventListener('dragstart', () => {
+      // Arrastar um item fora da seleção troca a seleção pra só ele (drag simples)
+      if (!reorderSelecionados.has(nome)) {
+        reorderSelecionados.forEach(n => marcarReorderItem(n, false));
+        marcarReorderItem(nome, true);
+      }
+      reorderDragNomes = [...reorderSelecionados];
+      reorderDragNomes.forEach(n => {
+        const el = document.querySelector(`.reorder-item[data-nome="${CSS.escape(n)}"]`);
+        if (el) el.classList.add('dragging');
+      });
+    });
+    item.addEventListener('dragend', () => {
+      document.querySelectorAll('.reorder-item.dragging').forEach(el => el.classList.remove('dragging'));
+      reorderDragNomes = [];
+    });
+  });
+}
+
+function elementoAposArraste(container, y) {
+  const els = [...container.querySelectorAll('.reorder-item:not(.dragging)')];
+  return els.reduce((maisProximo, el) => {
+    const box = el.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    if (offset < 0 && offset > maisProximo.offset) return { offset, el };
+    return maisProximo;
+  }, { offset: -Infinity, el: null }).el;
+}
+
+$('reorderList').addEventListener('dragover', ev => {
+  ev.preventDefault();
+  if (!reorderDragNomes.length) return;
+  const lista = $('reorderList');
+  const depois = elementoAposArraste(lista, ev.clientY);
+  // Preserva a ordem relativa: filtra os selecionados na ordem em que já estão no DOM
+  const arrastados = [...lista.querySelectorAll('.reorder-item')].filter(el => reorderDragNomes.includes(el.dataset.nome));
+  arrastados.forEach(el => {
+    if (depois == null) lista.appendChild(el);
+    else lista.insertBefore(el, depois);
+  });
+});
+
+function nomesAtuaisDoModal() {
+  return [...document.querySelectorAll('.reorder-item')].map(li => li.dataset.nome);
+}
+
+$('btnOrdemAZ').addEventListener('click', () => renderReorderList(ordenarPavimentosAlfabetico(nomesAtuaisDoModal())));
+$('btnOrdemZA').addEventListener('click', () => renderReorderList(ordenarPavimentosAlfabetico(nomesAtuaisDoModal()).reverse()));
+$('btnCancelarReordenar').addEventListener('click', () => $('reorderModal').classList.add('hidden'));
+$('btnSalvarReordenar').addEventListener('click', () => {
+  LOB.pavimentos = nomesAtuaisDoModal();
+  reindexarPavimentos();
+  layoutLob();
+  $('reorderModal').classList.add('hidden');
+});
+</script>
+
+</body>
+</html>
