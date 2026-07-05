@@ -345,6 +345,15 @@ thead th.sortable:hover { background: #24365a; }
   border: 1px solid var(--border); border-radius: 6px; padding: 6px 9px; font-size: 12px;
   font-family: 'DM Sans', sans-serif; color: var(--text); flex-shrink: 0;
 }
+
+.marco-search-bar { padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--surface2); }
+.marco-search-results { max-height: 220px; overflow-y: auto; border-bottom: 1px solid var(--border); }
+.marco-search-item { padding: 8px 16px; cursor: pointer; border-bottom: 1px solid var(--border); }
+.marco-search-item:last-child { border-bottom: none; }
+.marco-search-item:hover { background: var(--blue-light); }
+.marco-search-item .nome { font-size: 12.5px; color: var(--text); font-weight: 600; }
+.marco-search-item .meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.marco-search-empty { padding: 12px 16px; font-size: 12px; color: var(--muted); font-style: italic; }
 .chart-toolbar { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-wrap: wrap; }
 .tbtn {
   display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px;
@@ -365,6 +374,12 @@ thead th.sortable:hover { background: #24365a; }
   font-family: 'DM Sans', sans-serif; color: var(--text);
 }
 .date-filter button { font-size: 10.5px; color: var(--blue-bright); background: none; border: none; cursor: pointer; text-decoration: underline; }
+
+/* Tela cheia abrange o app inteiro (não só o painel do gráfico), senão as telas de
+   Configurações/Marcos/Feriados ficam invisíveis ao navegar pra elas (o navegador só
+   desenha o elemento em tela cheia e seus descendentes; elas moram no mesmo container). */
+#appContainer:fullscreen { padding: 14px 20px; background: var(--bg); }
+#appContainer:fullscreen #lobPanel { border-radius: 8px; }
 
 .lob-body { display: flex; flex: 1; min-height: 0; }
 .lob-grid { display: grid; grid-template-columns: 150px 1fr; grid-template-rows: 70px 1fr; flex: 1; min-width: 0; }
@@ -397,6 +412,32 @@ thead th.sortable:hover { background: #24365a; }
 #lobTooltip strong { display: block; font-family: 'Sora', sans-serif; font-size: 12px; margin-bottom: 2px; color: var(--navy); }
 #lobTooltip .crit { color: var(--red); font-weight: 700; }
 #lobTooltip .wbs { color: var(--muted); font-size: 10.5px; }
+#lobTooltip .tooltip-pav { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+#lobTooltip .tooltip-periodo { font-size: 11.5px; color: var(--text); margin-bottom: 2px; }
+#lobTooltip .tooltip-secao {
+  display: inline-block; font-family: 'Sora', sans-serif; font-size: 9px; font-weight: 800; text-transform: uppercase;
+  letter-spacing: .05em; margin-top: 8px; margin-bottom: 4px; color: #fff; padding: 3px 9px; border-radius: 20px;
+}
+#lobTooltip .tooltip-secao.pred { background: #eab308; color: var(--navy); }
+#lobTooltip .tooltip-secao.suc { background: #2563eb; }
+#lobTooltip .tooltip-item { font-size: 11px; padding-left: 11px; position: relative; margin-bottom: 2px; color: var(--text); }
+#lobTooltip .tooltip-item::before { content: '•'; position: absolute; left: 0; font-weight: 700; color: var(--muted); }
+#lobTooltip .tooltip-item .wbs { color: var(--muted); }
+#lobTooltip.fixado { pointer-events: auto; padding: 0; max-width: 320px; }
+#lobTooltip.fixado .tooltip-body { padding: 9px 13px; }
+.tooltip-drag-handle {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 6px 10px; background: var(--surface2); border-bottom: 1px solid var(--border);
+  border-radius: 8px 8px 0 0; cursor: grab; font-size: 10px; color: var(--muted);
+  font-family: 'Sora', sans-serif; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+}
+.tooltip-drag-handle:active { cursor: grabbing; }
+.tooltip-close {
+  width: 18px; height: 18px; border-radius: 50%; border: none; background: var(--surface2);
+  color: var(--muted); font-size: 10px; cursor: pointer; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.tooltip-close:hover { background: var(--red-bg); color: var(--red); }
 
 
 .reorder-list { list-style: none; margin: 14px 0; max-height: 340px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; }
@@ -425,7 +466,7 @@ thead th.sortable:hover { background: #24365a; }
   <h1>Gerador de Linha de Balanço</h1>
 </header>
 
-<div class="container">
+<div class="container" id="appContainer">
 
   <!-- ═══════════════ TELA 1: UPLOAD ═══════════════ -->
   <div id="upload-screen">
@@ -584,7 +625,7 @@ thead th.sortable:hover { background: #24365a; }
       <strong>caminho crítico</strong>. Use o filtro de datas ou <kbd>Ctrl</kbd> + roda do mouse pra dar zoom.
     </div>
 
-    <div class="panel">
+    <div class="panel" id="lobPanel">
       <div class="panel-head">
         <span class="panel-title">Fluxo de Produção: Pavimentos × Calendário</span>
         <div class="chart-toolbar">
@@ -602,6 +643,7 @@ thead th.sortable:hover { background: #24365a; }
           <button class="tbtn" id="btnZoomReset" title="Voltar ao zoom padrão" style="width:auto;padding:0 10px;font-size:10.5px">Padrão</button>
           <button class="tbtn" id="btnVerTudo" title="Ajustar pra ver a Linha de Balanço inteira, sem rolagem" style="width:auto;padding:0 10px;font-size:10.5px">⛶ Ver tudo</button>
           <div class="tsep"></div>
+          <button class="tbtn" id="btnTelaCheia" title="Tela cheia" style="width:auto;padding:0 10px;font-size:10.5px">⤢ Tela cheia</button>
           <button class="tbtn" id="btnAbrirConfigGeral" title="Ordem, cores, marcos e feriados" style="width:auto;padding:0 10px;font-size:10.5px">⚙ Configurações</button>
           <button class="btn-export" onclick="alert('Na ferramenta real, isso gera um arquivo .xlsx de verdade com as mesmas cores e datas, pronto pra abrir no Excel. (Ainda não implementado nesta fase.)')">⬇ Exportar Excel</button>
         </div>
@@ -713,8 +755,16 @@ thead th.sortable:hover { background: #24365a; }
       <div class="panel-head">
         <span class="panel-title">Marcos do Escopo</span>
         <span class="panel-count" id="marcosCfgCount"></span>
-        <button class="quick-sort-btn" id="btnAddMarco" style="margin-left:auto">+ Adicionar marco</button>
+        <button class="quick-sort-btn" id="btnAddMarco" style="margin-left:auto">+ Adicionar marco em branco</button>
       </div>
+      <div class="marco-search-bar">
+        <div class="search-box">
+          <span>🔎</span>
+          <input type="text" id="marcoSearchInput" placeholder="Pesquisar um item do cronograma pra vincular (a data vem do item, o nome dá pra editar depois)...">
+        </div>
+        <div id="marcoSearchDiag" style="font-size:10.5px;color:var(--muted);margin-top:4px"></div>
+      </div>
+      <div id="marcoSearchResults" class="marco-search-results hidden"></div>
       <div class="tbl-scroll">
         <ul id="marcosCfgList" class="reorder-list" style="margin:0;border:none;border-radius:0"></ul>
       </div>
@@ -730,13 +780,14 @@ thead th.sortable:hover { background: #24365a; }
     <div class="sec-title-row">
       <div class="sec-title">Feriados</div>
     </div>
-    <div class="sec-sub">Dias não úteis, destacados em laranja no calendário do gráfico. Muda na hora, sem passo de aplicar.</div>
+    <div class="sec-sub">Dias não úteis, destacados no calendário do gráfico. Já importados automaticamente do cronograma. Muda na hora, sem passo de aplicar.</div>
 
     <div class="panel">
       <div class="panel-head">
         <span class="panel-title">Feriados do Escopo</span>
         <span class="panel-count" id="feriadosCfgCount"></span>
-        <button class="quick-sort-btn" id="btnAddFeriado" style="margin-left:auto">+ Adicionar feriado</button>
+        <button class="quick-sort-btn" id="btnImportarFeriados" style="margin-left:auto">🔄 Reimportar do cronograma</button>
+        <button class="quick-sort-btn" id="btnAddFeriado">+ Adicionar feriado</button>
       </div>
       <div class="tbl-scroll">
         <ul id="feriadosCfgList" class="reorder-list" style="margin:0;border:none;border-radius:0"></ul>
@@ -840,7 +891,33 @@ function parseMpp(xml) {
       predecessors
     });
   }
-  return tasks;
+  return { tasks, feriados: extrairFeriadosCalendario(root) };
+}
+
+// Feriados vêm dos "Exceptions" (DayWorking=0) de qualquer calendário do cronograma.
+// Dedupe por data, já que o mesmo feriado costuma se repetir em vários calendários do
+// mesmo arquivo (ex.: calendário padrão e o da linha de base).
+function extrairFeriadosCalendario(root) {
+  const calendarsEl = childEl(root, 'Calendars');
+  if (!calendarsEl) return [];
+  const feriados = [];
+  const vistos = new Set();
+  childrenEls(calendarsEl, 'Calendar').forEach(calEl => {
+    const exceptionsEl = childEl(calEl, 'Exceptions');
+    if (!exceptionsEl) return;
+    childrenEls(exceptionsEl, 'Exception').forEach(excEl => {
+      if (child(excEl, 'DayWorking') !== '0') return; // só dias marcados como não trabalhados
+      const tp = childEl(excEl, 'TimePeriod');
+      if (!tp) return;
+      const from = pd(child(tp, 'FromDate'));
+      if (!from) return;
+      const chave = from.toDateString();
+      if (vistos.has(chave)) return;
+      vistos.add(chave);
+      feriados.push({ nome: child(excEl, 'Name') || '', data: from });
+    });
+  });
+  return feriados.sort((a, b) => a.data - b.data);
 }
 
 // ════════════════════════════════ HIERARQUIA ═══════════════════════════════════════
@@ -970,9 +1047,11 @@ function loadXml(file) {
   const reader = new FileReader();
   reader.onload = e => {
     try {
-      const tasks = parseMpp(e.target.result);
+      const resultado = parseMpp(e.target.result);
+      const tasks = resultado.tasks;
       if (!tasks.length) throw new Error('O XML foi lido, mas nenhuma tarefa foi encontrada.');
       S.tasks = tasks;
+      S.feriadosCronograma = resultado.feriados;
       S.escopoInfo = acharEscopos(tasks);
 
       $('z-xml').classList.add('done');
@@ -1627,16 +1706,29 @@ function roundRect(ctx, x, y, w, h, r) {
   ctx.closePath();
 }
 
-const LOB_BASE_DAY_W = 26, LOB_BASE_LANE_H = 21, LOB_SIDEBAR_W_MIN = 110, LOB_SIDEBAR_W_MAX = 260, LOB_HEADER_H = 70;
+const LOB_BASE_DAY_W = 26, LOB_BASE_LANE_H = 21, LOB_SIDEBAR_W_MIN = 110, LOB_SIDEBAR_W_MAX = 260;
+// Piso e teto de raia pro auto-ajuste (Ver tudo / reajuste ao filtrar / zoom manual): com
+// poucos pavimentos, dividir a área toda disponível por pouca coisa gera barras gigantes;
+// com muitos, a raia pode encolher a ponto de a barra virar um traço ilegível. Os dois lados
+// ficam travados nesses limites, sejam quais forem a área disponível ou o nº de raias.
+const LOB_LANE_H_MIN = 14, LOB_LANE_H_MAX = LOB_BASE_LANE_H * 2, LOB_DAY_W_MAX = LOB_BASE_DAY_W * 3;
+// Cores da tarja de fim de semana/feriado, compartilhadas entre o corpo do gráfico e o
+// cabeçalho, pra manter os dois com a mesma linguagem visual.
+const LOB_COR_FIMSEMANA = 'rgba(107,128,160,.10)', LOB_COR_FERIADO = 'rgba(107,128,160,.22)', LOB_COR_FERIADO_MARCA = '#c2760a';
+// Limiares de dayW que decidem o nível de detalhe do cabeçalho: dia a dia (zoom alto),
+// semana a semana (zoom médio) ou só o mês (zoom bem baixo, sem essa régua a mais).
+const LOB_HEADER_DIA_MIN = LOB_BASE_DAY_W * 0.7, LOB_HEADER_SEMANA_MIN = LOB_BASE_DAY_W * 0.22;
+const LOB_HEADER_BASE = 48, LOB_BADGE_ROW_H = 20, LOB_HEADER_MIN = 70, LOB_BADGE_FONT = 'bold 10px Sora, sans-serif';
 const LOB_SIDEBAR_FONT = 'bold 12px Sora, sans-serif';
 const LOB = {
   bars: [], pavimentos: [], servicos: [], pavInfo: [], barById: new Map(),
-  dayW: 0, laneH: 0, pavYOffset: [], pavHeight: [], sidebarW: LOB_SIDEBAR_W_MIN,
+  dayW: 0, laneH: 0, pavYOffset: [], pavHeight: [], sidebarW: LOB_SIDEBAR_W_MIN, headerH: LOB_HEADER_MIN,
   linhasVisiveis: [], pavIndexParaLinha: new Map(),
   diasOrigem: 0, diasTotalVisivel: 1,
   projectStart: new Date(), totalDays: 1,
-  filtroIniDay: null, filtroFimDay: null, pacoteFiltro: null, hoverBar: null,
-  marcos: [], feriados: [], servicosOcultos: new Set()
+  filtroIniDay: null, filtroFimDay: null, pacoteFiltro: null, hoverBar: null, pinnedBar: null,
+  marcos: [], feriados: [], servicosOcultos: new Set(),
+  escopoTasks: [], escopoNome: '', feriadosCronograma: []
 };
 
 // Largura da coluna de pavimento se ajusta ao nome mais comprido (até um teto), em vez de
@@ -1720,6 +1812,13 @@ function reindexarPavimentos() {
 }
 
 function initLob() {
+  // Cópia própria da árvore do escopo, independente de S (que por algum motivo esvazia
+  // depois de um tempo em certas sessões). O gráfico já prova que esses dados estão
+  // corretos aqui, então a busca de Marcos passa a ler daqui em vez de S.subtreeTasks.
+  LOB.escopoTasks = S.subtreeTasks || [];
+  LOB.escopoNome = S.escopoAtual ? S.escopoAtual.name : '';
+  LOB.feriadosCronograma = S.feriadosCronograma || [];
+
   const brutas = construirBars();
   const nomesPav = [...new Set(brutas.map(b => b.pavNome))];
   LOB.pavimentos = ordenarPavimentosPorInicio(nomesPav, brutas);
@@ -1745,7 +1844,7 @@ function initLob() {
   LOB.bars.forEach(b => { b.sucUids = LOB.bars.filter(b2 => b2.predUids.includes(b.uid)).map(b2 => b2.uid); });
 
   LOB.dayW = LOB_BASE_DAY_W; LOB.laneH = LOB_BASE_LANE_H;
-  LOB.filtroIniDay = null; LOB.filtroFimDay = null; LOB.pacoteFiltro = null; LOB.hoverBar = null;
+  LOB.filtroIniDay = null; LOB.filtroFimDay = null; LOB.pacoteFiltro = null; LOB.hoverBar = null; LOB.pinnedBar = null;
   $('filtroIni').value = ''; $('filtroFim').value = '';
 
   calcularLargSidebar();
@@ -1753,6 +1852,7 @@ function initLob() {
 
   LOB.marcos = []; LOB.feriados = [];
   marcoIdSeq = 0; feriadoIdSeq = 0;
+  importarFeriadosCronograma();
 
   $('chartSub').textContent = `Escopo: ${S.escopoAtual.name} · ${LOB.bars.length} tarefas · ${LOB.pavimentos.length} pavimentos · ${LOB.servicos.length} serviços`;
   atualizarMilestoneList();
@@ -1787,6 +1887,9 @@ function atualizarZoomPct() {
 // "Ver tudo": ajusta largura do dia e altura da raia de forma INDEPENDENTE pra caber tudo
 // na área visível, sem rolagem. Com filtro de serviço e/ou de datas ativo, cabe só no que
 // está sendo mostrado de verdade (linhas ocultas já não entram, via LOB.linhasVisiveis).
+// Numa linha de balanço muito densa (muitas raias no total), respeitar o piso de legibilidade
+// pode significar que o conteúdo passa a precisar de rolagem mesmo assim: entre "caber tudo
+// sem rolar" e "raia legível", a legibilidade ganha, então aqui o piso nunca é ignorado.
 function verLobTudo() {
   const wrap = $('mainWrap');
   const totalRaias = LOB.linhasVisiveis.reduce((soma, pi) => soma + LOB.pavInfo[pi].numLanes, 0) || 1;
@@ -1799,21 +1902,52 @@ function verLobTudo() {
     totalDiasAlvo = Math.max(fimDia - inicioDia, 1);
   }
 
-  LOB.dayW = Math.max(wrap.clientWidth / totalDiasAlvo, 3);
-  LOB.laneH = Math.max(wrap.clientHeight / totalRaias, 8);
+  LOB.dayW = Math.min(Math.max(wrap.clientWidth / totalDiasAlvo, 3), LOB_DAY_W_MAX);
+  LOB.laneH = Math.min(Math.max(wrap.clientHeight / totalRaias, LOB_LANE_H_MIN), LOB_LANE_H_MAX);
   atualizarZoomPct();
   layoutLob();
   wrap.scrollTo(Math.max(lobDayToX(inicioDia) - 12, 0), 0);
 }
 
+// Empacota os badges dos marcos em "andares" (mesma ideia das raias das barras): só sobe
+// pra um andar novo quando o badge colide com o último já colocado naquele andar.
+function calcularLinhasDosMarcos(ctx) {
+  ctx.font = LOB_BADGE_FONT;
+  const itens = LOB.marcos.map(m => {
+    const x = lobDayToX(m.dia + 1);
+    const nome = m.nome || '(sem nome)';
+    const w = Math.min(ctx.measureText(nome).width + 16, 220);
+    return { m, x, w, esquerda: x - w / 2, direita: x + w / 2 };
+  }).sort((a, b) => a.esquerda - b.esquerda);
+
+  const direitaPorAndar = [];
+  itens.forEach(it => {
+    let andar = direitaPorAndar.findIndex(direita => direita <= it.esquerda);
+    if (andar === -1) andar = direitaPorAndar.length;
+    it.andar = andar;
+    direitaPorAndar[andar] = it.direita + 6;
+  });
+  return { itens, numAndares: direitaPorAndar.length };
+}
+
+// Cresce o cabeçalho conforme o nº de andares de badge necessário (nenhum marco = altura
+// mínima de sempre). Atualiza tanto a altura do canvas quanto a linha da grade em CSS.
+function atualizarHeaderH() {
+  const ctx = $('headerCanvas').getContext('2d');
+  const { numAndares } = calcularLinhasDosMarcos(ctx);
+  LOB.headerH = Math.max(LOB_HEADER_MIN, LOB_HEADER_BASE + numAndares * LOB_BADGE_ROW_H + 4);
+  document.querySelector('.lob-grid').style.gridTemplateRows = `${LOB.headerH}px 1fr`;
+}
+
 function layoutLob() {
+  atualizarHeaderH();
   const contentW = LOB.diasTotalVisivel * LOB.dayW;
   const contentH = computeLobOffsets();
 
   const mainCanvas = $('mainCanvas');
   mainCanvas.width = contentW; mainCanvas.height = contentH;
   const headerCanvas = $('headerCanvas');
-  headerCanvas.width = contentW; headerCanvas.height = LOB_HEADER_H;
+  headerCanvas.width = contentW; headerCanvas.height = LOB.headerH;
   const sidebarCanvas = $('sidebarCanvas');
   sidebarCanvas.width = LOB.sidebarW; sidebarCanvas.height = contentH;
 
@@ -1822,6 +1956,12 @@ function layoutLob() {
 }
 
 function lobDayToX(d) { return (d - LOB.diasOrigem) * LOB.dayW; }
+
+// Espaçamento vertical da barra dentro da raia: proporcional ao LOB.laneH, não fixo. Com um
+// respiro fixo de 6px (3+3), zoom baixo deixa a raia bem fina mas o respiro continua do mesmo
+// tamanho, então a barra vira um fiapo cercado de vão vazio. Escalando o respiro junto com a
+// raia (com um piso de 1px), a barra continua ocupando a mesma proporção da raia em qualquer zoom.
+function lobBarPad() { return Math.max(1, Math.min(3, LOB.laneH * 0.15)); }
 
 // Raia 0 fica na base do bloco do pavimento (mais antiga embaixo), raias maiores sobem.
 // Canvas cresce pra baixo, então isso significa inverter: raia 0 = mais perto do fundo.
@@ -1848,9 +1988,36 @@ function lobMonthSpans() {
   spans.push({ start: spanStart, end: fim, label: lobMonthLabel(spanStart) });
   return spans;
 }
+// Semanas de segunda a domingo, recortadas pela janela visível (diasOrigem/diasTotalVisivel).
+// "inicioSemana" guarda a segunda-feira "de verdade" (pode cair antes do início da janela,
+// só serve pra calcular o rótulo), enquanto start/end já vêm recortados pro que é desenhado.
+function lobWeekSpans() {
+  const spans = [];
+  const origem = LOB.diasOrigem, fim = origem + LOB.diasTotalVisivel;
+  let d = origem;
+  while (d < fim) {
+    const date = new Date(LOB.projectStart); date.setDate(date.getDate() + d);
+    const dowSeg = (date.getDay() + 6) % 7; // 0 = segunda-feira
+    const inicioSemana = d - dowSeg;
+    const fimSemana = Math.min(inicioSemana + 7, fim);
+    spans.push({ start: d, end: fimSemana, inicioSemana });
+    d = fimSemana;
+  }
+  return spans;
+}
+function lobWeekLabel(inicioSemana) {
+  const date = new Date(LOB.projectStart); date.setDate(date.getDate() + inicioSemana);
+  return date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+}
 function lobMonthLabel(d) {
   const date = new Date(LOB.projectStart); date.setDate(date.getDate() + d);
   return date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase();
+}
+// Versão curta ("06/26") pro mês que sobrou pequeno demais depois de um filtro de data cortar
+// o meio dele: "JULHO DE 2026" não cabe, então cai pra essa em vez de ficar cortado na tela.
+function lobMonthLabelCurto(d) {
+  const date = new Date(LOB.projectStart); date.setDate(date.getDate() + d);
+  return date.toLocaleDateString('pt-BR', { month: '2-digit', year: '2-digit' });
 }
 
 function drawLobHeader() {
@@ -1862,26 +2029,90 @@ function drawLobHeader() {
     ctx.font = 'bold 11px Sora, sans-serif';
     ctx.fillStyle = '#1a2b45';
     ctx.textAlign = 'center';
-    ctx.fillText(sp.label, lobDayToX(sp.start) + (sp.end - sp.start) * LOB.dayW / 2, 20);
+    const larguraSpan = (sp.end - sp.start) * LOB.dayW;
+    // Com o filtro de data cortando o meio de um mês, a faixa visível pode ficar estreita
+    // demais pro nome completo ("JULHO DE 2026") caber sem estourar pro lado de fora do
+    // cabeçalho. Cai pra "06/26" nesse caso, e some de vez só se nem isso couber.
+    let rotulo = sp.label;
+    if (ctx.measureText(rotulo).width > larguraSpan - 6) rotulo = lobMonthLabelCurto(sp.start);
+    if (ctx.measureText(rotulo).width <= larguraSpan - 6) {
+      ctx.fillText(rotulo, lobDayToX(sp.start) + larguraSpan / 2, 20);
+    }
     ctx.textAlign = 'left';
 
     ctx.strokeStyle = '#9aa9c0'; ctx.lineWidth = 1.4;
-    ctx.beginPath(); ctx.moveTo(lobDayToX(sp.start), 28); ctx.lineTo(lobDayToX(sp.start), LOB_HEADER_H); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(lobDayToX(sp.start), 28); ctx.lineTo(lobDayToX(sp.start), LOB.headerH); ctx.stroke();
   });
 
-  if (LOB.dayW >= LOB_BASE_DAY_W * 0.7) {
+  // 3 níveis de detalhe conforme o zoom: dia a dia (números + tarja de fim de semana/feriado),
+  // semana a semana (só separador + rótulo por semana, com marca se tiver feriado dentro) ou,
+  // no zoom bem baixo, nem isso (sobra só a faixa do mês, já desenhada acima).
+  if (LOB.dayW >= LOB_HEADER_DIA_MIN) {
+    const feriadosPorDia = new Set(LOB.feriados.map(f => f.dia));
     for (let d = LOB.diasOrigem; d < LOB.diasOrigem + LOB.diasTotalVisivel; d++) {
       const date = new Date(LOB.projectStart); date.setDate(date.getDate() + d);
       const dow = date.getDay();
+      const ehFeriado = feriadosPorDia.has(d);
+      if (ehFeriado) { ctx.fillStyle = LOB_COR_FERIADO; ctx.fillRect(lobDayToX(d), 28, LOB.dayW, LOB.headerH - 28); }
+      else if (dow === 0 || dow === 6) { ctx.fillStyle = LOB_COR_FIMSEMANA; ctx.fillRect(lobDayToX(d), 28, LOB.dayW, LOB.headerH - 28); }
+
       ctx.font = '9px DM Sans, sans-serif';
       ctx.fillStyle = (dow === 0 || dow === 6) ? '#c53030' : '#6b80a0';
       ctx.textAlign = 'center';
       ctx.fillText(String(date.getDate()).padStart(2, '0'), lobDayToX(d) + LOB.dayW / 2, 42);
       ctx.textAlign = 'left';
+
+      if (ehFeriado) {
+        ctx.fillStyle = LOB_COR_FERIADO_MARCA;
+        ctx.beginPath(); ctx.arc(lobDayToX(d) + LOB.dayW / 2, 47, 1.6, 0, Math.PI * 2); ctx.fill();
+      }
     }
+  } else if (LOB.dayW >= LOB_HEADER_SEMANA_MIN) {
+    lobWeekSpans().forEach(sp => {
+      ctx.strokeStyle = '#c7d2e0'; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(lobDayToX(sp.start), 28); ctx.lineTo(lobDayToX(sp.start), LOB.headerH); ctx.stroke();
+
+      const temFeriado = LOB.feriados.some(f => f.dia >= sp.inicioSemana && f.dia < sp.inicioSemana + 7);
+      const cx = lobDayToX(sp.start) + (sp.end - sp.start) * LOB.dayW / 2;
+      ctx.font = '9px DM Sans, sans-serif';
+      ctx.fillStyle = '#6b80a0';
+      ctx.textAlign = 'center';
+      ctx.fillText(lobWeekLabel(sp.inicioSemana), cx, 42);
+      if (temFeriado) {
+        ctx.fillStyle = LOB_COR_FERIADO_MARCA;
+        ctx.beginPath(); ctx.arc(cx, 47, 1.6, 0, Math.PI * 2); ctx.fill();
+      }
+      ctx.textAlign = 'left';
+    });
   }
   ctx.strokeStyle = '#d4dfe8'; ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(0, LOB_HEADER_H - 0.5); ctx.lineTo(c.width, LOB_HEADER_H - 0.5); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, LOB.headerH - 0.5); ctx.lineTo(c.width, LOB.headerH - 0.5); ctx.stroke();
+
+  // Badge de cada marco, fixo no cabeçalho (não some ao rolar verticalmente, só some ao
+  // rolar horizontalmente pra fora do período visível). Quando dois colidem, empilha em
+  // andares diferentes em vez de sobrepor (calcularLinhasDosMarcos já decidiu isso).
+  const { itens } = calcularLinhasDosMarcos(ctx);
+  itens.forEach(({ m, x, w, andar }) => {
+    if (x < -120 || x > c.width + 120) return;
+    ctx.font = LOB_BADGE_FONT;
+    const nome = m.nome || '(sem nome)';
+    const cor = m.cor || '#1A6EE8';
+    const badgeW = w, badgeH = 18;
+    const badgeX = Math.max(2, Math.min(x - badgeW / 2, c.width - badgeW - 2));
+    const badgeY = LOB_HEADER_BASE + andar * LOB_BADGE_ROW_H;
+
+    ctx.strokeStyle = cor; ctx.lineWidth = 1.5; ctx.setLineDash([3, 2]);
+    ctx.beginPath(); ctx.moveTo(x, badgeY + badgeH); ctx.lineTo(x, LOB.headerH); ctx.stroke();
+    ctx.setLineDash([]);
+
+    roundRect(ctx, badgeX, badgeY, badgeW, badgeH, 9);
+    ctx.fillStyle = cor;
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.textAlign = 'center';
+    ctx.fillText(truncarTexto(ctx, nome, badgeW - 12), badgeX + badgeW / 2, badgeY + 12.5);
+    ctx.textAlign = 'left';
+  });
 }
 
 function drawLobSidebar() {
@@ -1920,13 +2151,14 @@ function drawLobMain() {
   for (let d = LOB.diasOrigem; d < LOB.diasOrigem + LOB.diasTotalVisivel; d++) {
     const date = new Date(LOB.projectStart); date.setDate(date.getDate() + d);
     const dow = date.getDay();
-    if (dow === 0 || dow === 6) { ctx.fillStyle = 'rgba(107,128,160,.10)'; ctx.fillRect(lobDayToX(d), 0, LOB.dayW, c.height); }
+    if (dow === 0 || dow === 6) { ctx.fillStyle = LOB_COR_FIMSEMANA; ctx.fillRect(lobDayToX(d), 0, LOB.dayW, c.height); }
   }
-  LOB.feriados.forEach(f => { ctx.fillStyle = 'rgba(217,119,6,.18)'; ctx.fillRect(lobDayToX(f.dia), 0, LOB.dayW, c.height); });
+  LOB.feriados.forEach(f => { ctx.fillStyle = LOB_COR_FERIADO; ctx.fillRect(lobDayToX(f.dia), 0, LOB.dayW, c.height); });
 
   LOB.marcos.forEach(m => {
-    ctx.strokeStyle = '#1A6EE8'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
-    ctx.beginPath(); ctx.moveTo(lobDayToX(m.dia), 0); ctx.lineTo(lobDayToX(m.dia), c.height); ctx.stroke();
+    const xMarco = lobDayToX(m.dia + 1); // fim do dia (data de término), não o início dele
+    ctx.strokeStyle = m.cor || '#1A6EE8'; ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
+    ctx.beginPath(); ctx.moveTo(xMarco, 0); ctx.lineTo(xMarco, c.height); ctx.stroke();
     ctx.setLineDash([]);
   });
 
@@ -1947,8 +2179,9 @@ function drawLobMain() {
     if (!LOB.pavIndexParaLinha.has(b.pav)) return; // linha do pavimento está oculta
     const x = lobDayToX(b.startDay);
     const w = Math.max(b.dur * LOB.dayW, 3);
-    const y = lobLaneY(b.pav, b.lane) + 3;
-    const h = LOB.laneH - 6;
+    const pad = lobBarPad();
+    const y = lobLaneY(b.pav, b.lane) + pad;
+    const h = LOB.laneH - pad * 2;
 
     const atenuado = LOB.pacoteFiltro && b.servNome !== LOB.pacoteFiltro;
 
@@ -1989,15 +2222,30 @@ function drawLobMain() {
         ? { x: lobDayToX(LOB.hoverBar.startDay), y: lobLaneY(LOB.hoverBar.pav, LOB.hoverBar.lane) + LOB.laneH / 2 }
         : { x: lobDayToX(other.startDay), y: lobLaneY(other.pav, other.lane) + LOB.laneH / 2 };
 
-      ctx.strokeStyle = '#1a2b45'; ctx.lineWidth = 1.8; ctx.setLineDash([4, 3]);
+      // Predecessora em âmbar, sucessora em azul (sem usar vermelho) + halo branco por
+      // baixo, pra garantir contraste tanto em cima do fundo claro quanto de barras escuras.
+      const corLinha = isPred ? '#eab308' : '#2563eb';
+      const desenharLinha = (largura, cor) => {
+        ctx.strokeStyle = cor; ctx.lineWidth = largura; ctx.setLineDash([4, 3]);
+        ctx.beginPath();
+        ctx.moveTo(from.x, from.y);
+        ctx.lineTo(from.x + 10, from.y);
+        ctx.lineTo(to.x - 10, to.y);
+        ctx.lineTo(to.x, to.y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      };
+      desenharLinha(4.5, 'rgba(255,255,255,.95)');
+      desenharLinha(1.8, corLinha);
+
+      ctx.fillStyle = 'rgba(255,255,255,.95)';
       ctx.beginPath();
-      ctx.moveTo(from.x, from.y);
-      ctx.lineTo(from.x + 10, from.y);
-      ctx.lineTo(to.x - 10, to.y);
-      ctx.lineTo(to.x, to.y);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.fillStyle = '#1a2b45';
+      ctx.moveTo(to.x, to.y);
+      ctx.lineTo(to.x - 7, to.y - 5.5);
+      ctx.lineTo(to.x - 7, to.y + 5.5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = corLinha;
       ctx.beginPath();
       ctx.moveTo(to.x, to.y);
       ctx.lineTo(to.x - 6, to.y - 4);
@@ -2006,8 +2254,11 @@ function drawLobMain() {
       ctx.fill();
 
       const ox = lobDayToX(other.startDay), ow = Math.max(other.dur * LOB.dayW, 3);
-      const oy = lobLaneY(other.pav, other.lane) + 3, oh = LOB.laneH - 6;
-      ctx.strokeStyle = '#1a2b45'; ctx.lineWidth = 2;
+      const oy = lobLaneY(other.pav, other.lane) + lobBarPad(), oh = LOB.laneH - lobBarPad() * 2;
+      ctx.strokeStyle = 'rgba(255,255,255,.95)'; ctx.lineWidth = 4;
+      roundRect(ctx, ox - 1.5, oy - 1.5, ow + 3, oh + 3, 4);
+      ctx.stroke();
+      ctx.strokeStyle = corLinha; ctx.lineWidth = 2;
       roundRect(ctx, ox - 1.5, oy - 1.5, ow + 3, oh + 3, 4);
       ctx.stroke();
     });
@@ -2022,9 +2273,8 @@ function syncLobTransforms() {
 $('mainWrap').addEventListener('scroll', syncLobTransforms);
 
 function zoomLobPor(fator) {
-  const min = 0.35, max = 3;
-  LOB.dayW = Math.min(Math.max(LOB.dayW * fator, LOB_BASE_DAY_W * min), LOB_BASE_DAY_W * max);
-  LOB.laneH = Math.min(Math.max(LOB.laneH * fator, LOB_BASE_LANE_H * min), LOB_BASE_LANE_H * max);
+  LOB.dayW = Math.min(Math.max(LOB.dayW * fator, LOB_BASE_DAY_W * 0.35), LOB_DAY_W_MAX);
+  LOB.laneH = Math.min(Math.max(LOB.laneH * fator, LOB_LANE_H_MIN), LOB_LANE_H_MAX);
   atualizarZoomPct();
   layoutLob();
 }
@@ -2035,39 +2285,74 @@ $('btnZoomReset').addEventListener('click', () => {
   atualizarZoomPct(); layoutLob(); $('mainWrap').scrollTo(0, 0);
 });
 $('btnVerTudo').addEventListener('click', verLobTudo);
+
+$('btnTelaCheia').addEventListener('click', () => {
+  if (document.fullscreenElement) document.exitFullscreen();
+  else $('appContainer').requestFullscreen();
+});
+document.addEventListener('fullscreenchange', () => {
+  const emTelaCheia = document.fullscreenElement === $('appContainer');
+  $('btnTelaCheia').textContent = emTelaCheia ? '⤢ Sair da tela cheia' : '⤢ Tela cheia';
+  if (!$('chart-screen').classList.contains('hidden')) verLobTudo(); // reaproveita o espaço só se o gráfico estiver na tela
+});
 $('mainWrap').addEventListener('wheel', ev => {
   if (!ev.ctrlKey) return;
   ev.preventDefault();
   zoomLobPor(ev.deltaY < 0 ? 1.1 : 1 / 1.1);
 }, { passive: false });
 
-$('mainWrap').addEventListener('mousemove', ev => {
+// Acha a barra sob o mouse dentro do mainWrap (mesmo hit-test usado no hover e no clique).
+function acharBarraSobMouse(ev) {
   const wrap = $('mainWrap');
   const rect = wrap.getBoundingClientRect();
   const mx = ev.clientX - rect.left + wrap.scrollLeft;
   const my = ev.clientY - rect.top + wrap.scrollTop;
-
-  const hit = LOB.bars.find(b => {
+  return LOB.bars.find(b => {
     if (LOB.servicosOcultos.has(b.servNome)) return false;
     if (!lobBarVisivel(b) || !LOB.pavIndexParaLinha.has(b.pav)) return false;
     const x = lobDayToX(b.startDay), w = Math.max(b.dur * LOB.dayW, 3);
-    const y = lobLaneY(b.pav, b.lane) + 3, h = LOB.laneH - 6;
+    const y = lobLaneY(b.pav, b.lane) + lobBarPad(), h = LOB.laneH - lobBarPad() * 2;
     return mx >= x && mx <= x + w && my >= y && my <= y + h;
   });
+}
+
+// Monta só o conteúdo (título/pavimento/período + seções de predecessoras/sucessoras,
+// cada uma com sua cor). Reaproveitado tanto no tooltip solto (hover) quanto no fixado (clique).
+function montarTooltipConteudoHtml(hit) {
+  const d1 = new Date(LOB.projectStart); d1.setDate(d1.getDate() + hit.startDay);
+  const d2 = new Date(LOB.projectStart); d2.setDate(d2.getDate() + hit.startDay + hit.dur - 1);
+  const fmt = d => d.toLocaleDateString('pt-BR');
+  const preds = hit.predUids.map(uid => LOB.barById.get(uid)).filter(Boolean);
+  const sucs = hit.sucUids.map(uid => LOB.barById.get(uid)).filter(Boolean);
+
+  const itemHtml = (t, classe) =>
+    `<div class="tooltip-item ${classe}">${escHtml(t.servNome)} (${escHtml(t.pavNome)}) <span class="wbs">WBS ${escHtml(t.wbs)}</span></div>`;
+
+  let html = `<strong>${escHtml(hit.servNome)}</strong>`
+    + `<div class="tooltip-pav">${escHtml(hit.pavNome)} <span class="wbs">· WBS ${escHtml(hit.wbs)}</span></div>`
+    + `<div class="tooltip-periodo">${fmt(d1)} a ${fmt(d2)} (${hit.dur}d)</div>`;
+  if (hit.critical) html += `<div class="crit">⚠ Caminho crítico</div>`;
+
+  if (preds.length) {
+    html += `<div class="tooltip-secao pred">Predecessoras</div>` + preds.map(p => itemHtml(p, 'pred')).join('');
+  }
+  if (sucs.length) {
+    html += `<div class="tooltip-secao suc">Sucessoras</div>` + sucs.map(s => itemHtml(s, 'suc')).join('');
+  }
+  return html;
+}
+
+$('mainWrap').addEventListener('mousemove', ev => {
+  if (LOB.pinnedBar) return; // com uma janela fixada, o hover solto fica desligado
+  const wrap = $('mainWrap');
+  const hit = acharBarraSobMouse(ev);
 
   if (hit !== LOB.hoverBar) { LOB.hoverBar = hit || null; drawLobMain(); }
 
   const tooltip = $('lobTooltip');
   if (hit) {
-    const d1 = new Date(LOB.projectStart); d1.setDate(d1.getDate() + hit.startDay);
-    const d2 = new Date(LOB.projectStart); d2.setDate(d2.getDate() + hit.startDay + hit.dur - 1);
-    const fmt = d => d.toLocaleDateString('pt-BR');
-    const preds = hit.predUids.map(uid => LOB.barById.get(uid)).filter(Boolean);
-    const sucs = hit.sucUids.map(uid => LOB.barById.get(uid)).filter(Boolean);
-    tooltip.innerHTML = `<strong>${escHtml(hit.servNome)}</strong>${escHtml(hit.pavNome)} <span class="wbs">· WBS ${escHtml(hit.wbs)}</span><br>${fmt(d1)} a ${fmt(d2)} (${hit.dur}d)`
-      + (hit.critical ? `<br><span class="crit">⚠ Caminho crítico</span>` : '')
-      + preds.map(p => `<br>◀ Predecessora: ${escHtml(p.servNome)} (${escHtml(p.pavNome)}) <span class="wbs">WBS ${escHtml(p.wbs)}</span>`).join('')
-      + sucs.map(s => `<br>▶ Sucessora: ${escHtml(s.servNome)} (${escHtml(s.pavNome)}) <span class="wbs">WBS ${escHtml(s.wbs)}</span>`).join('');
+    tooltip.classList.remove('fixado');
+    tooltip.innerHTML = montarTooltipConteudoHtml(hit);
     tooltip.style.display = 'block';
     // Mede o tamanho real do tooltip e reposiciona pra nunca passar da borda da janela
     const tw = tooltip.offsetWidth, th = tooltip.offsetHeight;
@@ -2083,9 +2368,63 @@ $('mainWrap').addEventListener('mousemove', ev => {
   }
 });
 $('mainWrap').addEventListener('mouseleave', () => {
+  if (LOB.pinnedBar) return;
   $('lobTooltip').style.display = 'none';
   if (LOB.hoverBar) { LOB.hoverBar = null; drawLobMain(); }
 });
+
+// Clique numa barra fixa o tooltip: vira uma janelinha arrastável que fica visível até
+// fechar, em vez de sumir ao tirar o mouse. Só uma fixada por vez.
+$('mainWrap').addEventListener('click', ev => {
+  const hit = acharBarraSobMouse(ev);
+  if (!hit) { desfixarTooltip(); return; }
+  fixarTooltip(hit, ev.clientX + 14, ev.clientY + 14);
+});
+
+function fixarTooltip(hit, left, top) {
+  LOB.pinnedBar = hit;
+  LOB.hoverBar = hit;
+  const tooltip = $('lobTooltip');
+  tooltip.classList.add('fixado');
+  tooltip.innerHTML = `
+    <div class="tooltip-drag-handle">
+      <span>⠿⠿ arrastar</span>
+      <button class="tooltip-close" title="Fechar">✕</button>
+    </div>
+    <div class="tooltip-body">${montarTooltipConteudoHtml(hit)}</div>`;
+  tooltip.style.display = 'block';
+  const tw = tooltip.offsetWidth, th = tooltip.offsetHeight;
+  tooltip.style.left = Math.max(4, Math.min(left, window.innerWidth - tw - 4)) + 'px';
+  tooltip.style.top = Math.max(4, Math.min(top, window.innerHeight - th - 4)) + 'px';
+
+  tooltip.querySelector('.tooltip-close').addEventListener('click', desfixarTooltip);
+  const handle = tooltip.querySelector('.tooltip-drag-handle');
+  handle.addEventListener('mousedown', ev => {
+    tooltipArrastando = true;
+    const rect = tooltip.getBoundingClientRect();
+    tooltipArrasteOffset = { x: ev.clientX - rect.left, y: ev.clientY - rect.top };
+    ev.preventDefault();
+  });
+  drawLobMain();
+}
+
+function desfixarTooltip() {
+  LOB.pinnedBar = null;
+  LOB.hoverBar = null;
+  const tooltip = $('lobTooltip');
+  tooltip.classList.remove('fixado');
+  tooltip.style.display = 'none';
+  drawLobMain();
+}
+
+let tooltipArrastando = false, tooltipArrasteOffset = { x: 0, y: 0 };
+document.addEventListener('mousemove', ev => {
+  if (!tooltipArrastando) return;
+  const tooltip = $('lobTooltip');
+  tooltip.style.left = (ev.clientX - tooltipArrasteOffset.x) + 'px';
+  tooltip.style.top = (ev.clientY - tooltipArrasteOffset.y) + 'px';
+});
+document.addEventListener('mouseup', () => { tooltipArrastando = false; });
 
 // Nome completo do pavimento ao passar o mouse na sidebar, só quando ele estiver truncado
 $('sidebarWrap').addEventListener('mousemove', ev => {
@@ -2129,6 +2468,7 @@ $('btnLimparFiltroData').addEventListener('click', () => {
   $('filtroIni').value = ''; $('filtroFim').value = '';
   LOB.filtroIniDay = null; LOB.filtroFimDay = null;
   reindexarPavimentos();
+  ajustarLaneHAoFiltro();
   layoutLob();
 });
 function atualizarLobFiltroData() {
@@ -2137,7 +2477,18 @@ function atualizarLobFiltroData() {
   LOB.filtroIniDay = ini ? lobDateToDay(ini) : null;
   LOB.filtroFimDay = fim ? lobDateToDay(fim) : LOB.totalDays;
   reindexarPavimentos();
+  ajustarLaneHAoFiltro();
   layoutLob();
+}
+
+// Depois de um filtro (serviço ou data) mudar as raias visíveis, a altura da raia (LOB.laneH)
+// não acompanha sozinha: se o filtro deixa menos raias no total, sobra um vão vazio embaixo do
+// gráfico (o conteúdo fica mais baixo que a área visível). Aqui a raia estica ou encolhe pra
+// ocupar exatamente a altura disponível, sem mexer no zoom horizontal (LOB.dayW).
+function ajustarLaneHAoFiltro() {
+  const wrap = $('mainWrap');
+  const totalRaias = LOB.linhasVisiveis.reduce((soma, pi) => soma + LOB.pavInfo[pi].numLanes, 0) || 1;
+  if (wrap.clientHeight > 0) LOB.laneH = Math.min(Math.max(wrap.clientHeight / totalRaias, LOB_LANE_H_MIN), LOB_LANE_H_MAX);
 }
 
 function renderPkgList() {
@@ -2157,11 +2508,18 @@ function renderPkgList() {
       LOB.pacoteFiltro = (LOB.pacoteFiltro === nome) ? null : nome;
       reindexarPavimentos();
       renderPkgList();
+      ajustarLaneHAoFiltro();
       layoutLob();
     });
   });
 }
-$('btnLimparPkg').addEventListener('click', () => { LOB.pacoteFiltro = null; reindexarPavimentos(); renderPkgList(); layoutLob(); });
+$('btnLimparPkg').addEventListener('click', () => {
+  LOB.pacoteFiltro = null;
+  reindexarPavimentos();
+  renderPkgList();
+  ajustarLaneHAoFiltro();
+  layoutLob();
+});
 
 // ════════════════════════════════ CONFIGURAÇÃO DE PACOTES (cor/ordem/visibilidade) ═══
 // Tela dedicada (não modal): toda mudança já aplica na hora, sem passo de "aplicar".
@@ -2203,7 +2561,9 @@ let marcoIdSeq = 0;
 
 function atualizarMilestoneList() {
   $('milestoneList').innerHTML = LOB.marcos.length
-    ? [...LOB.marcos].sort((a, b) => a.dia - b.dia).map(m => `◆ <strong style="color:var(--navy)">${escHtml(m.nome || '(sem nome)')}</strong>`).join('<br>')
+    ? [...LOB.marcos].sort((a, b) => a.dia - b.dia).map(m =>
+        `<span style="color:${m.cor || '#1A6EE8'}">◆</span> <strong style="color:var(--navy)">${escHtml(m.nome || '(sem nome)')}</strong>`
+      ).join('<br>')
     : 'Nenhum marco definido ainda.';
 }
 
@@ -2211,6 +2571,10 @@ function abrirMarcosScreen() {
   $('chart-screen').classList.add('hidden');
   $('config-screen').classList.add('hidden');
   $('marcos-screen').classList.remove('hidden');
+  $('marcoSearchInput').value = '';
+  $('marcoSearchResults').classList.add('hidden');
+  $('marcoSearchResults').innerHTML = '';
+  $('marcoSearchDiag').textContent = '';
   renderMarcosList();
 }
 function voltarDoMarcosCfg() {
@@ -2223,6 +2587,7 @@ function renderMarcosList() {
   const ordenados = [...LOB.marcos].sort((a, b) => a.dia - b.dia);
   $('marcosCfgList').innerHTML = ordenados.length ? ordenados.map(m => `
     <li class="reorder-item marcocfg-item" data-id="${m.id}">
+      <input type="color" class="pkgcfg-color" data-id="${m.id}" value="${m.cor || '#1A6EE8'}" title="Cor do marco">
       <input type="text" class="marcocfg-nome" data-id="${m.id}" placeholder="Nome do marco (ex.: Fim da Estrutura)" value="${escHtml(m.nome)}">
       <input type="date" class="marcocfg-data" data-id="${m.id}" value="${lobDiaParaInput(m.dia)}">
       <button class="sel-clear-x" data-id="${m.id}" title="Remover">✕</button>
@@ -2233,31 +2598,98 @@ function renderMarcosList() {
 function attachMarcosCfgEvents() {
   document.querySelectorAll('#marcosCfgList .marcocfg-item').forEach(item => {
     const id = +item.dataset.id;
+    const corInput = item.querySelector('.pkgcfg-color');
+    if (corInput) corInput.addEventListener('input', ev => {
+      const m = LOB.marcos.find(x => x.id === id);
+      if (m) m.cor = ev.target.value;
+      layoutLob();
+    });
     item.querySelector('.marcocfg-nome').addEventListener('input', ev => {
       const m = LOB.marcos.find(x => x.id === id);
       if (m) m.nome = ev.target.value;
       atualizarMilestoneList();
-      drawLobMain();
+      layoutLob(); // o badge do marco mora no cabeçalho, não só na área das barras
     });
     item.querySelector('.marcocfg-data').addEventListener('change', ev => {
       const m = LOB.marcos.find(x => x.id === id);
       if (m && ev.target.value) m.dia = lobDateToDay(ev.target.value);
       atualizarMilestoneList();
-      drawLobMain();
+      layoutLob();
       renderMarcosList();
     });
     item.querySelector('.sel-clear-x').addEventListener('click', () => {
       LOB.marcos = LOB.marcos.filter(x => x.id !== id);
       atualizarMilestoneList();
-      drawLobMain();
+      layoutLob();
       renderMarcosList();
     });
   });
 }
 
 $('btnAddMarco').addEventListener('click', () => {
-  LOB.marcos.push({ id: ++marcoIdSeq, nome: '', dia: LOB.diasOrigem || 0 });
+  LOB.marcos.push({ id: ++marcoIdSeq, nome: '', dia: LOB.diasOrigem || 0, cor: '#1A6EE8' });
+  layoutLob();
   renderMarcosList();
+});
+
+// Data de referência de uma tarefa real (usa o término, que é o sentido mais comum de
+// marco: "quando aquilo termina") convertida pro mesmo dia-offset das barras do gráfico.
+function diaDeTarefa(t) {
+  return Math.round((t.finish - LOB.projectStart) / 864e5);
+}
+
+// Remove acentos pra busca tolerante (ex.: "comunicacao" acha "Comunicação")
+function lobSemAcento(s) {
+  return String(s || '').normalize('NFD').replace(/\p{Diacritic}/gu, '');
+}
+
+// Mostra a árvore inteira do escopo (na ordem do cronograma, com recuo por nível) quando
+// o campo está vazio, e filtra por nome conforme o usuário digita. Sempre mostra algo ao
+// focar/clicar no campo, mesmo sem ter digitado nada ainda.
+function renderMarcoSearchResults(termo) {
+  const resultsEl = $('marcoSearchResults');
+  const tasks = LOB.escopoTasks || [];
+  const termoNorm = lobSemAcento(termo).toUpperCase();
+  const filtrados = termoNorm ? tasks.filter(t => t.name && lobSemAcento(t.name).toUpperCase().includes(termoNorm)) : tasks;
+  const limitados = filtrados.slice(0, 300);
+  $('marcoSearchDiag').textContent = `Escopo: ${LOB.escopoNome || '(sem nome)'} · Pesquisando entre ${tasks.length} itens · ${filtrados.length} encontrado${filtrados.length !== 1 ? 's' : ''}`;
+  resultsEl.innerHTML = limitados.length
+    ? limitados.map(t => {
+        const indent = Math.max((t.outlineLevel || 1) - 1, 0) * 14;
+        const dataTxt = (t.finish instanceof Date && !isNaN(t.finish)) ? t.finish.toLocaleDateString('pt-BR') : 'sem data';
+        return `<div class="marco-search-item" data-uid="${escHtml(t.uid)}" style="padding-left:${16 + indent}px">
+          <div class="nome">${escHtml((t.name || '').trim())}</div>
+          <div class="meta">WBS ${escHtml(t.wbs || t.id)} · término em ${dataTxt}</div>
+        </div>`;
+      }).join('')
+    : `<div class="marco-search-empty">Nenhum item do cronograma bate com esse termo.</div>`;
+  resultsEl.classList.remove('hidden');
+}
+
+$('marcoSearchInput').addEventListener('focus', () => {
+  renderMarcoSearchResults($('marcoSearchInput').value.trim());
+});
+$('marcoSearchInput').addEventListener('input', () => {
+  renderMarcoSearchResults($('marcoSearchInput').value.trim());
+});
+
+$('marcoSearchResults').addEventListener('click', ev => {
+  const item = ev.target.closest('.marco-search-item');
+  if (!item) return;
+  const t = (LOB.escopoTasks || []).find(x => x.uid === item.dataset.uid);
+  if (!t || !(t.finish instanceof Date) || isNaN(t.finish)) return;
+  LOB.marcos.push({ id: ++marcoIdSeq, nome: (t.name || '').trim(), dia: diaDeTarefa(t), cor: '#1A6EE8' });
+  $('marcoSearchInput').value = '';
+  $('marcoSearchResults').classList.add('hidden');
+  $('marcoSearchResults').innerHTML = '';
+  atualizarMilestoneList();
+  layoutLob();
+  renderMarcosList();
+});
+document.addEventListener('click', ev => {
+  if (!ev.target.closest('.marco-search-bar') && !ev.target.closest('#marcoSearchResults')) {
+    $('marcoSearchResults').classList.add('hidden');
+  }
 });
 
 // ════════════════════════════════ FERIADOS (dias não úteis destacados) ═════════════
@@ -2310,6 +2742,35 @@ function attachFeriadosCfgEvents() {
 $('btnAddFeriado').addEventListener('click', () => {
   LOB.feriados.push({ id: ++feriadoIdSeq, nome: '', dia: LOB.diasOrigem || 0 });
   renderFeriadosList();
+});
+
+// Importa as exceções de calendário (feriados) do cronograma pra LOB.feriados, sem duplicar
+// as que já estão na lista (por dia). Chamada automaticamente ao montar o gráfico (initLob) e,
+// manualmente, pelo botão "Reimportar" (útil se o usuário apagar um feriado e quiser trazer de volta).
+function importarFeriadosCronograma() {
+  const diasJaExistentes = new Set(LOB.feriados.map(f => f.dia));
+  let importados = 0;
+  LOB.feriadosCronograma.forEach(f => {
+    const dia = Math.round((f.data - LOB.projectStart) / 864e5);
+    if (diasJaExistentes.has(dia)) return;
+    diasJaExistentes.add(dia);
+    LOB.feriados.push({ id: ++feriadoIdSeq, nome: f.nome, dia });
+    importados++;
+  });
+  return importados;
+}
+
+$('btnImportarFeriados').addEventListener('click', () => {
+  if (!LOB.feriadosCronograma.length) {
+    alert('Nenhum feriado (exceção de calendário) foi encontrado no cronograma carregado.');
+    return;
+  }
+  const importados = importarFeriadosCronograma();
+  renderFeriadosList();
+  drawLobMain();
+  alert(importados > 0
+    ? `${importados} feriado${importados !== 1 ? 's' : ''} importado${importados !== 1 ? 's' : ''} do cronograma.`
+    : 'Todos os feriados do cronograma já estavam na lista.');
 });
 
 function renderPkgConfigList() {
