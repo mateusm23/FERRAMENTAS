@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gerador de Linha de Balanço</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+<!-- Vendorizada localmente (libs/exceljs.min.js) pra ferramenta continuar funcionando offline,
+     igual as outras do portal. Usada só na exportação pra Excel. -->
+<script src="libs/exceljs.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap');
 
@@ -645,7 +648,7 @@ thead th.sortable:hover { background: #24365a; }
           <div class="tsep"></div>
           <button class="tbtn" id="btnTelaCheia" title="Tela cheia" style="width:auto;padding:0 10px;font-size:10.5px">⤢ Tela cheia</button>
           <button class="tbtn" id="btnAbrirConfigGeral" title="Ordem, cores, marcos e feriados" style="width:auto;padding:0 10px;font-size:10.5px">⚙ Configurações</button>
-          <button class="btn-export" onclick="alert('Na ferramenta real, isso gera um arquivo .xlsx de verdade com as mesmas cores e datas, pronto pra abrir no Excel. (Ainda não implementado nesta fase.)')">⬇ Exportar Excel</button>
+          <button class="btn-export" id="btnExportarExcel">⬇ Exportar Excel</button>
         </div>
       </div>
 
@@ -3034,6 +3037,393 @@ $('btnSalvarReordenar').addEventListener('click', () => {
   reindexarPavimentos();
   layoutLob();
   $('reorderModal').classList.add('hidden');
+});
+
+// ════════════════════════════════ EXPORTAÇÃO PARA EXCEL ═══════════════════════════
+// Porta pro navegador (via ExcelJS, vendorizada em libs/exceljs.min.js) o layout validado
+// no protótipo Python (preview/gerar-preview-excel.py): 2 variações de grade (com texto /
+// com número+legenda), mais aba de legenda e de dados crus. Usa direto LOB.bars/pavInfo/
+// servicos (já respeitando os filtros ativos, igual o "Ver tudo" já faz), sem recalcular
+// raia nem reordenar nada de novo.
+const XL_MESES_PT = ['JANEIRO', 'FEVEREIRO', 'MARÇO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO',
+  'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
+const XL_NAVY = 'FF1A2B45', XL_AZUL_CONTRASTE = 'FF1A6EE8', XL_CINZA_PAV_COL = 'FFEAF0F8',
+  XL_CINZA_MES_HDR = 'FFD3E3F5', XL_CINZA_FIMSEMANA = 'FFEAEEF3', XL_CINZA_FIMSEMANA_HDR = 'FFB8CBE0',
+  XL_FILL_PAV_PAR = 'FFF7FAFD', XL_MUTED = 'FF6B80A0', XL_COR_DIA = 'FF33455E',
+  XL_BORDA_SUAVE = 'FF9AA9C0', XL_BORDA_MES = 'FF3D5A80', XL_BORDA_DIA_CLARA = 'FFE3E8F0',
+  XL_BORDA_FINA = 'FFD4DFE8';
+
+function xlArgb(hex) { return 'FF' + hex.replace('#', '').toUpperCase(); }
+function xlContraste(hex) {
+  const h = hex.replace('#', '');
+  const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.55 ? XL_NAVY : 'FFFFFFFF';
+}
+function xlFill(argb) { return { type: 'pattern', pattern: 'solid', fgColor: { argb } }; }
+function xlSide(argb, style) { return { style: style || 'thin', color: { argb } }; }
+function xlBordaCom(cell, lados) { cell.border = Object.assign({}, cell.border || {}, lados); }
+function xlMesLabel(date) { return `${XL_MESES_PT[date.getMonth()]} DE ${date.getFullYear()}`; }
+
+// Constrói uma aba. "simples=true" troca o texto do pacote na barra por só o número, e
+// reserva 3 colunas à esquerda de tudo pra legenda lateral (número+cor / nome do serviço).
+function xlConstruirAba(wb, titulo, simples, d) {
+  const ws = wb.addWorksheet(titulo);
+  let COL_LEG_NUM, COL_LEG_COR, COL_LEG_NOME, COL_PAV;
+  if (simples) { COL_LEG_NUM = 1; COL_LEG_COR = 2; COL_LEG_NOME = 3; COL_PAV = 4; }
+  else { COL_PAV = 1; }
+  const COL_DIA0 = COL_PAV + 1;
+  const ultimaCol = COL_DIA0 + d.diasTotalVisivel - 1;
+
+  function dataDoDia(dRel) {
+    const dt = new Date(d.projectStart); dt.setDate(dt.getDate() + d.diasOrigem + dRel);
+    return dt;
+  }
+
+  function linhaCabecalho(row, texto, font, alinhamento) {
+    ws.mergeCells(row, COL_DIA0, row, ultimaCol);
+    const cel = ws.getCell(row, COL_DIA0);
+    cel.value = texto;
+    cel.font = font;
+    cel.alignment = alinhamento || { horizontal: 'left', vertical: 'middle', indent: 1 };
+    return cel;
+  }
+
+  function desenharCabecalhoCalendario(rowMes, rowDia) {
+    const limites = [];
+    let mesAtual = null, inicioMesCol = COL_DIA0;
+    for (let dd = 0; dd < d.diasTotalVisivel; dd++) {
+      const date = dataDoDia(dd);
+      const col = COL_DIA0 + dd;
+      const mesLabel = xlMesLabel(date);
+      if (mesLabel !== mesAtual) {
+        if (mesAtual !== null) ws.mergeCells(rowMes, inicioMesCol, rowMes, col - 1);
+        mesAtual = mesLabel; inicioMesCol = col; limites.push(col);
+        const celMes = ws.getCell(rowMes, col);
+        celMes.value = mesLabel;
+        celMes.font = { name: 'Calibri', bold: true, size: 10, color: { argb: XL_NAVY } };
+        celMes.alignment = { horizontal: 'center', vertical: 'middle' };
+      }
+      ws.getCell(rowMes, col).fill = xlFill(XL_CINZA_MES_HDR);
+      const dow = date.getDay();
+      const celDia = ws.getCell(rowDia, col);
+      celDia.value = date.getDate();
+      celDia.font = { name: 'Calibri', bold: true, size: 9, color: { argb: (dow === 0 || dow === 6) ? 'FFC53030' : XL_COR_DIA } };
+      celDia.alignment = { horizontal: 'center' };
+      celDia.fill = xlFill((dow === 0 || dow === 6) ? XL_CINZA_FIMSEMANA_HDR : XL_CINZA_MES_HDR);
+    }
+    ws.mergeCells(rowMes, inicioMesCol, rowMes, ultimaCol);
+    ws.getRow(rowMes).height = 18;
+    ws.getRow(rowDia).height = 16;
+    return limites;
+  }
+
+  function rotuloPavimento(rowMes, rowDia, comTexto) {
+    ws.mergeCells(rowMes, COL_PAV, rowDia, COL_PAV);
+    const cel = ws.getCell(rowMes, COL_PAV);
+    if (comTexto !== false) cel.value = 'PAVIMENTO';
+    cel.font = { name: 'Calibri', bold: true, size: 10, color: { argb: XL_NAVY } };
+    cel.fill = xlFill(XL_CINZA_PAV_COL);
+    cel.alignment = { horizontal: 'center', vertical: 'middle' };
+    cel.border = { left: xlSide(XL_BORDA_SUAVE), right: xlSide(XL_BORDA_SUAVE), top: xlSide(XL_BORDA_SUAVE), bottom: xlSide(XL_BORDA_SUAVE) };
+    ws.getCell(rowDia, COL_PAV).fill = xlFill(XL_CINZA_PAV_COL);
+    xlBordaCom(ws.getCell(rowDia, COL_PAV), { left: xlSide(XL_BORDA_SUAVE), right: xlSide(XL_BORDA_SUAVE), bottom: xlSide(XL_BORDA_SUAVE) });
+  }
+
+  // ---------- Cabeçalho ----------
+  const ROW_BANNER = 1, ROW_ACCENT = 2, ROW_SUBTITULO = 3;
+  const ROW_META_RESP = 4, ROW_META_STATS = 5, ROW_META_DATA = 6, ROW_SPACER = 7;
+
+  ws.getCell(ROW_BANNER, COL_PAV).fill = xlFill(XL_NAVY);
+  ws.getCell(ROW_ACCENT, COL_PAV).fill = xlFill(XL_AZUL_CONTRASTE);
+
+  const celBanner = linhaCabecalho(ROW_BANNER, 'LINHA DE BALANÇO - NOME DA OBRA',
+    { name: 'Calibri', bold: true, size: 13, color: { argb: 'FFFFFFFF' } });
+  celBanner.fill = xlFill(XL_NAVY);
+  ws.getRow(ROW_BANNER).height = 30;
+
+  ws.mergeCells(ROW_ACCENT, COL_DIA0, ROW_ACCENT, ultimaCol);
+  ws.getCell(ROW_ACCENT, COL_DIA0).fill = xlFill(XL_AZUL_CONTRASTE);
+  ws.getRow(ROW_ACCENT).height = 4;
+
+  linhaCabecalho(ROW_SUBTITULO, d.escopoNome || '(sem escopo)',
+    { name: 'Calibri', bold: true, size: 14, color: { argb: XL_NAVY } });
+  ws.getRow(ROW_SUBTITULO).height = 22;
+
+  const hoje = new Date();
+  linhaCabecalho(ROW_META_RESP, 'Responsável: (preencher)', { name: 'Calibri', size: 10, color: { argb: XL_MUTED } });
+  linhaCabecalho(ROW_META_STATS,
+    `${d.bars.length} tarefas  |  ${d.pavimentosVisiveis.length} pavimentos  |  ${d.servicosVisiveis.length} serviços`,
+    { name: 'Calibri', size: 10, color: { argb: XL_MUTED } });
+  linhaCabecalho(ROW_META_DATA,
+    `Exportado em ${String(hoje.getDate()).padStart(2, '0')}/${String(hoje.getMonth() + 1).padStart(2, '0')}/${hoje.getFullYear()}`,
+    { name: 'Calibri', size: 10, color: { argb: XL_MUTED } });
+  for (let r = ROW_META_RESP; r <= ROW_META_DATA; r++) ws.getRow(r).height = 16;
+
+  for (let row = ROW_META_RESP; row <= ROW_META_DATA; row++) {
+    xlBordaCom(ws.getCell(row, COL_DIA0), { left: xlSide(XL_BORDA_SUAVE) });
+    xlBordaCom(ws.getCell(row, ultimaCol), { right: xlSide(XL_BORDA_SUAVE) });
+  }
+  for (let col = COL_DIA0; col <= ultimaCol; col++) {
+    xlBordaCom(ws.getCell(ROW_META_RESP, col), { top: xlSide(XL_BORDA_SUAVE) });
+    xlBordaCom(ws.getCell(ROW_META_DATA, col), { bottom: xlSide(XL_BORDA_SUAVE) });
+  }
+
+  ws.getRow(ROW_SPACER).height = 8;
+
+  // ---------- Marcos: calcula quantos "andares" de caixa são necessários (mesma ideia de
+  // empacotamento das raias/badges: só sobe de andar quando duas caixas colidem), e reserva
+  // essas linhas ACIMA do cabeçalho do calendário, antes de saber onde ROW_MES cai. ----------
+  const marcosItens = (d.marcos || [])
+    .filter(m => m.dia >= d.diasOrigem && m.dia < d.diasOrigem + d.diasTotalVisivel)
+    .map(m => {
+      const larguraCols = Math.max(3, Math.ceil((m.nome || '(sem nome)').length * 0.45));
+      const colCentro = COL_DIA0 + (m.dia - d.diasOrigem);
+      const esquerda = colCentro - Math.floor(larguraCols / 2);
+      return { nome: m.nome || '(sem nome)', cor: m.cor || '#1A6EE8', colDia: colCentro, esquerda, direita: esquerda + larguraCols - 1 };
+    })
+    .sort((a, b) => a.esquerda - b.esquerda);
+  const direitaPorAndar = [];
+  marcosItens.forEach(it => {
+    let andar = direitaPorAndar.findIndex(dd => dd < it.esquerda);
+    if (andar === -1) andar = direitaPorAndar.length;
+    it.andar = andar;
+    direitaPorAndar[andar] = it.direita;
+  });
+  const numAndaresMarcos = direitaPorAndar.length;
+  const rowMarcos0 = ROW_SPACER + 1;
+  for (let i = 0; i < numAndaresMarcos; i++) ws.getRow(rowMarcos0 + i).height = 16;
+
+  const ROW_MES = rowMarcos0 + numAndaresMarcos, ROW_DIA = ROW_MES + 1;
+  const LINHA0 = ROW_DIA + 1;
+
+  const limitesMes = desenharCabecalhoCalendario(ROW_MES, ROW_DIA);
+  rotuloPavimento(ROW_MES, ROW_DIA);
+
+  // ---------- Só na versão simples: legenda lateral ----------
+  if (simples) {
+    for (let col = COL_LEG_NUM; col <= COL_LEG_NOME; col++) {
+      [ROW_MES, ROW_DIA].forEach(row => { ws.getCell(row, col).fill = xlFill(XL_CINZA_PAV_COL); });
+      xlBordaCom(ws.getCell(ROW_MES, col), { top: xlSide(XL_BORDA_SUAVE) });
+      xlBordaCom(ws.getCell(ROW_DIA, col), { bottom: xlSide(XL_BORDA_SUAVE) });
+    }
+    [ROW_MES, ROW_DIA].forEach(row => {
+      xlBordaCom(ws.getCell(row, COL_LEG_NUM), { left: xlSide(XL_BORDA_SUAVE) });
+      xlBordaCom(ws.getCell(row, COL_LEG_NOME), { right: xlSide(XL_BORDA_SUAVE) });
+    });
+    ws.mergeCells(ROW_MES, COL_LEG_NUM, ROW_DIA, COL_LEG_NOME);
+    const celLegTitulo = ws.getCell(ROW_MES, COL_LEG_NUM);
+    celLegTitulo.value = 'LEGENDA DOS SERVIÇOS';
+    celLegTitulo.font = { name: 'Calibri', bold: true, size: 10, color: { argb: XL_NAVY } };
+    celLegTitulo.alignment = { horizontal: 'center', vertical: 'middle' };
+
+    const rowLegenda0 = ROW_DIA + 1;
+    d.servicosVisiveis.forEach((s, i) => {
+      const r = rowLegenda0 + i;
+      ws.mergeCells(r, COL_LEG_NUM, r, COL_LEG_COR);
+      const celBadge = ws.getCell(r, COL_LEG_NUM);
+      celBadge.value = d.numeroDoServico.get(s.nome);
+      celBadge.fill = xlFill(xlArgb(s.cor));
+      celBadge.font = { name: 'Calibri', bold: true, size: 10, color: { argb: xlContraste(s.cor) } };
+      celBadge.alignment = { horizontal: 'center', vertical: 'middle' };
+      const celNome = ws.getCell(r, COL_LEG_NOME);
+      celNome.value = s.nome;
+      celNome.font = { name: 'Calibri', bold: true, size: 9, color: { argb: XL_NAVY } };
+      celNome.alignment = { horizontal: 'left', vertical: 'middle', indent: 1 };
+      ws.getRow(r).height = 18;
+    });
+    const linhaFinalLegenda = rowLegenda0 + d.servicosVisiveis.length - 1;
+    for (let r = rowLegenda0; r <= linhaFinalLegenda; r++) {
+      xlBordaCom(ws.getCell(r, COL_LEG_NUM), { top: xlSide(XL_BORDA_SUAVE), bottom: xlSide(XL_BORDA_SUAVE), left: xlSide(XL_BORDA_SUAVE) });
+      xlBordaCom(ws.getCell(r, COL_LEG_COR), { top: xlSide(XL_BORDA_SUAVE), bottom: xlSide(XL_BORDA_SUAVE) });
+      xlBordaCom(ws.getCell(r, COL_LEG_NOME), { top: xlSide(XL_BORDA_SUAVE), bottom: xlSide(XL_BORDA_SUAVE), right: xlSide(XL_BORDA_SUAVE) });
+    }
+    ws.getColumn(COL_LEG_NUM).width = 5;
+    ws.getColumn(COL_LEG_COR).width = 5;
+    ws.getColumn(COL_LEG_NOME).width = 16;
+  }
+
+  // ---------- Pavimentos e raias ----------
+  const linhaInicialPav = new Map();
+  let linhaAtual = LINHA0;
+  d.pavimentosVisiveis.forEach(pav => {
+    const n = d.numLanesPorPav.get(pav.nome);
+    linhaInicialPav.set(pav.nome, linhaAtual);
+    if (n > 1) ws.mergeCells(linhaAtual, COL_PAV, linhaAtual + n - 1, COL_PAV);
+    const celPav = ws.getCell(linhaAtual, COL_PAV);
+    celPav.value = pav.nome;
+    celPav.font = { name: 'Calibri', bold: true, size: 10, color: { argb: XL_NAVY } };
+    celPav.fill = xlFill(XL_CINZA_PAV_COL);
+    celPav.alignment = { horizontal: 'left', vertical: 'middle', indent: 1 };
+    for (let r = linhaAtual; r < linhaAtual + n; r++) {
+      ws.getCell(r, COL_PAV).fill = xlFill(XL_CINZA_PAV_COL);
+      xlBordaCom(ws.getCell(r, COL_PAV), { left: xlSide(XL_BORDA_SUAVE), right: xlSide(XL_BORDA_SUAVE) });
+    }
+    xlBordaCom(ws.getCell(linhaAtual, COL_PAV), { top: xlSide(XL_BORDA_SUAVE) });
+    xlBordaCom(ws.getCell(linhaAtual + n - 1, COL_PAV), { bottom: xlSide(XL_BORDA_SUAVE) });
+    linhaAtual += n;
+  });
+  const totalLinhas = linhaAtual - 1;
+
+  d.pavimentosVisiveis.forEach((pav, pi) => {
+    const linha0 = linhaInicialPav.get(pav.nome);
+    const n = d.numLanesPorPav.get(pav.nome);
+    for (let r = linha0; r < linha0 + n; r++) {
+      for (let dd = 0; dd < d.diasTotalVisivel; dd++) {
+        const col = COL_DIA0 + dd;
+        const dow = dataDoDia(dd).getDay();
+        const cel = ws.getCell(r, col);
+        if (dow === 0 || dow === 6) cel.fill = xlFill(XL_CINZA_FIMSEMANA);
+        else if (pi % 2 === 0) cel.fill = xlFill(XL_FILL_PAV_PAR);
+      }
+    }
+  });
+
+  // ---------- Barras ----------
+  d.bars.forEach(b => {
+    const numLanes = d.numLanesPorPav.get(b.pavNome);
+    const linha0 = linhaInicialPav.get(b.pavNome);
+    const row = linha0 + (numLanes - 1 - b.lane); // raia 0 embaixo, igual ao gráfico real
+    const colIni = COL_DIA0 + b.colIniRel, colFim = COL_DIA0 + b.colFimRel;
+    const fillArgb = xlArgb(b.cor);
+    for (let col = colIni; col <= colFim; col++) {
+      const cel = ws.getCell(row, col);
+      cel.fill = xlFill(fillArgb);
+      cel.border = { left: xlSide(XL_BORDA_FINA), right: xlSide(XL_BORDA_FINA), top: xlSide(XL_BORDA_FINA), bottom: xlSide(XL_BORDA_FINA) };
+    }
+    if (colFim > colIni) ws.mergeCells(row, colIni, row, colFim);
+    const cel = ws.getCell(row, colIni);
+    if (simples) {
+      cel.value = d.numeroDoServico.get(b.servNome);
+      cel.font = { name: 'Calibri', bold: true, size: 10, color: { argb: xlContraste(b.cor) } };
+      cel.alignment = { horizontal: 'center', vertical: 'middle' };
+    } else {
+      cel.value = ` ${b.servNome} (${b.dur} dias)`;
+      cel.font = { name: 'Calibri', bold: true, size: 8, color: { argb: xlContraste(b.cor) } };
+      cel.alignment = { horizontal: 'left', vertical: 'middle' };
+    }
+  });
+
+  // ---------- Separadores ----------
+  d.pavimentosVisiveis.forEach(pav => {
+    const linha0 = linhaInicialPav.get(pav.nome);
+    const n = d.numLanesPorPav.get(pav.nome);
+    const ultimaLinhaBloco = linha0 + n - 1;
+    for (let col = COL_PAV; col <= ultimaCol; col++) xlBordaCom(ws.getCell(ultimaLinhaBloco, col), { bottom: xlSide(XL_BORDA_SUAVE) });
+  });
+  for (let col = COL_PAV; col <= ultimaCol; col++) xlBordaCom(ws.getCell(ROW_DIA, col), { bottom: xlSide(XL_BORDA_SUAVE) });
+
+  // ---------- Rodapé: repete a régua de datas ----------
+  const ROW_MES_RODAPE = totalLinhas + 1, ROW_DIA_RODAPE = totalLinhas + 2;
+  desenharCabecalhoCalendario(ROW_MES_RODAPE, ROW_DIA_RODAPE);
+  rotuloPavimento(ROW_MES_RODAPE, ROW_DIA_RODAPE, false);
+  for (let col = COL_PAV; col <= ultimaCol; col++) {
+    xlBordaCom(ws.getCell(ROW_MES_RODAPE, col), { top: xlSide(XL_BORDA_SUAVE) });
+    xlBordaCom(ws.getCell(ROW_DIA_RODAPE, col), { bottom: xlSide(XL_BORDA_SUAVE) });
+  }
+  const ultimaLinhaPlanilha = ROW_DIA_RODAPE;
+
+  for (let row = ROW_BANNER; row <= ultimaLinhaPlanilha; row++) {
+    xlBordaCom(ws.getCell(row, COL_PAV), { right: xlSide(XL_BORDA_SUAVE) });
+    xlBordaCom(ws.getCell(row, ultimaCol), { right: xlSide(XL_BORDA_SUAVE) });
+  }
+
+  limitesMes.forEach(col => {
+    for (let row = ROW_MES; row <= ultimaLinhaPlanilha; row++) xlBordaCom(ws.getCell(row, col), { left: xlSide(XL_BORDA_MES, 'medium') });
+  });
+  [ROW_MES, ROW_MES_RODAPE].forEach(rowAlvo => {
+    for (let col = COL_DIA0; col <= ultimaCol; col++) {
+      xlBordaCom(ws.getCell(rowAlvo, col), { top: xlSide(XL_BORDA_MES, 'medium'), bottom: xlSide(XL_BORDA_MES, 'medium') });
+    }
+  });
+
+  const linhasCabecalhoCalendario = new Set([ROW_MES, ROW_DIA, ROW_MES_RODAPE, ROW_DIA_RODAPE]);
+  for (let dd = 0; dd < d.diasTotalVisivel; dd++) {
+    const col = COL_DIA0 + dd;
+    if (limitesMes.includes(col)) continue;
+    for (let row = ROW_MES; row <= ultimaLinhaPlanilha; row++) {
+      const borda = linhasCabecalhoCalendario.has(row) ? xlSide(XL_BORDA_SUAVE) : xlSide(XL_BORDA_DIA_CLARA);
+      xlBordaCom(ws.getCell(row, col), { left: borda });
+    }
+  }
+
+  // ---------- Marcos: caixa com o nome (cor do marco, mesclada) no andar calculado antes, e
+  // uma linha pontilhada na cor do marco descendo até o fim da tabela. Roda por ÚLTIMO, depois
+  // de toda borda de mês/dia/pavimento, senão esses trechos passam por cima e apagam a linha.
+  // Limitação real do Excel: quando o dia do marco cai DENTRO de uma barra mesclada, a borda
+  // não aparece ali (célula mesclada só tem borda nas bordas externas dela) - a linha fica
+  // com uma lacuna atrás da barra nesse trecho, e volta a aparecer assim que a barra termina.
+  marcosItens.forEach(it => {
+    const rowLabel = rowMarcos0 + it.andar;
+    const cIni = Math.max(it.esquerda, COL_DIA0), cFim = Math.min(it.direita, ultimaCol);
+    if (cFim > cIni) ws.mergeCells(rowLabel, cIni, rowLabel, cFim);
+    const cel = ws.getCell(rowLabel, cIni);
+    cel.value = it.nome;
+    cel.fill = xlFill(xlArgb(it.cor));
+    cel.font = { name: 'Calibri', bold: true, size: 8, color: { argb: xlContraste(it.cor) } };
+    cel.alignment = { horizontal: 'center', vertical: 'middle' };
+
+    const bordaPontilhada = xlSide(xlArgb(it.cor), 'mediumDashed');
+    for (let row = rowLabel; row <= ultimaLinhaPlanilha; row++) {
+      xlBordaCom(ws.getCell(row, it.colDia), { left: bordaPontilhada });
+    }
+  });
+
+  ws.getColumn(COL_PAV).width = 14;
+  for (let dd = 0; dd < d.diasTotalVisivel; dd++) ws.getColumn(COL_DIA0 + dd).width = 3.0;
+  for (let r = LINHA0; r <= ultimaLinhaPlanilha; r++) ws.getRow(r).height = 15;
+  ws.getRow(ROW_DIA).height = 16;
+  ws.getRow(ROW_DIA_RODAPE).height = 16;
+  ws.views = [{ state: 'frozen', xSplit: COL_DIA0 - 1, ySplit: LINHA0 - 1, showGridLines: false }];
+}
+
+// Monta os dois recortes de dado real (LOB) que as abas usam, respeitando os filtros ativos
+// no gráfico (mesma janela de dias e mesmas linhas visíveis que "Ver tudo" já usa).
+async function exportarLinhaDeBalancoExcel() {
+  if (!LOB.bars.length) { alert('Nenhuma barra pra exportar ainda.'); return; }
+
+  const servicosVisiveis = LOB.servicos.filter(s => !LOB.servicosOcultos.has(s.nome));
+  const numeroDoServico = new Map(servicosVisiveis.map((s, i) => [s.nome, i + 1]));
+
+  const pavimentosVisiveis = LOB.linhasVisiveis.map(pi => ({ pi, nome: LOB.pavimentos[pi] }));
+  const numLanesPorPav = new Map(pavimentosVisiveis.map(p => [p.nome, LOB.pavInfo[p.pi].numLanes]));
+  const nomesVisiveis = new Set(pavimentosVisiveis.map(p => p.nome));
+
+  const bars = LOB.bars
+    .filter(b => lobBarRelevante(b) && nomesVisiveis.has(b.pavNome))
+    .map(b => ({
+      pavNome: b.pavNome, servNome: b.servNome, cor: b.cor, lane: b.lane, dur: b.dur,
+      start: b.start, finish: b.finish,
+      colIniRel: Math.max(b.startDay, LOB.diasOrigem) - LOB.diasOrigem,
+      colFimRel: Math.min(b.startDay + b.dur - 1, LOB.diasOrigem + LOB.diasTotalVisivel - 1) - LOB.diasOrigem,
+    }));
+
+  const dadosExport = {
+    bars, pavimentosVisiveis, numLanesPorPav, servicosVisiveis, numeroDoServico,
+    diasOrigem: LOB.diasOrigem, diasTotalVisivel: LOB.diasTotalVisivel,
+    projectStart: LOB.projectStart, escopoNome: LOB.escopoNome, marcos: LOB.marcos,
+  };
+
+  const wb = new ExcelJS.Workbook();
+  xlConstruirAba(wb, 'Linha de Balanço', false, dadosExport);
+  xlConstruirAba(wb, 'Linha de Balanço Simples', true, dadosExport);
+
+  const buffer = await wb.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `linha-de-balanco${LOB.escopoNome ? ' - ' + LOB.escopoNome : ''}.xlsx`.replace(/[\\/:*?"<>|]/g, '_');
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+$('btnExportarExcel').addEventListener('click', () => {
+  exportarLinhaDeBalancoExcel().catch(err => {
+    console.error(err);
+    alert('Não foi possível gerar o Excel: ' + err.message);
+  });
 });
 </script>
 

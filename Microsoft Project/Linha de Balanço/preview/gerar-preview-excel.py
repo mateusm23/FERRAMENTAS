@@ -14,6 +14,7 @@
 # rascunho, mantida aqui no preview/ pra voce poder ler e acompanhar a logica por tras
 # de cada ajuste visual antes de portarmos pra versao definitiva em JS.
 import datetime
+import math
 import os
 from openpyxl import Workbook
 from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
@@ -88,6 +89,14 @@ DETALHE_ESCOPO = "TORRE B"
 RESPONSAVEL = "Eng. Fulano de Tal"
 DATA_EXPORT = datetime.date(2026, 7, 2)
 
+# Marcos ficticios pra testar o layout: 2 propositalmente proximos (pra ver a colisao sendo
+# empilhada em "andares", igual o grafico real ja faz com os badges) e 1 mais isolado.
+MARCOS_FICTICIOS = [
+    {"dia": 10, "nome": "Entrega Fundacao", "cor": "1A6EE8"},
+    {"dia": 12, "nome": "Inicio Estrutura", "cor": "D97706"},
+    {"dia": 35, "nome": "Vistoria Corpo de Bombeiros", "cor": "D63A3A"},
+]
+
 bars = []
 for pi, pav in enumerate(PAVIMENTOS):
     offset = pi * 3
@@ -120,19 +129,25 @@ for pav in PAVIMENTOS:
     bars_do_pav = [b for b in bars if b["pav"] == pav]
     num_raias_por_pav[pav] = pack_lanes(bars_do_pav)
 
-COL_PAV = 1
-COL_DIA0 = 2  # primeira coluna de dia
-ultima_col = COL_DIA0 + total_dias - 1
-
-
 # ============================================================================================
 # Monta a aba da linha de balanco. "simples=True" troca o texto do pacote dentro da barra por
-# so o numero do servico, e adiciona um bloco de legenda (numero + cor + nome) entre o
-# cabecalho e o calendario, ja que sem o nome escrito na barra precisa de uma forma de
-# decodificar o numero.
+# so o numero do servico, e reserva 3 colunas à ESQUERDA de tudo (antes da coluna de
+# pavimento) pra uma legenda lateral estilizada (numero + cor + nome), ja que sem o nome
+# escrito na barra precisa de uma forma de decodificar o numero.
 # ============================================================================================
-def construir_aba(wb, titulo_aba, simples):
+def construir_aba(wb, titulo_aba, simples, marcos=None):
     ws = wb.create_sheet(titulo_aba)
+    marcos = marcos or []
+
+    # Na versao simples, colunas 1-3 viram a legenda lateral e tudo o mais (pavimento +
+    # calendario) desloca 3 colunas pra direita. Na versao completa, layout de sempre.
+    if simples:
+        COL_LEG_NUM, COL_LEG_COR, COL_LEG_NOME = 1, 2, 3
+        COL_PAV = 4
+    else:
+        COL_PAV = 1
+    COL_DIA0 = COL_PAV + 1  # primeira coluna de dia
+    ultima_col = COL_DIA0 + total_dias - 1
 
     def linha_cabecalho(row, texto, fonte, alinhamento=None):
         ws.merge_cells(start_row=row, start_column=COL_DIA0, end_row=row, end_column=ultima_col)
@@ -169,13 +184,15 @@ def construir_aba(wb, titulo_aba, simples):
         ws.row_dimensions[row_dia].height = 16
         return limites
 
-    def rotulo_pavimento(row_mes, row_dia):
+    def rotulo_pavimento(row_mes, row_dia, com_texto=True):
         ws.merge_cells(start_row=row_mes, start_column=COL_PAV, end_row=row_dia, end_column=COL_PAV)
-        cel = ws.cell(row=row_mes, column=COL_PAV, value="PAVIMENTO")
+        cel = ws.cell(row=row_mes, column=COL_PAV, value="PAVIMENTO" if com_texto else None)
         cel.font = Font(name="Calibri", bold=True, size=10, color=NAVY)
         cel.fill = PatternFill("solid", fgColor=CINZA_PAV_COL)
         cel.alignment = Alignment(horizontal="center", vertical="center")
         cel.border = Border(left=BORDA_PAV_SEP, right=BORDA_PAV_SEP, top=BORDA_PAV_SEP, bottom=BORDA_PAV_SEP)
+        ws.cell(row=row_dia, column=COL_PAV).fill = PatternFill("solid", fgColor=CINZA_PAV_COL)
+        borda_com(ws.cell(row=row_dia, column=COL_PAV), left=BORDA_PAV_SEP, right=BORDA_PAV_SEP, bottom=BORDA_PAV_SEP)
 
     # ---------- Cabecalho: banner, tarja de contraste, subtitulo, metadados isolados ----------
     ROW_BANNER, ROW_ACCENT, ROW_SUBTITULO = 1, 2, 3
@@ -216,34 +233,84 @@ def construir_aba(wb, titulo_aba, simples):
     ws.row_dimensions[ROW_SPACER].height = 8
     proxima_linha = ROW_SPACER + 1
 
-    # ---------- So na versao simples: bloco de legenda (numero + cor + servico) ----------
-    if simples:
-        row_titulo_legenda = proxima_linha
-        ws.merge_cells(start_row=row_titulo_legenda, start_column=COL_PAV, end_row=row_titulo_legenda, end_column=COL_DIA0 + 2)
-        cel_leg_titulo = ws.cell(row=row_titulo_legenda, column=COL_PAV, value="LEGENDA DOS SERVICOS")
-        cel_leg_titulo.font = Font(name="Calibri", bold=True, size=10, color=NAVY)
-        ws.row_dimensions[row_titulo_legenda].height = 16
-        row_legenda0 = row_titulo_legenda + 1
-        for i, (nome, cor) in enumerate(SERVICOS):
-            r = row_legenda0 + i
-            cel_num = ws.cell(row=r, column=COL_PAV, value=NUMERO_DO_SERVICO[nome])
-            cel_num.font = Font(name="Calibri", bold=True, size=9, color=NAVY)
-            cel_num.alignment = Alignment(horizontal="center", vertical="center")
-            cel_cor = ws.cell(row=r, column=COL_DIA0, value="")
-            cel_cor.fill = PatternFill("solid", fgColor=cor)
-            cel_nome = ws.cell(row=r, column=COL_DIA0 + 1, value=nome)
-            cel_nome.font = Font(name="Calibri", size=9, color=MUTED)
-            cel_nome.alignment = Alignment(horizontal="left", vertical="center", indent=1)
-            ws.row_dimensions[r].height = 14
-        proxima_linha = row_legenda0 + len(SERVICOS)
-        ws.row_dimensions[proxima_linha].height = 8  # respiro entre a legenda e o calendario
-        proxima_linha += 1
+    # ---------- Marcos: calcula quantos "andares" de caixa sao necessarios (mesma ideia de
+    # empacotamento das raias/badges: so sobe de andar quando duas caixas colidem), e reserva
+    # essas linhas ACIMA do cabecalho do calendario, antes de saber onde ROW_MES cai. ----------
+    def calcular_andares_marcos():
+        itens = []
+        for m in marcos:
+            largura_cols = max(3, math.ceil(len(m["nome"]) * 0.45))
+            col_centro = COL_DIA0 + m["dia"]
+            esquerda = col_centro - largura_cols // 2
+            direita = esquerda + largura_cols - 1
+            itens.append({**m, "col_dia": col_centro, "esquerda": esquerda, "direita": direita})
+        itens.sort(key=lambda it: it["esquerda"])
+        direita_por_andar = []
+        for it in itens:
+            andar = next((i for i, d in enumerate(direita_por_andar) if d < it["esquerda"]), None)
+            if andar is None:
+                andar = len(direita_por_andar)
+                direita_por_andar.append(0)
+            it["andar"] = andar
+            direita_por_andar[andar] = it["direita"]
+        return itens, len(direita_por_andar)
 
-    ROW_MES, ROW_DIA = proxima_linha, proxima_linha + 1
+    marcos_itens, num_andares_marcos = calcular_andares_marcos() if marcos else ([], 0)
+    row_marcos0 = proxima_linha
+    for i in range(num_andares_marcos):
+        ws.row_dimensions[row_marcos0 + i].height = 16
+
+    ROW_MES, ROW_DIA = row_marcos0 + num_andares_marcos, row_marcos0 + num_andares_marcos + 1
     LINHA0 = ROW_DIA + 1
 
     limites_mes = desenhar_cabecalho_calendario(ROW_MES, ROW_DIA)
     rotulo_pavimento(ROW_MES, ROW_DIA)
+
+    # ---------- So na versao simples: legenda lateral (badge numero+cor + nome do servico), à
+    # esquerda da coluna de pavimento. O titulo usa a MESMA formatacao do rotulo "PAVIMENTO"
+    # (mesclado nas 2 linhas do cabecalho do calendario, mesmo fundo/borda/fonte), e o bloco
+    # inteiro (titulo + linhas de servico) fica emoldurado por uma borda ao redor. ----------
+    if simples:
+        ws.merge_cells(start_row=ROW_MES, start_column=COL_LEG_NUM, end_row=ROW_DIA, end_column=COL_LEG_NOME)
+        cel_leg_titulo = ws.cell(row=ROW_MES, column=COL_LEG_NUM, value="LEGENDA DOS SERVICOS")
+        cel_leg_titulo.font = Font(name="Calibri", bold=True, size=10, color=NAVY)
+        cel_leg_titulo.alignment = Alignment(horizontal="center", vertical="center")
+        # O merge cobre 2 linhas x 3 colunas: preenche e emoldura CADA celula do bloco (nao so
+        # a de cima-esquerda), senao o fundo/borda so aparece numa fatia do titulo mesclado.
+        for col in range(COL_LEG_NUM, COL_LEG_NOME + 1):
+            for row in (ROW_MES, ROW_DIA):
+                ws.cell(row=row, column=col).fill = PatternFill("solid", fgColor=CINZA_PAV_COL)
+            borda_com(ws.cell(row=ROW_MES, column=col), top=BORDA_PAV_SEP)
+            borda_com(ws.cell(row=ROW_DIA, column=col), bottom=BORDA_PAV_SEP)
+        for row in (ROW_MES, ROW_DIA):
+            borda_com(ws.cell(row=row, column=COL_LEG_NUM), left=BORDA_PAV_SEP)
+            borda_com(ws.cell(row=row, column=COL_LEG_NOME), right=BORDA_PAV_SEP)
+
+        row_legenda0 = ROW_DIA + 1
+        for i, (nome, cor) in enumerate(SERVICOS):
+            r = row_legenda0 + i
+            ws.merge_cells(start_row=r, start_column=COL_LEG_NUM, end_row=r, end_column=COL_LEG_COR)
+            cel_badge = ws.cell(row=r, column=COL_LEG_NUM, value=NUMERO_DO_SERVICO[nome])
+            cel_badge.fill = PatternFill("solid", fgColor=cor)
+            cel_badge.font = Font(name="Calibri", bold=True, size=10, color=texto_contraste(cor))
+            cel_badge.alignment = Alignment(horizontal="center", vertical="center")
+            cel_nome = ws.cell(row=r, column=COL_LEG_NOME, value=nome)
+            cel_nome.font = Font(name="Calibri", bold=True, size=9, color=NAVY)  # mais escuro, melhor contraste
+            cel_nome.alignment = Alignment(horizontal="left", vertical="center", indent=1)
+            ws.row_dimensions[r].height = 18
+
+        linha_final_legenda = row_legenda0 + len(SERVICOS) - 1
+
+        # Borda em volta de cada linha de servico (topo/base/esquerda/direita), pra parecer
+        # uma tabelinha propria isolada em vez de so um contorno externo solto.
+        for r in range(row_legenda0, linha_final_legenda + 1):
+            borda_com(ws.cell(row=r, column=COL_LEG_NUM), top=BORDA_PAV_SEP, bottom=BORDA_PAV_SEP, left=BORDA_PAV_SEP)
+            borda_com(ws.cell(row=r, column=COL_LEG_COR), top=BORDA_PAV_SEP, bottom=BORDA_PAV_SEP)
+            borda_com(ws.cell(row=r, column=COL_LEG_NOME), top=BORDA_PAV_SEP, bottom=BORDA_PAV_SEP, right=BORDA_PAV_SEP)
+
+        ws.column_dimensions[get_column_letter(COL_LEG_NUM)].width = 5
+        ws.column_dimensions[get_column_letter(COL_LEG_COR)].width = 5
+        ws.column_dimensions[get_column_letter(COL_LEG_NOME)].width = 16
 
     # ---------- Pavimentos e raias ----------
     linha_inicial_pav = {}
@@ -257,6 +324,13 @@ def construir_aba(wb, titulo_aba, simples):
         cel_pav.font = FONTE_PAV
         cel_pav.fill = PatternFill("solid", fgColor=CINZA_PAV_COL)
         cel_pav.alignment = Alignment(horizontal="left", vertical="center", indent=1)
+        # Borda em volta da celula do pavimento (mesclada por N raias): topo/base so nas
+        # pontas do bloco, esquerda/direita em toda a extensao mesclada.
+        for r in range(linha_atual, linha_atual + n):
+            ws.cell(row=r, column=COL_PAV).fill = PatternFill("solid", fgColor=CINZA_PAV_COL)
+            borda_com(ws.cell(row=r, column=COL_PAV), left=BORDA_PAV_SEP, right=BORDA_PAV_SEP)
+        borda_com(ws.cell(row=linha_atual, column=COL_PAV), top=BORDA_PAV_SEP)
+        borda_com(ws.cell(row=linha_atual + n - 1, column=COL_PAV), bottom=BORDA_PAV_SEP)
         linha_atual += n
     total_linhas = linha_atual - 1
 
@@ -308,9 +382,10 @@ def construir_aba(wb, titulo_aba, simples):
     ROW_MES_RODAPE = total_linhas + 1
     ROW_DIA_RODAPE = total_linhas + 2
     desenhar_cabecalho_calendario(ROW_MES_RODAPE, ROW_DIA_RODAPE)
-    rotulo_pavimento(ROW_MES_RODAPE, ROW_DIA_RODAPE)
+    rotulo_pavimento(ROW_MES_RODAPE, ROW_DIA_RODAPE, com_texto=False)
     for col in range(COL_PAV, ultima_col + 1):
         borda_com(ws.cell(row=ROW_MES_RODAPE, column=col), top=BORDA_PAV_SEP)
+        borda_com(ws.cell(row=ROW_DIA_RODAPE, column=col), bottom=BORDA_PAV_SEP)
     ultima_linha_planilha = ROW_DIA_RODAPE
 
     for row in range(ROW_BANNER, ultima_linha_planilha + 1):
@@ -336,6 +411,28 @@ def construir_aba(wb, titulo_aba, simples):
             borda = BORDA_DIA_HDR if row in linhas_cabecalho_calendario else BORDA_DIA_CLARA
             borda_com(ws.cell(row=row, column=col), left=borda)
 
+    # ---------- Marcos: caixa com o nome (cor do marco, mesclada) no andar calculado antes, e
+    # uma linha pontilhada na cor do marco descendo até o fim da tabela. Roda por ÚLTIMO, depois
+    # de toda borda de mes/dia/pavimento, senao esses trechos passam por cima e apagam a linha
+    # (foi exatamente o bug visto: o separador fino de cada dia rodava depois e sobrescrevia).
+    # Limitacao real do Excel que continua existindo mesmo assim: quando o dia do marco cai
+    # DENTRO de uma barra mesclada, a borda nao aparece ali (uma celula mesclada so tem borda
+    # nas bordas externas dela, nunca no meio) - a linha fica com uma lacuna atras da barra
+    # nesse trecho, e volta a aparecer assim que a barra termina.
+    for it in marcos_itens:
+        row_label = row_marcos0 + it["andar"]
+        c_ini, c_fim = max(it["esquerda"], COL_DIA0), min(it["direita"], ultima_col)
+        if c_fim > c_ini:
+            ws.merge_cells(start_row=row_label, start_column=c_ini, end_row=row_label, end_column=c_fim)
+        cel = ws.cell(row=row_label, column=c_ini, value=it["nome"])
+        cel.fill = PatternFill("solid", fgColor=it["cor"])
+        cel.font = Font(name="Calibri", bold=True, size=8, color=texto_contraste(it["cor"]))
+        cel.alignment = Alignment(horizontal="center", vertical="center")
+
+        borda_pontilhada = Side(style="mediumDashed", color=it["cor"])
+        for r in range(row_label, ultima_linha_planilha + 1):
+            borda_com(ws.cell(row=r, column=it["col_dia"]), left=borda_pontilhada)
+
     ws.column_dimensions[get_column_letter(COL_PAV)].width = 14
     for d in range(total_dias):
         ws.column_dimensions[get_column_letter(COL_DIA0 + d)].width = 3.00
@@ -352,10 +449,10 @@ wb = Workbook()
 wb.remove(wb.active)  # a aba padrao "Sheet" e substituida pelas duas variacoes abaixo
 
 # ============================ ABA 1: LINHA DE BALANCO (completa, com texto) ============================
-construir_aba(wb, "Linha de Balanco", simples=False)
+construir_aba(wb, "Linha de Balanco", simples=False, marcos=MARCOS_FICTICIOS)
 
 # ============================ ABA 2: LINHA DE BALANCO SIMPLES (numeros + legenda) ============================
-construir_aba(wb, "Linha de Balanco Simples", simples=True)
+construir_aba(wb, "Linha de Balanco Simples", simples=True, marcos=MARCOS_FICTICIOS)
 
 # ============================ ABA 3: LEGENDA ============================
 wl = wb.create_sheet("Legenda")
