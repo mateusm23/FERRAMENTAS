@@ -397,6 +397,38 @@ thead th.sortable:hover { background: #24365a; }
 .lob-main-wrap { grid-column: 2; grid-row: 2; overflow: auto; position: relative; background: #fff; }
 #headerCanvas, #sidebarCanvas { position: absolute; top: 0; left: 0; }
 
+/* Reordenar pavimentos direto na régua da esquerda: sobrepõe o sidebarCanvas com linhas
+   HTML de verdade (arrastáveis nativamente), alinhadas píxel a píxel com LOB.pavYOffset/
+   pavHeight, e segue o mesmo transform de scroll do canvas (ver syncLobTransforms). */
+.lob-reorder-col { position: absolute; top: 0; left: 0; width: 100%; }
+.lob-reorder-row {
+  position: absolute; left: 0; width: 100%; box-sizing: border-box;
+  display: flex; align-items: center; gap: 7px; padding: 0 12px;
+  font-size: 12px; font-weight: 700; color: var(--navy); background: #fff;
+  border-bottom: 1px solid var(--border); cursor: grab; user-select: none;
+  transition: top .12s ease;
+}
+.lob-reorder-row .handle { color: var(--muted); font-size: 13px; flex-shrink: 0; }
+.lob-reorder-row span.txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lob-reorder-row.dragging { opacity: .35; cursor: grabbing; transition: none; }
+.lob-reorder-row:hover { background: var(--blue-light); }
+
+/* Aviso translúcido sobre o gráfico enquanto a reordenação inline está ativa: mesma
+   célula de grid do mainWrap (coluna 2, linha 2), então cobre exatamente a área das
+   barras sem interferir no scroll/drag do sidebar. pointer-events:none deixa o usuário
+   continuar rolando e interagindo com o gráfico por baixo normalmente. */
+.lob-reorder-aviso {
+  grid-column: 2; grid-row: 2; position: relative; pointer-events: none;
+  background: rgba(26,110,232,.06); z-index: 3;
+  display: flex; align-items: flex-start; justify-content: center; padding-top: 14px;
+}
+.lob-reorder-aviso-badge {
+  display: inline-flex; align-items: center; gap: 6px; padding: 7px 16px;
+  border-radius: 20px; font-family: 'Sora', sans-serif; font-size: 11.5px; font-weight: 700;
+  color: var(--blue-bright); background: #fff; border: 1px solid #cfe0fb;
+  box-shadow: 0 6px 18px rgba(26,43,69,.14);
+}
+
 .pkg-side { width: 200px; flex-shrink: 0; border-left: 1px solid var(--border); background: var(--surface2); display: flex; flex-direction: column; overflow-y: auto; }
 .pkg-side-head { padding: 10px 12px 6px; font-family: 'Sora', sans-serif; font-size: 10.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
 .pkg-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; cursor: pointer; border-left: 3px solid transparent; font-size: 12px; color: var(--text); transition: background .12s; }
@@ -647,6 +679,9 @@ thead th.sortable:hover { background: #24365a; }
           <button class="tbtn" id="btnVerTudo" title="Ajustar pra ver a Linha de Balanço inteira, sem rolagem" style="width:auto;padding:0 10px;font-size:10.5px">⛶ Ver tudo</button>
           <div class="tsep"></div>
           <button class="tbtn" id="btnTelaCheia" title="Tela cheia" style="width:auto;padding:0 10px;font-size:10.5px">⤢ Tela cheia</button>
+          <button class="tbtn" id="btnReordenarPav" title="Reordenar pavimentos: clique e arraste as linhas na coluna à esquerda" style="width:auto;padding:0 10px;font-size:10.5px">↕ Reordenar pavimentos</button>
+          <button class="tbtn hidden" id="btnReordenarAplicar" style="width:auto;padding:0 10px;font-size:10.5px;background:var(--green);color:#fff;border-color:var(--green)">✓ Aplicar ordem</button>
+          <button class="tbtn hidden" id="btnReordenarCancelar" style="width:auto;padding:0 10px;font-size:10.5px">✕ Cancelar</button>
           <button class="tbtn" id="btnAbrirConfigGeral" title="Ordem, cores, marcos e feriados" style="width:auto;padding:0 10px;font-size:10.5px">⚙ Configurações</button>
           <button class="btn-export" id="btnExportarExcel">⬇ Exportar Excel</button>
         </div>
@@ -656,8 +691,11 @@ thead th.sortable:hover { background: #24365a; }
         <div class="lob-grid">
           <div class="lob-corner">Pavimento</div>
           <div class="lob-header-wrap"><canvas id="headerCanvas"></canvas></div>
-          <div class="lob-sidebar-wrap" id="sidebarWrap"><canvas id="sidebarCanvas"></canvas></div>
+          <div class="lob-sidebar-wrap" id="sidebarWrap"><canvas id="sidebarCanvas"></canvas><div class="lob-reorder-col hidden" id="lobReorderCol"></div></div>
           <div class="lob-main-wrap" id="mainWrap"><canvas id="mainCanvas"></canvas></div>
+          <div class="lob-reorder-aviso hidden" id="lobReorderAviso">
+            <span class="lob-reorder-aviso-badge">🔄 Prévia da nova ordem — as barras serão recalculadas ao aplicar</span>
+          </div>
         </div>
         <div class="pkg-side">
           <div class="pkg-side-head">Serviços (clique pra filtrar)</div>
@@ -2272,6 +2310,7 @@ function syncLobTransforms() {
   const mainWrap = $('mainWrap');
   $('headerCanvas').style.transform = `translateX(${-mainWrap.scrollLeft}px)`;
   $('sidebarCanvas').style.transform = `translateY(${-mainWrap.scrollTop}px)`;
+  $('lobReorderCol').style.transform = `translateY(${-mainWrap.scrollTop}px)`;
 }
 $('mainWrap').addEventListener('scroll', syncLobTransforms);
 
@@ -2956,7 +2995,7 @@ function renderReorderList(nomes) {
 
 function marcarReorderItem(nome, marcar) {
   if (marcar) reorderSelecionados.add(nome); else reorderSelecionados.delete(nome);
-  const li = document.querySelector(`.reorder-item[data-nome="${CSS.escape(nome)}"]`);
+  const li = document.querySelector(`#reorderList .reorder-item[data-nome="${CSS.escape(nome)}"]`);
   if (li) {
     li.classList.toggle('selected', marcar);
     const cb = li.querySelector('.reorder-check');
@@ -2965,7 +3004,7 @@ function marcarReorderItem(nome, marcar) {
 }
 
 function attachReorderItemEvents() {
-  const itens = [...document.querySelectorAll('.reorder-item')];
+  const itens = [...document.querySelectorAll('#reorderList .reorder-item')];
   itens.forEach(item => {
     const nome = item.dataset.nome;
 
@@ -2991,12 +3030,12 @@ function attachReorderItemEvents() {
       }
       reorderDragNomes = [...reorderSelecionados];
       reorderDragNomes.forEach(n => {
-        const el = document.querySelector(`.reorder-item[data-nome="${CSS.escape(n)}"]`);
+        const el = document.querySelector(`#reorderList .reorder-item[data-nome="${CSS.escape(n)}"]`);
         if (el) el.classList.add('dragging');
       });
     });
     item.addEventListener('dragend', () => {
-      document.querySelectorAll('.reorder-item.dragging').forEach(el => el.classList.remove('dragging'));
+      document.querySelectorAll('#reorderList .reorder-item.dragging').forEach(el => el.classList.remove('dragging'));
       reorderDragNomes = [];
     });
   });
@@ -3026,7 +3065,7 @@ $('reorderList').addEventListener('dragover', ev => {
 });
 
 function nomesAtuaisDoModal() {
-  return [...document.querySelectorAll('.reorder-item')].map(li => li.dataset.nome);
+  return [...document.querySelectorAll('#reorderList .reorder-item')].map(li => li.dataset.nome);
 }
 
 $('btnOrdemAZ').addEventListener('click', () => renderReorderList(ordenarPavimentosAlfabetico(nomesAtuaisDoModal())));
@@ -3037,6 +3076,116 @@ $('btnSalvarReordenar').addEventListener('click', () => {
   reindexarPavimentos();
   layoutLob();
   $('reorderModal').classList.add('hidden');
+});
+
+// ════════════════════════════════ REORDENAR PAVIMENTOS INLINE (direto na régua) ════
+// Alternativa ao reorderModal: em vez de abrir um modal, sobrepõe o sidebarCanvas com
+// linhas HTML reais (arrastáveis nativamente), uma por pavimento VISÍVEL, alinhadas
+// píxel a píxel com LOB.pavYOffset/pavHeight. Durante o arraste os elementos não são
+// recriados (só reposicionados via style.top), pra não interromper o drag nativo do
+// navegador, que cancela a operação se o nó de origem sai do DOM no meio do gesto.
+let lobReorderAtivo = false;
+let lobReorderOrdemAtual = [];   // nomes visíveis, na ordem sendo editada
+let lobReorderAlturas = new Map(); // nome -> altura (fixa, não muda com a posição)
+let lobReorderDragNome = null;
+
+function lobReorderCalcularOffsets(ordem) {
+  let y = 0;
+  return ordem.map(nome => {
+    const h = lobReorderAlturas.get(nome) || LOB.laneH;
+    const off = { nome, y, h };
+    y += h;
+    return off;
+  });
+}
+
+// Aplica a nova ordem só nas posições que estavam visíveis, preservando o lugar de
+// qualquer pavimento escondido por filtro (mesmo princípio do reorderModal, que edita
+// a lista toda; aqui só os visíveis participam do arraste).
+function lobReorderPavimentosComNovaOrdem(novaOrdemVisivel) {
+  const resultado = [...LOB.pavimentos];
+  const posicoes = [...LOB.linhasVisiveis].sort((a, b) => a - b);
+  posicoes.forEach((pos, i) => { resultado[pos] = novaOrdemVisivel[i]; });
+  return resultado;
+}
+
+function abrirReorderInline() {
+  if (!LOB.linhasVisiveis.length) return;
+  lobReorderAtivo = true;
+  lobReorderOrdemAtual = LOB.linhasVisiveis.map(pi => LOB.pavimentos[pi]);
+  lobReorderAlturas = new Map(LOB.linhasVisiveis.map((pi, i) => [LOB.pavimentos[pi], LOB.pavHeight[i]]));
+  $('sidebarCanvas').style.visibility = 'hidden';
+  $('lobReorderCol').classList.remove('hidden');
+  $('lobReorderAviso').classList.remove('hidden');
+  $('btnReordenarPav').classList.add('hidden');
+  $('btnReordenarAplicar').classList.remove('hidden');
+  $('btnReordenarCancelar').classList.remove('hidden');
+  renderReorderInlineRows();
+}
+
+function fecharReorderInline() {
+  lobReorderAtivo = false;
+  lobReorderDragNome = null;
+  $('sidebarCanvas').style.visibility = '';
+  $('lobReorderCol').classList.add('hidden');
+  $('lobReorderCol').innerHTML = '';
+  $('lobReorderAviso').classList.add('hidden');
+  $('btnReordenarPav').classList.remove('hidden');
+  $('btnReordenarAplicar').classList.add('hidden');
+  $('btnReordenarCancelar').classList.add('hidden');
+}
+
+function renderReorderInlineRows() {
+  const col = $('lobReorderCol');
+  const offsets = lobReorderCalcularOffsets(lobReorderOrdemAtual);
+  col.innerHTML = offsets.map(o => `
+    <div class="lob-reorder-row" draggable="true" data-nome="${escHtml(o.nome)}" style="top:${o.y}px;height:${o.h}px">
+      <span class="handle">⋮⋮</span><span class="txt">${escHtml(o.nome)}</span>
+    </div>`).join('');
+
+  col.querySelectorAll('.lob-reorder-row').forEach(row => {
+    row.addEventListener('dragstart', () => {
+      lobReorderDragNome = row.dataset.nome;
+      row.classList.add('dragging');
+    });
+    row.addEventListener('dragend', () => {
+      row.classList.remove('dragging');
+      lobReorderDragNome = null;
+    });
+  });
+}
+
+function lobReorderReposicionarLinhas() {
+  const col = $('lobReorderCol');
+  const offsets = lobReorderCalcularOffsets(lobReorderOrdemAtual);
+  offsets.forEach(o => {
+    const row = col.querySelector(`.lob-reorder-row[data-nome="${CSS.escape(o.nome)}"]`);
+    if (row) { row.style.top = o.y + 'px'; row.style.height = o.h + 'px'; }
+  });
+}
+
+$('lobReorderCol').addEventListener('dragover', ev => {
+  ev.preventDefault();
+  if (!lobReorderDragNome) return;
+  const rect = $('lobReorderCol').getBoundingClientRect();
+  const y = ev.clientY - rect.top;
+  const offsets = lobReorderCalcularOffsets(lobReorderOrdemAtual);
+  let novoIndex = offsets.findIndex(o => y < o.y + o.h / 2);
+  if (novoIndex === -1) novoIndex = offsets.length - 1;
+  const idxAtual = lobReorderOrdemAtual.indexOf(lobReorderDragNome);
+  if (idxAtual === -1 || novoIndex === idxAtual) return;
+  lobReorderOrdemAtual.splice(idxAtual, 1);
+  lobReorderOrdemAtual.splice(novoIndex, 0, lobReorderDragNome);
+  lobReorderReposicionarLinhas();
+});
+
+$('btnReordenarPav').addEventListener('click', abrirReorderInline);
+$('btnReordenarCancelar').addEventListener('click', fecharReorderInline);
+$('btnReordenarAplicar').addEventListener('click', () => {
+  LOB.pavimentos = lobReorderPavimentosComNovaOrdem(lobReorderOrdemAtual);
+  reindexarPavimentos();
+  fecharReorderInline();
+  layoutLob();
 });
 
 // ════════════════════════════════ EXPORTAÇÃO PARA EXCEL ═══════════════════════════
@@ -3051,7 +3200,7 @@ const XL_NAVY = 'FF1A2B45', XL_AZUL_CONTRASTE = 'FF1A6EE8', XL_CINZA_PAV_COL = '
   XL_CINZA_MES_HDR = 'FFD3E3F5', XL_CINZA_FIMSEMANA = 'FFEAEEF3', XL_CINZA_FIMSEMANA_HDR = 'FFB8CBE0',
   XL_FILL_PAV_PAR = 'FFF7FAFD', XL_MUTED = 'FF6B80A0', XL_COR_DIA = 'FF33455E',
   XL_BORDA_SUAVE = 'FF9AA9C0', XL_BORDA_MES = 'FF3D5A80', XL_BORDA_DIA_CLARA = 'FFE3E8F0',
-  XL_BORDA_FINA = 'FFD4DFE8';
+  XL_BORDA_FINA = 'FFD4DFE8', XL_CINZA_FERIADO = 'FFD6DEE9', XL_CINZA_FERIADO_HDR = 'FFA3B7CF';
 
 function xlArgb(hex) { return 'FF' + hex.replace('#', '').toUpperCase(); }
 function xlContraste(hex) {
@@ -3073,6 +3222,7 @@ function xlConstruirAba(wb, titulo, simples, d) {
   else { COL_PAV = 1; }
   const COL_DIA0 = COL_PAV + 1;
   const ultimaCol = COL_DIA0 + d.diasTotalVisivel - 1;
+  const diasFeriado = new Set((d.feriados || []).map(f => f.dia));
 
   function dataDoDia(dRel) {
     const dt = new Date(d.projectStart); dt.setDate(dt.getDate() + d.diasOrigem + dRel);
@@ -3105,11 +3255,13 @@ function xlConstruirAba(wb, titulo, simples, d) {
       }
       ws.getCell(rowMes, col).fill = xlFill(XL_CINZA_MES_HDR);
       const dow = date.getDay();
+      const ehFimDeSemana = dow === 0 || dow === 6;
+      const ehFeriado = diasFeriado.has(d.diasOrigem + dd);
       const celDia = ws.getCell(rowDia, col);
       celDia.value = date.getDate();
-      celDia.font = { name: 'Calibri', bold: true, size: 9, color: { argb: (dow === 0 || dow === 6) ? 'FFC53030' : XL_COR_DIA } };
+      celDia.font = { name: 'Calibri', bold: true, size: 9, color: { argb: (!ehFeriado && ehFimDeSemana) ? 'FFC53030' : XL_COR_DIA } };
       celDia.alignment = { horizontal: 'center' };
-      celDia.fill = xlFill((dow === 0 || dow === 6) ? XL_CINZA_FIMSEMANA_HDR : XL_CINZA_MES_HDR);
+      celDia.fill = xlFill(ehFeriado ? XL_CINZA_FERIADO_HDR : (ehFimDeSemana ? XL_CINZA_FIMSEMANA_HDR : XL_CINZA_MES_HDR));
     }
     ws.mergeCells(rowMes, inicioMesCol, rowMes, ultimaCol);
     ws.getRow(rowMes).height = 18;
@@ -3272,7 +3424,8 @@ function xlConstruirAba(wb, titulo, simples, d) {
         const col = COL_DIA0 + dd;
         const dow = dataDoDia(dd).getDay();
         const cel = ws.getCell(r, col);
-        if (dow === 0 || dow === 6) cel.fill = xlFill(XL_CINZA_FIMSEMANA);
+        if (diasFeriado.has(d.diasOrigem + dd)) cel.fill = xlFill(XL_CINZA_FERIADO);
+        else if (dow === 0 || dow === 6) cel.fill = xlFill(XL_CINZA_FIMSEMANA);
         else if (pi % 2 === 0) cel.fill = xlFill(XL_FILL_PAV_PAR);
       }
     }
@@ -3401,6 +3554,7 @@ async function exportarLinhaDeBalancoExcel() {
     bars, pavimentosVisiveis, numLanesPorPav, servicosVisiveis, numeroDoServico,
     diasOrigem: LOB.diasOrigem, diasTotalVisivel: LOB.diasTotalVisivel,
     projectStart: LOB.projectStart, escopoNome: LOB.escopoNome, marcos: LOB.marcos,
+    feriados: LOB.feriados,
   };
 
   const wb = new ExcelJS.Workbook();
