@@ -1,0 +1,1895 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Efetivo de Obra</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👷</text></svg>">
+<style>
+:root {
+  --navy:    #1a2744;
+  --blue:    #2a4a8e;
+  --mid:     #3d6abf;
+  --pale:    #dce8f8;
+  --g1:      #f4f6fa;
+  --g2:      #e8edf5;
+  --g3:      #c5cedd;
+  --g4:      #8a97ab;
+  --g5:      #4a5568;
+  --text:    #1e2a3a;
+  --green:   #0f9b6e;
+  --green-l: #e8f8f2;
+  --amber:   #b45309;
+  --amber-l: #fff4e6;
+  --amber-b: #fcd9b0;
+  --red:     #c0392b;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  background: var(--g1); color: var(--text); min-height: 100vh;
+  display: flex; flex-direction: column;
+}
+
+.header {
+  background: linear-gradient(135deg, var(--navy) 0%, #1e3a6e 100%);
+  padding: 32px 32px 36px; text-align: center; position: relative; overflow: hidden;
+}
+.header::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.025'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E");
+}
+.header-content { position: relative; }
+.header-icon { font-size: 34px; margin-bottom: 8px; }
+.header h1 { font-size: 24px; font-weight: 800; color: #fff; letter-spacing: -.02em; margin-bottom: 6px; }
+.header p { color: rgba(255,255,255,.55); font-size: 13px; }
+.header a.voltar-portal {
+  position: absolute; top: 0; left: 0; color: rgba(255,255,255,.65); font-size: 12.5px;
+  text-decoration: none; padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,.2);
+}
+.header a.voltar-portal:hover { background: rgba(255,255,255,.08); color: #fff; }
+
+.main { flex: 1; max-width: 1100px; width: 100%; margin: 0 auto; padding: 32px 24px 48px; }
+
+.screen { display: none; }
+.screen.active { display: block; animation: fadein .25s ease; }
+@keyframes fadein { from { opacity:0; transform: translateY(6px);} to { opacity:1; transform:none; } }
+
+.card {
+  background: #fff; border-radius: 14px; border: 1px solid var(--g2);
+  box-shadow: 0 2px 12px rgba(26,39,68,.06); padding: 24px; margin-bottom: 20px;
+}
+.card h2 { font-size: 16px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+.card .card-hint { font-size: 12.5px; color: var(--g4); margin-bottom: 18px; line-height: 1.5; }
+
+/* UPLOAD */
+.upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+@media (max-width: 720px) { .upload-grid { grid-template-columns: 1fr; } }
+
+.dropzone {
+  border: 2px dashed var(--g3); border-radius: 12px; padding: 28px 18px;
+  text-align: center; cursor: pointer; transition: border-color .15s, background .15s;
+  background: var(--g1);
+}
+.dropzone:hover, .dropzone.dragover { border-color: var(--mid); background: var(--pale); }
+.dropzone.loaded { border-style: solid; border-color: var(--green); background: var(--green-l); }
+.dropzone.error { border-style: solid; border-color: var(--red); background: #fdecea; }
+.dropzone .dz-icon { font-size: 28px; margin-bottom: 8px; }
+.dropzone .dz-title { font-size: 13.5px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+.dropzone .dz-hint { font-size: 11.5px; color: var(--g4); line-height: 1.5; }
+.dropzone .dz-status { font-size: 12px; margin-top: 10px; font-weight: 600; }
+.dropzone.loaded .dz-status { color: var(--green); }
+.dropzone.error .dz-status { color: var(--red); }
+.dropzone input[type=file] { display: none; }
+
+/* TUTORIAIS (tela de upload) */
+.tutorial-list { margin-top: 18px; display: flex; flex-direction: column; gap: 8px; }
+.tutorial-toggle {
+  align-self: flex-start; background: none; border: none; color: var(--mid);
+  font-size: 12.5px; font-weight: 700; cursor: pointer; padding: 4px 0; font-family: inherit;
+  display: flex; align-items: center; gap: 4px;
+}
+.tutorial-toggle:hover { text-decoration: underline; }
+.tutorial-toggle .chevron { transition: transform .15s; }
+.tutorial-toggle.aberto .chevron { transform: rotate(180deg); }
+.tutorial-box {
+  background: var(--g1); border: 1px solid var(--g2); border-radius: 10px;
+  padding: 14px 16px; font-size: 12.5px; color: var(--g5); line-height: 1.6;
+}
+.tutorial-box strong { color: var(--navy); }
+.tutorial-box ol { padding-left: 18px; }
+.tutorial-box li { margin-bottom: 4px; }
+.tutorial-box p { margin-bottom: 8px; }
+.tutorial-table { width: 100%; border-collapse: collapse; margin: 8px 0 12px; font-size: 11.5px; }
+.tutorial-table th, .tutorial-table td { border: 1px solid var(--g3); padding: 5px 8px; text-align: left; white-space: nowrap; }
+.tutorial-table th { background: var(--pale); color: var(--navy); }
+
+/* BUTTONS */
+.btn {
+  font-family: inherit; font-size: 13.5px; font-weight: 700; border: none; border-radius: 10px;
+  padding: 11px 20px; cursor: pointer; transition: transform .1s, box-shadow .15s; display: inline-flex;
+  align-items: center; gap: 8px;
+}
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn-primary { background: linear-gradient(90deg, var(--blue), var(--mid)); color: #fff; }
+.btn-primary:not(:disabled):hover { box-shadow: 0 6px 18px rgba(61,106,191,.35); }
+.btn-secondary { background: var(--g2); color: var(--g5); }
+.btn-secondary:hover { background: var(--g3); }
+.btn-row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
+
+/* CONFIG SCREEN */
+.equip-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--g2); }
+.equip-row:last-child { border-bottom: none; }
+.equip-raw { font-size: 12.5px; color: var(--g5); font-family: Consolas, monospace; word-break: break-all; }
+.equip-raw .tag { display:inline-block; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color: var(--g4); background: var(--g2); border-radius: 6px; padding: 2px 6px; margin-right: 6px; }
+input[type=text].input-obra, input[type=text].input-empresa {
+  font-family: inherit; font-size: 13.5px; padding: 9px 12px; border-radius: 8px;
+  border: 1px solid var(--g3); width: 100%; color: var(--text);
+}
+input[type=text].input-obra:focus, input[type=text].input-empresa:focus { outline: none; border-color: var(--mid); }
+
+.check-list { display: flex; flex-wrap: wrap; gap: 10px; }
+.check-item { display: flex; align-items: center; gap: 7px; background: var(--g1); border: 1px solid var(--g2); border-radius: 8px; padding: 8px 12px; font-size: 12.5px; font-weight: 600; color: var(--g5); }
+.check-item input { width: 15px; height: 15px; }
+
+/* ALTERNÂNCIA TABELA / PENDÊNCIAS */
+.view-toggle { display: flex; gap: 8px; margin-bottom: 18px; }
+.view-toggle-btn {
+  font-family: inherit; font-size: 12.5px; font-weight: 700; padding: 9px 16px; border-radius: 10px;
+  border: 1px solid var(--g3); background: var(--g1); color: var(--g5); cursor: pointer;
+}
+.view-toggle-btn:hover { border-color: var(--mid); }
+.view-toggle-btn.ativo { background: var(--navy); color: #fff; border-color: var(--navy); }
+.badge-contador {
+  display: inline-block; min-width: 18px; padding: 1px 6px; border-radius: 20px; margin-left: 4px;
+  background: var(--amber); color: #fff; font-size: 10.5px; font-weight: 700;
+}
+.view-toggle-btn.ativo .badge-contador { background: rgba(255,255,255,.25); }
+
+/* PENDÊNCIAS */
+.pendencia-card { background: var(--g1); border: 1px solid var(--g2); border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; }
+.pendencia-card.resolvida { opacity: .6; }
+.pendencia-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 6px; }
+.pendencia-head strong { font-size: 13px; color: var(--navy); }
+.pendencia-head .tag-obra { font-size: 11px; color: var(--g4); }
+.pendencia-card .memorial-box { margin: 0; }
+
+/* RESULTADO */
+.kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+@media (max-width: 720px) { .kpi-row { grid-template-columns: 1fr 1fr; } }
+.kpi { background: #fff; border: 1px solid var(--g2); border-radius: 12px; padding: 16px; text-align: center; box-shadow: 0 2px 10px rgba(26,39,68,.05); }
+.kpi .kpi-num { font-size: 22px; font-weight: 800; color: var(--navy); }
+.kpi .kpi-label { font-size: 11px; color: var(--g4); text-transform: uppercase; letter-spacing: .05em; margin-top: 3px; }
+
+.filtros { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+.filtros select, .filtros input[type=text] {
+  font-family: inherit; font-size: 12.5px; padding: 8px 10px; border-radius: 8px;
+  border: 1px solid var(--g3); background: #fff; color: var(--text);
+}
+.filtros input[type=text] { flex: 1; min-width: 200px; }
+
+/* BUSCA POR PESSOA */
+.busca-resultado {
+  background: #fff; border: 1px solid var(--pale); border-radius: 12px;
+  padding: 14px 18px; margin-bottom: 18px;
+}
+.busca-resultado-item + .busca-resultado-item { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--g2); }
+.busca-resultado-head { font-size: 13px; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+.busca-resultado-head .tag-obra { font-weight: 500; color: var(--g4); font-size: 11.5px; }
+.busca-dias-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.busca-dia-cell {
+  min-width: 64px; text-align: center; padding: 6px 8px; border-radius: 8px;
+  background: var(--g1); border: 1px solid var(--g2); cursor: pointer; font-size: 11.5px;
+}
+.busca-dia-cell:hover { background: var(--pale); }
+.busca-dia-cell .d-data { font-size: 10px; color: var(--g4); }
+.busca-dia-cell .d-horas { font-weight: 700; color: var(--navy); margin-top: 2px; }
+.busca-dia-cell.sem-presenca .d-horas { color: var(--g3); font-weight: 400; }
+.busca-dia-cell.selecionada { background: var(--pale); border-color: var(--mid); }
+.busca-sem-resultado { font-size: 12.5px; color: var(--g4); }
+.busca-escolha { display: flex; flex-wrap: wrap; gap: 8px; }
+.busca-escolha button {
+  font-family: inherit; font-size: 12px; padding: 6px 12px; border-radius: 20px;
+  border: 1px solid var(--g3); background: var(--g1); cursor: pointer; color: var(--text);
+}
+.busca-escolha button:hover { background: var(--pale); border-color: var(--mid); }
+
+/* PIVOT (Obra > Empresa > Dia > Pessoa) */
+.obra-bloco { margin-bottom: 22px; border: 1px solid var(--g2); border-radius: 12px; overflow: hidden; }
+.obra-titulo {
+  font-size: 12.5px; font-weight: 700; color: var(--navy); background: var(--g1);
+  padding: 10px 14px; border-bottom: 1px solid var(--g2);
+}
+table.pivot-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+table.pivot-table th {
+  text-align: center; font-size: 10.5px; text-transform: uppercase; letter-spacing: .03em;
+  color: var(--g4); padding: 8px 6px; border-bottom: 2px solid var(--g2); white-space: nowrap;
+}
+table.pivot-table th.col-empresa { text-align: left; padding-left: 14px; }
+table.pivot-table td { padding: 7px 6px; border-bottom: 1px solid var(--g2); text-align: center; }
+table.pivot-table td.col-empresa { text-align: left; padding-left: 14px; font-weight: 600; color: var(--text); }
+table.pivot-table tr.linha-empresa:hover { background: var(--g1); }
+table.pivot-table tr.linha-nao-cadastrada { background: #fffbe0; }
+table.pivot-table tr.linha-nao-cadastrada:hover { background: #fef6c8; }
+table.pivot-table tr.linha-nao-cadastrada td.col-empresa { color: #8a6d00; }
+.badge-nao-cadastrada {
+  font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+  background: #fbe9a0; color: #6b5400; border-radius: 20px; padding: 2px 8px; margin-left: 6px;
+}
+.btn-lista-nomes {
+  font-family: inherit; font-size: 10.5px; font-weight: 700; padding: 3px 10px; border-radius: 20px;
+  background: #fff; border: 1px solid #e6cf70; color: #8a6d00; cursor: pointer; margin-left: 8px;
+}
+.btn-lista-nomes:hover { background: #fef6c8; }
+table.pivot-table tr.linha-total td { background: var(--g1); font-weight: 700; color: var(--navy); border-top: 2px solid var(--g2); }
+table.pivot-table tr.linha-total-geral td { background: var(--navy); color: #fff; font-weight: 700; }
+td.celula-qtd { cursor: pointer; border-radius: 6px; font-weight: 700; color: var(--mid); }
+td.celula-qtd:hover { background: var(--pale); }
+td.celula-qtd.zero { cursor: default; color: var(--g3); font-weight: 400; }
+td.celula-qtd.zero:hover { background: transparent; }
+tr.linha-detalhe td { background: var(--g1); text-align: left; padding: 10px 16px; }
+.lista-pessoas-dia { display: flex; flex-direction: column; gap: 2px; }
+.pessoa-item {
+  display: flex; justify-content: space-between; gap: 10px; padding: 7px 10px; border-radius: 6px;
+  cursor: pointer; font-size: 12px;
+}
+.pessoa-item:hover { background: #fff; }
+.pessoa-item .p-horas { font-weight: 700; color: var(--navy); }
+.pessoa-item.abaixo-minimo { color: var(--g4); }
+.pessoa-item.abaixo-minimo .p-horas { color: var(--g4); font-weight: 500; }
+.pessoa-item .p-obs { font-size: 10.5px; color: var(--amber); margin-left: 6px; }
+.memorial-box { background: #fff; border: 1px solid var(--g2); border-radius: 8px; padding: 10px 14px; margin: 6px 0 2px; }
+.timeline-bar { margin-bottom: 12px; }
+.timeline-track {
+  position: relative; height: 26px; background: var(--g2); border-radius: 8px;
+  overflow: hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,.05);
+}
+.timeline-segment {
+  position: absolute; top: 2px; bottom: 2px; border-radius: 4px;
+  background: linear-gradient(180deg, var(--mid), var(--blue));
+}
+.timeline-segment.continua { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+.timeline-segment.continua::after {
+  content: '»'; position: absolute; right: 1px; top: 50%; transform: translateY(-50%);
+  color: #fff; font-size: 11px; font-weight: 800; line-height: 1;
+}
+.timeline-segment.incompleto {
+  background: repeating-linear-gradient(45deg, var(--amber), var(--amber) 5px, #ffe6b8 5px, #ffe6b8 10px);
+  opacity: .85;
+}
+.timeline-tick { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(255,255,255,.7); }
+.timeline-labels { display: flex; justify-content: space-between; font-size: 9.5px; color: var(--g4); margin-top: 3px; }
+.memorial-linha {
+  display: flex; justify-content: space-between; padding: 4px 0; font-family: Consolas, monospace; font-size: 11.5px; color: var(--text);
+}
+.memorial-linha .m-obs { color: var(--amber); font-family: inherit; }
+.memorial-total { border-top: 1px solid var(--g2); margin-top: 4px; padding-top: 6px; font-weight: 700; display: flex; justify-content: space-between; font-size: 12px; }
+.memorial-total.abaixo-minimo { color: var(--amber); }
+.memorial-total.manual { color: var(--mid); }
+.memorial-decisao {
+  margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--g3);
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 11.5px; color: var(--g5);
+}
+.decisao-btns { display: flex; gap: 6px; }
+.decisao-btn {
+  font-family: inherit; font-size: 11px; padding: 4px 11px; border-radius: 20px;
+  border: 1px solid var(--g3); background: #fff; cursor: pointer; color: var(--g5);
+}
+.decisao-btn:hover { border-color: var(--mid); color: var(--mid); }
+.decisao-btn.ativo { background: var(--navy); color: #fff; border-color: var(--navy); }
+.lista-simples { display: flex; flex-direction: column; gap: 3px; margin-top: 8px; font-size: 12px; }
+.lista-simples .l-item { display: flex; justify-content: space-between; padding: 5px 10px; background: #fff; border-radius: 6px; }
+
+.table-scroll { overflow-x: auto; border-radius: 10px; }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: var(--g3); border-radius: 4px; }
+
+.author {
+  max-width: 860px; margin: 0 auto; padding: 0 24px 32px; text-align: center;
+  color: var(--g4); font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+.author-divider { width: 1px; height: 12px; background: var(--g3); }
+
+/* OVERLAY DE CARREGAMENTO */
+.loading-overlay {
+  position: fixed; inset: 0; background: rgba(244,246,250,.88); backdrop-filter: blur(2px);
+  display: flex; align-items: center; justify-content: center; z-index: 200;
+}
+.loading-box { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.spinner {
+  width: 42px; height: 42px; border: 4px solid var(--g2); border-top-color: var(--mid);
+  border-radius: 50%; animation: girar .8s linear infinite;
+}
+@keyframes girar { to { transform: rotate(360deg); } }
+.overlay-msg { font-size: 13.5px; font-weight: 700; color: var(--navy); }
+
+/* MODAL DE EXPORTAÇÃO */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(26,39,68,.5);
+  display: flex; align-items: center; justify-content: center; z-index: 100;
+}
+.modal-card {
+  background: #fff; border-radius: 14px; padding: 26px 28px; max-width: 380px; width: 90%;
+  position: relative; box-shadow: 0 20px 60px rgba(0,0,0,.25);
+}
+.modal-card h3 { font-size: 16px; color: var(--navy); margin-bottom: 10px; }
+.modal-card p { font-size: 13px; color: var(--g5); margin-bottom: 20px; line-height: 1.5; }
+.modal-btns { display: flex; gap: 10px; justify-content: flex-end; }
+.modal-close {
+  position: absolute; top: 10px; right: 12px; background: none; border: none;
+  font-size: 15px; color: var(--g4); cursor: pointer; padding: 4px;
+}
+.modal-close:hover { color: var(--text); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <a class="voltar-portal" href="../../index.html">← Portal</a>
+  <div class="header-content">
+    <div class="header-icon">👷</div>
+    <h1>Efetivo de Obra</h1>
+    <p>Cruza Cadastro de Pessoas com Acesso por Equipamento e calcula presença por obra, dia e empreiteiro</p>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- TELA 1: UPLOAD -->
+  <div id="screen-upload" class="screen active">
+    <div class="card">
+      <h2>1. Suba os dois arquivos</h2>
+      <p class="card-hint">Cadastro de Pessoas (.csv ou .xlsx) e Acesso por Equipamento (.xls ou .xlsx, relatório de catraca/facial). Nada sai do seu navegador — o processamento é todo local.</p>
+      <div class="upload-grid">
+
+        <div id="dz-cadastro" class="dropzone">
+          <div class="dz-icon">📇</div>
+          <div class="dz-title">Cadastro de Pessoas</div>
+          <div class="dz-hint">Arraste o arquivo aqui ou clique para escolher<br>(.csv ou .xlsx)</div>
+          <div class="dz-status"></div>
+          <input type="file" id="input-cadastro" accept=".csv,.xlsx,.xls">
+        </div>
+
+        <div id="dz-acessos" class="dropzone">
+          <div class="dz-icon">🕘</div>
+          <div class="dz-title">Acesso por Equipamento</div>
+          <div class="dz-hint">Arraste o arquivo aqui ou clique para escolher<br>(.xls ou .xlsx)</div>
+          <div class="dz-status"></div>
+          <input type="file" id="input-acessos" accept=".xls,.xlsx">
+        </div>
+
+      </div>
+
+      <div class="tutorial-list">
+        <div class="tutorial-item">
+          <button type="button" class="tutorial-toggle" data-target="tutorial-cadastro">
+            ❓ Como deve estar o Cadastro de Pessoas / onde consigo esse arquivo? <span class="chevron">▾</span>
+          </button>
+          <div id="tutorial-cadastro" class="tutorial-box" style="display:none">
+            <p><strong>Estrutura esperada</strong> — 4 colunas (o nome exato pode variar um pouco, a ferramenta procura por texto no cabeçalho, não por posição):</p>
+            <div class="table-scroll">
+              <table class="tutorial-table">
+                <thead><tr><th>Nº Identificador</th><th>Nome</th><th>Classificação</th><th>Empresa</th></tr></thead>
+                <tbody>
+                  <tr><td>100234</td><td>FULANO DA SILVA SANTOS</td><td>COLABORADOR</td><td>EMPREITEIRA XPTO LTDA</td></tr>
+                  <tr><td>100235</td><td>CICLANA DE SOUZA OLIVEIRA</td><td>COLABORADOR</td><td>CONSTRUTORA EXEMPLO LTDA</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p><strong>Onde conseguir:</strong> acesse o portal do Secullum da sua empresa e vá em <strong>Cadastros → Pessoas</strong>.</p>
+          </div>
+        </div>
+
+        <div class="tutorial-item">
+          <button type="button" class="tutorial-toggle" data-target="tutorial-acessos">
+            ❓ Como exportar o relatório de Acesso por Equipamento? <span class="chevron">▾</span>
+          </button>
+          <div id="tutorial-acessos" class="tutorial-box" style="display:none">
+            <ol>
+              <li>No Secullum, vá em <strong>Relatórios → Acessos → Acesso por Equipamento</strong>.</li>
+              <li>Preencha o <strong>Período</strong> desejado; deixe Equipamento, Empresa, Classificação, Função e Departamento como <strong>Todos/Todas</strong>.</li>
+              <li>Marque só <strong>"Exibir somente acessos liberados"</strong> — deixe as demais opções (agrupar por classificação, agrupamento principal por pessoas, imprimir em modo paisagem, salvar em Excel) desmarcadas.</li>
+              <li>Clique em <strong>Concluir</strong>.</li>
+              <li>Na tela do relatório gerado, clique em <strong>Salvar</strong> e escolha o formato <strong>Microsoft Excel</strong>.</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btn-continuar-upload" disabled>Continuar →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TELA 2: CONFIRMAÇÃO -->
+  <div id="screen-config" class="screen">
+    <div class="card" id="card-equipamentos">
+      <h2>2. Confirme a obra de cada equipamento</h2>
+      <p class="card-hint">O relatório de acesso não tem uma coluna "Obra" — ela vem embutida no nome do equipamento. Confira/ajuste o nome de cada obra abaixo.</p>
+      <div id="equip-list"></div>
+    </div>
+    <div class="card" id="card-classificacao" style="display:none">
+      <h2>3. Quem conta no efetivo</h2>
+      <p class="card-hint">Classificações encontradas no Cadastro de Pessoas — desmarque as que não devem entrar na contagem (ex.: visitantes).</p>
+      <div class="check-list" id="class-list"></div>
+    </div>
+    <div class="card">
+      <h2>4. Tempo mínimo pra contar como presença</h2>
+      <p class="card-hint">Se alguém passou pouquíssimo tempo no dia (só uma visita rápida, não um turno de trabalho), dá pra não contar essa pessoa naquele dia. Formato horas:minutos, ex. <strong>2:00</strong>. Deixe em branco pra contar todo mundo, sem mínimo.</p>
+      <input type="text" id="input-minimo" class="input-obra" placeholder="ex: 2:00 (em branco = sem mínimo)" style="max-width:260px">
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary" id="btn-voltar-config">← Voltar</button>
+      <button class="btn btn-primary" id="btn-gerar">Gerar Relatório →</button>
+    </div>
+  </div>
+
+  <!-- TELA 3: RESULTADO -->
+  <div id="screen-resultado" class="screen">
+    <div class="kpi-row" id="kpi-row"></div>
+
+    <div class="card">
+      <div class="view-toggle">
+        <button type="button" id="btn-ver-tabela" class="view-toggle-btn ativo">📋 Tabela</button>
+        <button type="button" id="btn-ver-pendencias" class="view-toggle-btn">⚠ Pendências pra revisar <span class="badge-contador" id="badge-pendencias">0</span></button>
+      </div>
+
+      <div id="pivot-view">
+        <h2>Efetivo por Obra, Empreiteiro e Dia</h2>
+        <p class="card-hint">Clique num número pra ver as pessoas daquele dia. Clique numa pessoa pra ver o memorial de cálculo (entradas e saídas).</p>
+        <div class="filtros">
+          <select id="filtro-obra"><option value="">Todas as obras</option></select>
+          <select id="filtro-empresa"><option value="">Todos os empreiteiros</option></select>
+          <input type="text" id="input-busca-pessoa" placeholder="🔎 Buscar pessoa pelo nome...">
+        </div>
+
+        <div id="busca-resultado-wrap" style="display:none"></div>
+
+        <div id="pivot-wrap"></div>
+      </div>
+
+      <div id="pendencias-view" style="display:none">
+        <h2>Pendências pra revisar</h2>
+        <p class="card-hint">Batidas incompletas (sem entrada ou sem saída) ou turnos abaixo do mínimo configurado — decida cada uma sem precisar procurar na tabela.</p>
+        <div class="filtros">
+          <select id="pend-filtro-obra"><option value="">Todas as obras</option></select>
+          <input type="text" id="pend-busca-nome" placeholder="🔎 Buscar pessoa pelo nome...">
+          <label class="check-item"><input type="checkbox" id="pend-mostrar-resolvidas"> Mostrar já decididas</label>
+        </div>
+        <div id="pendencias-wrap"></div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-secondary" id="btn-nova-analise">↺ Nova análise</button>
+      <button class="btn btn-primary" id="btn-exportar">⬇ Exportar Excel</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="author">
+  <span>Desenvolvido por <strong>Mateus Monteiro</strong></span>
+  <div class="author-divider"></div>
+  <span>(62) 99156-3421</span>
+</div>
+
+<div id="overlay-carregando" class="loading-overlay" style="display:none">
+  <div class="loading-box">
+    <div class="spinner"></div>
+    <div class="overlay-msg" id="overlay-msg">Processando...</div>
+  </div>
+</div>
+
+<div id="modal-export" class="modal-overlay" style="display:none">
+  <div class="modal-card">
+    <button type="button" class="modal-close" id="btn-export-cancelar">✕</button>
+    <h3>O que exportar?</h3>
+    <p>Tem um filtro ativo na tela (obra e/ou empreiteiro). Quer exportar só o que está filtrado, ou tudo?</p>
+    <div class="modal-btns">
+      <button type="button" class="btn btn-secondary" id="btn-export-filtrado">Somente filtrado</button>
+      <button type="button" class="btn btn-primary" id="btn-export-tudo">Exportar tudo</button>
+    </div>
+  </div>
+</div>
+
+<!-- SheetJS (leitura dos 2 arquivos) e ExcelJS (geração do Excel formatado, com cor/
+     agrupamento) via CDN — mesma dupla de bibliotecas usada nas outras ferramentas
+     do portal (ex.: Programação Semanal). Requisito de "zero CDN" foi removido a
+     pedido do usuário; deixou de valer o cuidado de vendorizar em Base64. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+<script>'use strict';
+
+/* ===================== NÚCLEO DE LÓGICA (parsing, pareamento, agregação) ===================== */
+
+const DIACRITICS_RE = new RegExp('[' + String.fromCharCode(0x0300) + '-' + String.fromCharCode(0x036f) + ']', 'g');
+
+function normalizeName(s) {
+  return (s == null ? '' : s.toString())
+    .normalize('NFD').replace(DIACRITICS_RE, '')
+    .toUpperCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+const normalizeHeader = normalizeName;
+
+function brDateToISO(str) {
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec((str || '').trim());
+  if (!m) return null;
+  return `${m[3]}-${m[2]}-${m[1]}`;
+}
+
+function isoToBR(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : (iso || '');
+}
+
+function toTimestamp(dataISO, hora) {
+  const h = (hora || '').trim();
+  const hm = /^(\d{1,2}):(\d{2})(?::(\d{2}))?$/.exec(h);
+  if (!hm) return NaN;
+  const hh = hm[1].padStart(2, '0'), mm = hm[2], ss = hm[3] || '00';
+  return new Date(`${dataISO}T${hh}:${mm}:${ss}`).getTime();
+}
+
+function parseAcessos(workbook) {
+  const sheetName = workbook.SheetNames[0];
+  const ws = workbook.Sheets[sheetName];
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '' });
+
+  const equipSet = new Set();
+  const events = [];
+  let currentEquip = null;
+  let cols = null;
+
+  for (const row of rows) {
+    const cells = row.map(c => (c == null ? '' : c.toString().trim()));
+    const cellsNorm = cells.map(normalizeHeader);
+
+    const equipIdx = cellsNorm.indexOf('EQUIPAMENTO');
+    if (equipIdx !== -1) {
+      const val = cells.slice(equipIdx + 1).find(v => v !== '');
+      if (val) { currentEquip = val; equipSet.add(val); }
+      continue;
+    }
+
+    const nomeIdx = cellsNorm.indexOf('NOME');
+    const dataIdx = cellsNorm.indexOf('DATA');
+    const horaIdx = cellsNorm.indexOf('HORA');
+    const descIdx = cellsNorm.indexOf('DESCRICAO');
+    if (nomeIdx !== -1 && dataIdx !== -1 && horaIdx !== -1 && descIdx !== -1) {
+      cols = { nome: nomeIdx, data: dataIdx, hora: horaIdx, desc: descIdx };
+      continue;
+    }
+
+    if (!cols) continue;
+    const nome = cells[cols.nome];
+    const data = cells[cols.data];
+    const hora = cells[cols.hora];
+    const desc = cells[cols.desc];
+    if (!nome || !data || !hora || !desc) continue;
+
+    const descNorm = normalizeHeader(desc);
+    const tipo = descNorm.startsWith('ENTR') ? 'ENTRADA' : (descNorm.startsWith('SA') ? 'SAIDA' : null);
+    if (!tipo) continue;
+
+    const dataISO = brDateToISO(data);
+    const ts = dataISO ? toTimestamp(dataISO, hora) : NaN;
+    if (!dataISO || isNaN(ts)) continue;
+
+    events.push({ equip: currentEquip, nome, nomeNorm: normalizeName(nome), dataISO, hora, tipo, ts });
+  }
+
+  return { equipamentos: [...equipSet], events };
+}
+
+function parseCadastro(workbook) {
+  const sheetName = workbook.SheetNames[0];
+  const ws = workbook.Sheets[sheetName];
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '' });
+  if (!rows.length) return { pessoas: [], classificacoes: [] };
+
+  const header = rows[0].map(normalizeHeader);
+  const idxNome = header.findIndex(h => h.includes('NOME'));
+  const idxEmpresa = header.findIndex(h => h.includes('EMPRESA'));
+  const idxClass = header.findIndex(h => h.includes('CLASSIFICA'));
+
+  const pessoas = [];
+  const classSet = new Set();
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    const nome = (r[idxNome] || '').toString().trim();
+    if (!nome) continue;
+    const empresa = idxEmpresa !== -1 ? (r[idxEmpresa] || '').toString().trim() : '';
+    const classificacao = idxClass !== -1 ? (r[idxClass] || '').toString().trim() : '';
+    if (classificacao) classSet.add(classificacao);
+    pessoas.push({ nome, nomeNorm: normalizeName(nome), empresa, classificacao });
+  }
+  return { pessoas, classificacoes: [...classSet] };
+}
+
+const MAX_SHIFT_MINUTES = 16 * 60;
+
+function pairEvents(events) {
+  const groups = {};
+  for (const e of events) {
+    const key = e.equip + '||' + e.nomeNorm;
+    (groups[key] = groups[key] || []).push(e);
+  }
+
+  const shifts = [];
+  for (const key of Object.keys(groups)) {
+    const evs = groups[key].slice().sort((a, b) => a.ts - b.ts);
+
+    const collapsed = [];
+    for (const e of evs) {
+      const last = collapsed[collapsed.length - 1];
+      if (last && last.tipo === e.tipo) {
+        if (e.tipo === 'SAIDA') collapsed[collapsed.length - 1] = e;
+        continue;
+      }
+      collapsed.push(e);
+    }
+
+    let open = null;
+    for (const e of collapsed) {
+      if (e.tipo === 'ENTRADA') {
+        if (open) shifts.push(makeShift(open, null));
+        open = e;
+      } else {
+        if (open) {
+          const minutos = (e.ts - open.ts) / 60000;
+          if (minutos > MAX_SHIFT_MINUTES) {
+            shifts.push(makeShift(open, null));
+            shifts.push(makeShift(null, e));
+          } else {
+            shifts.push(makeShift(open, e));
+          }
+          open = null;
+        } else {
+          shifts.push(makeShift(null, e));
+        }
+      }
+    }
+    if (open) shifts.push(makeShift(open, null));
+  }
+  return shifts;
+}
+
+function makeShift(entrada, saida) {
+  const base = entrada || saida;
+  return {
+    equip: base.equip,
+    nomeNorm: base.nomeNorm,
+    nomeOriginal: base.nome,
+    diaISO: base.dataISO,
+    diaSaidaISO: saida ? saida.dataISO : null,
+    horaEntrada: entrada ? entrada.hora : null,
+    horaSaida: saida ? saida.hora : null,
+    minutos: (entrada && saida) ? Math.round((saida.ts - entrada.ts) / 60000) : null,
+    observacao: !entrada ? 'Sem entrada registrada' : !saida ? 'Sem saída registrada' : null
+  };
+}
+
+function parseDuracao(str) {
+  if (!str) return 0;
+  const s = str.toString().trim();
+  if (!s) return 0;
+  const m = /^(\d{1,3}):(\d{1,2})$/.exec(s);
+  if (m) return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+  const n = parseFloat(s.replace(',', '.'));
+  return isNaN(n) ? 0 : Math.round(n * 60);
+}
+
+function formatarMinutos(min) {
+  if (min == null) return '—';
+  min = Math.round(min);
+  const h = Math.floor(min / 60), m = min % 60;
+  return `${h}h${m.toString().padStart(2, '0')}min`;
+}
+
+function diaCurto(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+  return m ? `${m[3]}/${m[2]}` : (iso || '');
+}
+
+// Agrupa turnos em Pessoa+Dia+Empresa+Obra, decide quem "conta" pro efetivo (respeitando
+// o mínimo de tempo) e monta a árvore Obra > Empresa > Dia usada pela tabela expansível.
+function buildPivot(shifts, cadMap, equipToObra, classFilterSet, minMinutos, overridesManuais) {
+  const porPessoaDiaMap = new Map();
+  const naoIdentMap = new Map();
+
+  for (const s of shifts) {
+    const obra = equipToObra[s.equip] || s.equip;
+    const pessoa = cadMap.get(s.nomeNorm);
+    let empresa, naoCadastrada = false;
+
+    if (pessoa) {
+      const classificacao = pessoa.classificacao;
+      if (classFilterSet && classificacao && !classFilterSet.has(classificacao)) continue;
+      empresa = pessoa.empresa || 'SEM EMPRESA';
+    } else {
+      empresa = 'EMPRESA NÃO CADASTRADA';
+      naoCadastrada = true;
+      const e = naoIdentMap.get(s.nomeNorm) || { nomeOriginal: s.nomeOriginal, obras: new Set(), turnos: 0 };
+      e.obras.add(obra); e.turnos++;
+      naoIdentMap.set(s.nomeNorm, e);
+    }
+
+    const key = [obra, empresa, s.diaISO, s.nomeNorm].join('||');
+    const entry = porPessoaDiaMap.get(key) || {
+      obra, empresa, dia: s.diaISO, nomeNorm: s.nomeNorm, nomeOriginal: s.nomeOriginal,
+      naoCadastrada, minutosMedidos: 0, temMedicao: false, shifts: []
+    };
+    entry.shifts.push(s);
+    if (s.minutos != null) { entry.minutosMedidos += s.minutos; entry.temMedicao = true; }
+    porPessoaDiaMap.set(key, entry);
+  }
+
+  const porPessoaDia = [...porPessoaDiaMap.values()];
+  for (const entry of porPessoaDia) {
+    const auto = entry.temMedicao ? (entry.minutosMedidos >= minMinutos) : true;
+    const key = [entry.obra, entry.empresa, entry.dia, entry.nomeNorm].join('||');
+    const override = overridesManuais ? overridesManuais[key] : undefined;
+    if (override === 'MANUAL_CONTA') { entry.conta = true; entry.decisao = 'MANUAL_CONTA'; }
+    else if (override === 'MANUAL_NAO_CONTA') { entry.conta = false; entry.decisao = 'MANUAL_NAO_CONTA'; }
+    else { entry.conta = auto; entry.decisao = 'AUTOMATICO'; }
+  }
+
+  const dias = [...new Set(shifts.map(s => s.diaISO))].sort();
+
+  const obrasMap = new Map();
+  for (const entry of porPessoaDia) {
+    if (!obrasMap.has(entry.obra)) obrasMap.set(entry.obra, new Map());
+    const empMap = obrasMap.get(entry.obra);
+    if (!empMap.has(entry.empresa)) empMap.set(entry.empresa, new Map());
+    const diaMap = empMap.get(entry.empresa);
+    if (!diaMap.has(entry.dia)) diaMap.set(entry.dia, []);
+    diaMap.get(entry.dia).push(entry);
+  }
+
+  const obras = [...obrasMap.keys()].sort().map(obraNome => {
+    const empMap = obrasMap.get(obraNome);
+    const nomesEmpresa = [...empMap.keys()].filter(e => e !== 'EMPRESA NÃO CADASTRADA').sort();
+    if (empMap.has('EMPRESA NÃO CADASTRADA')) nomesEmpresa.push('EMPRESA NÃO CADASTRADA');
+
+    const empresas = nomesEmpresa.map(empresaNome => {
+      const diaMap = empMap.get(empresaNome);
+      const porDia = {};
+      for (const dia of dias) {
+        const pessoas = (diaMap.get(dia) || []).slice().sort((a, b) => a.nomeOriginal.localeCompare(b.nomeOriginal));
+        porDia[dia] = { headcount: pessoas.filter(p => p.conta).length, pessoas };
+      }
+      return { empresa: empresaNome, naoCadastrada: empresaNome === 'EMPRESA NÃO CADASTRADA', porDia };
+    });
+
+    const totalPorDia = {};
+    for (const dia of dias) totalPorDia[dia] = empresas.reduce((acc, e) => acc + e.porDia[dia].headcount, 0);
+
+    return { obra: obraNome, empresas, totalPorDia };
+  });
+
+  const totalGeralPorDia = {};
+  for (const dia of dias) totalGeralPorDia[dia] = obras.reduce((acc, o) => acc + o.totalPorDia[dia], 0);
+
+  const naoIdentificados = [...naoIdentMap.entries()]
+    .map(([nomeNorm, v]) => ({ nomeNorm, nomeOriginal: v.nomeOriginal, obras: [...v.obras].join(', '), turnos: v.turnos }))
+    .sort((a, b) => b.turnos - a.turnos);
+
+  return { dias, obras, totalGeralPorDia, naoIdentificados, porPessoaDia };
+}
+
+// Busca por nome dentro do que já foi calculado pelo buildPivot, devolvendo uma linha
+// por (pessoa, obra) com o total de horas em cada dia do período — pra "em quais dias
+// essa pessoa trabalhou" independente de qual empresa/obra ela caiu na tabela principal.
+function buscarPessoa(porPessoaDia, query) {
+  const q = normalizeName(query);
+  if (!q) return [];
+  const porChave = new Map();
+  for (const entry of porPessoaDia) {
+    if (!entry.nomeNorm.includes(q)) continue;
+    const chave = entry.nomeNorm + '||' + entry.obra;
+    const row = porChave.get(chave) || {
+      nomeNorm: entry.nomeNorm, nomeOriginal: entry.nomeOriginal,
+      obra: entry.obra, empresa: entry.empresa, naoCadastrada: entry.naoCadastrada,
+      porDia: {}
+    };
+    row.porDia[entry.dia] = entry;
+    porChave.set(chave, row);
+  }
+  return [...porChave.values()].sort((a, b) => a.nomeOriginal.localeCompare(b.nomeOriginal));
+}
+
+function sugerirObra(equip) {
+  const stop = ['FACIAL', 'CONTROLID', 'TOPDATA', 'CATRACA', 'BIOMETRIA', 'RELOGIO', 'PONTO'];
+  const tokens = (equip || '').split(/[\s\-–]+/).map(t => t.trim()).filter(t => t && !stop.includes(normalizeName(t)));
+  return tokens.join(' ') || equip;
+}
+
+/* ===================== ESTADO DA FERRAMENTA ===================== */
+
+const state = {
+  cadastro: null,      // { pessoas, classificacoes }
+  acessos: null,       // { equipamentos, events }
+  equipToObra: {},
+  classFilter: null,   // Set ou null (sem filtro)
+  minMinutos: 0,
+  overridesManuais: {}, // chave "obra||empresa||dia||nomeNorm" -> 'MANUAL_CONTA' | 'MANUAL_NAO_CONTA'
+  shifts: [],
+  pivot: null          // resultado de buildPivot: { dias, obras, totalGeralPorDia, naoIdentificados, porPessoaDia }
+};
+
+/* ===================== TELA 1: UPLOAD ===================== */
+
+function lerArquivo(file) {
+  const isCsv = /\.csv$/i.test(file.name);
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const wb = isCsv
+          ? XLSX.read(e.target.result, { type: 'string' })
+          : XLSX.read(e.target.result, { type: 'array' });
+        resolve(wb);
+      } catch (err) { reject(err); }
+    };
+    reader.onerror = () => reject(reader.error || new Error('Falha ao ler o arquivo'));
+    if (isCsv) reader.readAsText(file, 'UTF-8'); else reader.readAsArrayBuffer(file);
+  });
+}
+
+function setDropzoneStatus(dz, statusEl, kind, msg) {
+  dz.classList.remove('loaded', 'error');
+  if (kind) dz.classList.add(kind);
+  statusEl.textContent = msg;
+}
+
+// Overlay de carregamento — pedido do usuário: duração mínima artificial (o trabalho
+// de verdade roda rapidinho, mas o overlay segura um pouco mais pra dar a sensação de
+// processamento) e mensagens que trocam ao longo do tempo, tipo "compilando dados...".
+// Sempre espera 30ms antes de rodar fn() pra dar tempo do navegador pintar o spinner
+// primeiro (sem isso, trabalho síncrono roda no mesmo frame e o spinner nunca aparece).
+function mostrarCarregando(msg) {
+  document.getElementById('overlay-msg').textContent = msg;
+  document.getElementById('overlay-carregando').style.display = 'flex';
+}
+function esconderCarregando() {
+  document.getElementById('overlay-carregando').style.display = 'none';
+}
+
+// aoFinalizar (opcional): só roda DEPOIS do tempo mínimo de overlay ter passado por
+// completo, bem antes de esconder o overlay. Existe pra separar "fazer o trabalho"
+// (fn, que roda rápido) de "efeito colateral que o usuário vê fora da página" (ex.: o
+// clique que dispara o download do Excel) — sem isso, o download começava assim que
+// fn() terminava (quase instantâneo) enquanto a tela de carregamento ainda ficava
+// girando por mais alguns segundos, quebrando a sensação de "terminou = já baixou".
+async function comCarregando(mensagens, duracaoMs, fn, aoFinalizar) {
+  if (typeof mensagens === 'string') mensagens = [mensagens];
+  let idx = 0;
+  mostrarCarregando(mensagens[0]);
+  const intervaloMsg = mensagens.length > 1
+    ? setInterval(() => {
+      idx = (idx + 1) % mensagens.length;
+      document.getElementById('overlay-msg').textContent = mensagens[idx];
+    }, Math.max(duracaoMs / mensagens.length, 300))
+    : null;
+
+  const inicio = Date.now();
+  await new Promise(res => setTimeout(res, 30));
+  let resultado, erro;
+  try {
+    resultado = await fn();
+  } catch (e) {
+    erro = e;
+  }
+
+  const decorrido = Date.now() - inicio;
+  const faltando = Math.max(duracaoMs - decorrido, 0);
+  await new Promise(res => setTimeout(res, faltando));
+  if (intervaloMsg) clearInterval(intervaloMsg);
+  esconderCarregando();
+
+  if (erro) throw erro;
+  if (aoFinalizar) aoFinalizar(resultado);
+  return resultado;
+}
+
+function checkContinuarHabilitado() {
+  document.getElementById('btn-continuar-upload').disabled = !(state.cadastro && state.acessos);
+}
+
+function handleCadastroFile(file) {
+  const dz = document.getElementById('dz-cadastro');
+  const statusEl = dz.querySelector('.dz-status');
+  comCarregando('Lendo Cadastro de Pessoas...', 5000, () => lerArquivo(file).then(wb => {
+    const parsed = parseCadastro(wb);
+    if (!parsed.pessoas.length) {
+      state.cadastro = null;
+      setDropzoneStatus(dz, statusEl, 'error', '✕ Não encontrei coluna de Nome nesse arquivo. Confira se é o Cadastro de Pessoas.');
+    } else {
+      state.cadastro = parsed;
+      setDropzoneStatus(dz, statusEl, 'loaded', `✓ ${file.name} — ${parsed.pessoas.length} pessoas cadastradas`);
+    }
+    checkContinuarHabilitado();
+  }).catch(() => {
+    state.cadastro = null;
+    setDropzoneStatus(dz, statusEl, 'error', '✕ Não consegui ler esse arquivo.');
+    checkContinuarHabilitado();
+  }));
+}
+
+function handleAcessosFile(file) {
+  const dz = document.getElementById('dz-acessos');
+  const statusEl = dz.querySelector('.dz-status');
+  comCarregando('Lendo relatório de Acesso...', 5000, () => lerArquivo(file).then(wb => {
+    const parsed = parseAcessos(wb);
+    if (!parsed.events.length) {
+      state.acessos = null;
+      setDropzoneStatus(dz, statusEl, 'error', '✕ Não encontrei eventos de Entrada/Saída nesse arquivo. Confira se é o relatório de Acesso.');
+    } else {
+      state.acessos = parsed;
+      const equipTxt = parsed.equipamentos.length + (parsed.equipamentos.length === 1 ? ' equipamento' : ' equipamentos');
+      setDropzoneStatus(dz, statusEl, 'loaded', `✓ ${file.name} — ${parsed.events.length} eventos, ${equipTxt}`);
+    }
+    checkContinuarHabilitado();
+  }).catch(() => {
+    state.acessos = null;
+    setDropzoneStatus(dz, statusEl, 'error', '✕ Não consegui ler esse arquivo.');
+    checkContinuarHabilitado();
+  }));
+}
+
+function wireDropzone(dzId, inputId, onFile) {
+  const dz = document.getElementById(dzId);
+  const input = document.getElementById(inputId);
+  dz.addEventListener('click', () => input.click());
+  input.addEventListener('change', () => { if (input.files[0]) onFile(input.files[0]); });
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('dragover'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('dragover'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault();
+    dz.classList.remove('dragover');
+    if (e.dataTransfer.files[0]) onFile(e.dataTransfer.files[0]);
+  });
+}
+
+wireDropzone('dz-cadastro', 'input-cadastro', handleCadastroFile);
+wireDropzone('dz-acessos', 'input-acessos', handleAcessosFile);
+
+document.querySelectorAll('.tutorial-toggle').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const box = document.getElementById(btn.getAttribute('data-target'));
+    const aberto = box.style.display !== 'none';
+    box.style.display = aberto ? 'none' : 'block';
+    btn.classList.toggle('aberto', !aberto);
+  });
+});
+
+function irParaTela(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+document.getElementById('btn-continuar-upload').addEventListener('click', () => {
+  renderTelaConfig();
+  irParaTela('screen-config');
+});
+
+/* ===================== TELA 2: CONFIRMAÇÃO ===================== */
+
+function renderTelaConfig() {
+  const equipList = document.getElementById('equip-list');
+  equipList.innerHTML = '';
+  state.acessos.equipamentos.forEach((equip, i) => {
+    if (!(equip in state.equipToObra)) state.equipToObra[equip] = sugerirObra(equip);
+    const row = document.createElement('div');
+    row.className = 'equip-row';
+    row.innerHTML = `
+      <div class="equip-raw"><span class="tag">Equipamento</span>${escapeHtml(equip)}</div>
+      <input type="text" class="input-obra" data-equip-idx="${i}" value="${escapeHtml(state.equipToObra[equip])}">
+    `;
+    equipList.appendChild(row);
+  });
+  equipList.querySelectorAll('.input-obra').forEach((inp, i) => {
+    inp.addEventListener('input', () => {
+      state.equipToObra[state.acessos.equipamentos[i]] = inp.value;
+    });
+  });
+
+  const cardClass = document.getElementById('card-classificacao');
+  const classList = document.getElementById('class-list');
+  classList.innerHTML = '';
+  const classificacoes = state.cadastro.classificacoes;
+  if (classificacoes.length > 0) {
+    cardClass.style.display = '';
+    if (state.classFilter === null) state.classFilter = new Set(classificacoes);
+    classificacoes.forEach(c => {
+      const label = document.createElement('label');
+      label.className = 'check-item';
+      const checked = state.classFilter.has(c) ? 'checked' : '';
+      label.innerHTML = `<input type="checkbox" data-class="${escapeHtml(c)}" ${checked}> ${escapeHtml(c)}`;
+      classList.appendChild(label);
+    });
+    classList.querySelectorAll('input[type=checkbox]').forEach(cb => {
+      cb.addEventListener('change', () => {
+        const c = cb.getAttribute('data-class');
+        if (cb.checked) state.classFilter.add(c); else state.classFilter.delete(c);
+      });
+    });
+  } else {
+    cardClass.style.display = 'none';
+  }
+}
+
+function escapeHtml(s) {
+  return (s == null ? '' : s.toString()).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+document.getElementById('btn-voltar-config').addEventListener('click', () => irParaTela('screen-upload'));
+
+document.getElementById('btn-gerar').addEventListener('click', () => {
+  comCarregando(
+    ['Compilando dados...', 'Cruzando com o Cadastro...', 'Tratando turnos noturnos...', 'Calculando pendências e totais...'],
+    10000,
+    () => {
+      gerarRelatorio();
+      irParaTela('screen-resultado');
+    }
+  );
+});
+
+/* ===================== GERAÇÃO DO RELATÓRIO ===================== */
+
+function gerarRelatorio() {
+  state.shifts = pairEvents(state.acessos.events);
+  state.minMinutos = parseDuracao(document.getElementById('input-minimo').value);
+  state.overridesManuais = {};
+  const cadMap = new Map(state.cadastro.pessoas.map(p => [p.nomeNorm, p]));
+  state.pivot = buildPivot(state.shifts, cadMap, state.equipToObra, state.classFilter, state.minMinutos, state.overridesManuais);
+  renderTelaResultado();
+}
+
+/* ===================== TELA 3: RESULTADO ===================== */
+
+function renderTelaResultado() {
+  renderKpis();
+  popularFiltros();
+  document.getElementById('input-busca-pessoa').value = '';
+  document.getElementById('busca-resultado-wrap').style.display = 'none';
+  document.getElementById('busca-resultado-wrap').innerHTML = '';
+  renderPivot();
+  alternarView('tabela');
+  atualizarBadgePendencias();
+}
+
+/* ---------- Alternância Tabela / Pendências ---------- */
+
+function alternarView(view) {
+  document.getElementById('pivot-view').style.display = view === 'tabela' ? '' : 'none';
+  document.getElementById('pendencias-view').style.display = view === 'pendencias' ? '' : 'none';
+  document.getElementById('btn-ver-tabela').classList.toggle('ativo', view === 'tabela');
+  document.getElementById('btn-ver-pendencias').classList.toggle('ativo', view === 'pendencias');
+  if (view === 'pendencias') { popularFiltroPendencias(); renderPendencias(); }
+}
+
+document.getElementById('btn-ver-tabela').addEventListener('click', () => alternarView('tabela'));
+document.getElementById('btn-ver-pendencias').addEventListener('click', () => alternarView('pendencias'));
+
+function contarPessoasNoEfetivo() {
+  return new Set(state.pivot.porPessoaDia.filter(e => e.conta).map(e => e.nomeNorm)).size;
+}
+
+function renderKpis() {
+  const pivot = state.pivot;
+  const dias = pivot.dias;
+  const periodo = dias.length ? `${diaCurto(dias[0])} – ${diaCurto(dias[dias.length - 1])}` : '—';
+  const kpis = [
+    { id: 'kpi-pessoas-efetivo', num: contarPessoasNoEfetivo(), label: 'Pessoas no efetivo' },
+    { num: pivot.obras.length, label: pivot.obras.length === 1 ? 'Obra' : 'Obras' },
+    { num: pivot.naoIdentificados.length, label: 'Não encontradas no cadastro' },
+    { num: periodo, label: 'Período' }
+  ];
+  document.getElementById('kpi-row').innerHTML = kpis.map(k => `
+    <div class="kpi"><div class="kpi-num"${k.id ? ` id="${k.id}"` : ''}>${k.num}</div><div class="kpi-label">${k.label}</div></div>
+  `).join('');
+}
+
+function popularFiltros() {
+  const obraSel = document.getElementById('filtro-obra');
+  const empresaSel = document.getElementById('filtro-empresa');
+  const obraAtual = obraSel.value, empresaAtual = empresaSel.value;
+  const obras = state.pivot.obras.map(o => o.obra);
+  const empresas = [...new Set(state.pivot.obras.flatMap(o => o.empresas.map(e => e.empresa)))].sort();
+
+  obraSel.innerHTML = '<option value="">Todas as obras</option>' + obras.map(o => `<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join('');
+  empresaSel.innerHTML = '<option value="">Todos os empreiteiros</option>' + empresas.map(e => `<option value="${escapeHtml(e)}">${escapeHtml(e)}</option>`).join('');
+  if (obras.includes(obraAtual)) obraSel.value = obraAtual;
+  if (empresas.includes(empresaAtual)) empresaSel.value = empresaAtual;
+}
+
+/* ---------- Pendências (batida incompleta ou abaixo do mínimo) ---------- */
+
+function ehPendencia(e) {
+  return !e.temMedicao || e.minutosMedidos < state.minMinutos;
+}
+
+function contarPendenciasAbertas() {
+  return state.pivot.porPessoaDia.filter(e => ehPendencia(e) && e.decisao === 'AUTOMATICO').length;
+}
+
+function atualizarBadgePendencias() {
+  const el = document.getElementById('badge-pendencias');
+  if (el) el.textContent = contarPendenciasAbertas();
+}
+
+function popularFiltroPendencias() {
+  const sel = document.getElementById('pend-filtro-obra');
+  const atual = sel.value;
+  const obras = state.pivot.obras.map(o => o.obra);
+  sel.innerHTML = '<option value="">Todas as obras</option>' + obras.map(o => `<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join('');
+  if (obras.includes(atual)) sel.value = atual;
+}
+
+function renderPendencias() {
+  const wrap = document.getElementById('pendencias-wrap');
+  const filtroObra = document.getElementById('pend-filtro-obra').value;
+  const busca = normalizeName(document.getElementById('pend-busca-nome').value);
+  const mostrarResolvidas = document.getElementById('pend-mostrar-resolvidas').checked;
+
+  let lista = state.pivot.porPessoaDia.filter(ehPendencia);
+  if (!mostrarResolvidas) lista = lista.filter(e => e.decisao === 'AUTOMATICO');
+  if (filtroObra) lista = lista.filter(e => e.obra === filtroObra);
+  if (busca) lista = lista.filter(e => e.nomeNorm.includes(busca));
+  lista.sort((a, b) => a.obra.localeCompare(b.obra) || a.dia.localeCompare(b.dia) || a.nomeOriginal.localeCompare(b.nomeOriginal));
+
+  atualizarBadgePendencias();
+
+  if (!lista.length) {
+    wrap.innerHTML = '<p style="text-align:center;color:var(--g4);padding:24px 0">Nenhuma pendência com esse filtro. 🎉</p>';
+    return;
+  }
+
+  wrap.innerHTML = '';
+  lista.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'pendencia-card' + (p.decisao !== 'AUTOMATICO' ? ' resolvida' : '');
+    const head = document.createElement('div');
+    head.className = 'pendencia-head';
+    head.innerHTML = `<strong>${escapeHtml(p.nomeOriginal)}</strong><span class="tag-obra">${escapeHtml(p.obra)} — ${escapeHtml(p.empresa)} — ${diaCurto(p.dia)}</span>`;
+    card.appendChild(head);
+    card.appendChild(renderMemorial(p, null, () => renderPendencias()));
+    wrap.appendChild(card);
+  });
+}
+
+['pend-filtro-obra', 'pend-mostrar-resolvidas'].forEach(id => {
+  document.getElementById(id).addEventListener('change', renderPendencias);
+});
+document.getElementById('pend-busca-nome').addEventListener('input', renderPendencias);
+
+document.getElementById('filtro-obra').addEventListener('change', renderPivot);
+document.getElementById('filtro-empresa').addEventListener('change', renderPivot);
+
+/* ---------- Tabela expansível Obra > Empresa > Dia > Pessoa ---------- */
+
+function renderPivot() {
+  const wrap = document.getElementById('pivot-wrap');
+  const filtroObra = document.getElementById('filtro-obra').value;
+  const filtroEmpresa = document.getElementById('filtro-empresa').value;
+  const pivot = state.pivot;
+  const dias = pivot.dias;
+
+  const obrasParaMostrar = pivot.obras.filter(o => !filtroObra || o.obra === filtroObra);
+  let html = '';
+  for (const obra of obrasParaMostrar) {
+    const empresas = obra.empresas.filter(e => !filtroEmpresa || e.empresa === filtroEmpresa);
+    if (!empresas.length) continue;
+    html += renderObraBlocoHtml(obra, empresas, dias);
+  }
+  if (!filtroObra && !filtroEmpresa && obrasParaMostrar.length > 1) {
+    html += renderTotalGeralHtml(pivot, dias);
+  }
+
+  wrap.innerHTML = html || '<p style="text-align:center;color:var(--g4);padding:24px 0">Nenhum registro com esse filtro.</p>';
+}
+
+function renderObraBlocoHtml(obra, empresasFiltradas, dias) {
+  const header = '<th class="col-empresa">Empreiteiro</th>' + dias.map(d => `<th>${diaCurto(d)}</th>`).join('');
+  const linhasEmpresas = empresasFiltradas.map(emp => renderLinhaEmpresaHtml(obra.obra, emp, dias)).join('');
+  const linhaTotal = `<tr class="linha-total"><td class="col-empresa">TOTAL ${escapeHtml(obra.obra)}</td>${dias.map(d => `<td data-total-cell="${escapeHtml(obra.obra + '||' + d)}">${obra.totalPorDia[d]}</td>`).join('')}</tr>`;
+  return `
+    <div class="obra-bloco">
+      <div class="obra-titulo">🏗 ${escapeHtml(obra.obra)}</div>
+      <div class="table-scroll"><table class="pivot-table">
+        <thead><tr>${header}</tr></thead>
+        <tbody>${linhasEmpresas}${linhaTotal}</tbody>
+      </table></div>
+    </div>`;
+}
+
+function renderTotalGeralHtml(pivot, dias) {
+  const cells = dias.map(d => `<td data-total-geral-cell="${escapeHtml(d)}">${pivot.totalGeralPorDia[d]}</td>`).join('');
+  return `
+    <div class="obra-bloco">
+      <div class="obra-titulo">Σ Total Geral — todas as obras</div>
+      <div class="table-scroll"><table class="pivot-table">
+        <thead><tr><th class="col-empresa"></th>${dias.map(d => `<th>${diaCurto(d)}</th>`).join('')}</tr></thead>
+        <tbody><tr class="linha-total-geral"><td class="col-empresa">Total</td>${cells}</tr></tbody>
+      </table></div>
+    </div>`;
+}
+
+function renderLinhaEmpresaHtml(obraNome, emp, dias) {
+  const cells = dias.map(d => {
+    const info = emp.porDia[d];
+    if (!info.pessoas.length) return '<td class="celula-qtd zero">0</td>';
+    const key = obraNome + '||' + emp.empresa + '||' + d;
+    return `<td class="celula-qtd" data-cell-key="${escapeHtml(key)}">${info.headcount}</td>`;
+  }).join('');
+  const nomeCol = emp.naoCadastrada
+    ? `EMPRESA NÃO CADASTRADA<span class="badge-nao-cadastrada">⚠ não cadastrada</span><button type="button" class="btn-lista-nomes" data-obra="${escapeHtml(obraNome)}">Ver lista de nomes</button>`
+    : escapeHtml(emp.empresa);
+  return `<tr class="linha-empresa${emp.naoCadastrada ? ' linha-nao-cadastrada' : ''}"><td class="col-empresa">${nomeCol}</td>${cells}</tr>`;
+}
+
+document.getElementById('pivot-wrap').addEventListener('click', e => {
+  const celula = e.target.closest('td.celula-qtd');
+  if (celula) return toggleDetalheDia(celula);
+  const btn = e.target.closest('.btn-lista-nomes');
+  if (btn) return toggleListaNaoIdentificados(btn);
+});
+
+function toggleDetalheDia(td) {
+  const key = td.getAttribute('data-cell-key');
+  const empresaRow = td.closest('tr');
+  const next = empresaRow.nextElementSibling;
+
+  if (next && next.classList.contains('linha-detalhe') && next.dataset.cellKey === key) {
+    next.remove();
+    return;
+  }
+  if (next && (next.classList.contains('linha-detalhe') || next.classList.contains('linha-lista-nomes'))) next.remove();
+
+  const [obraNome, empresaNome, dia] = key.split('||');
+  const obra = state.pivot.obras.find(o => o.obra === obraNome);
+  const emp = obra.empresas.find(e => e.empresa === empresaNome);
+  const info = emp.porDia[dia];
+
+  const tr = document.createElement('tr');
+  tr.className = 'linha-detalhe';
+  tr.dataset.cellKey = key;
+  const tdWrap = document.createElement('td');
+  tdWrap.colSpan = empresaRow.children.length;
+  renderListaPessoasDia(tdWrap, info.pessoas);
+  tr.appendChild(tdWrap);
+  empresaRow.after(tr);
+}
+
+function renderListaPessoasDia(container, pessoas) {
+  container.innerHTML = '';
+  if (!pessoas.length) {
+    container.innerHTML = '<span style="color:var(--g4);font-size:12px">Ninguém nesse dia.</span>';
+    return;
+  }
+  const lista = document.createElement('div');
+  lista.className = 'lista-pessoas-dia';
+  pessoas.forEach(p => {
+    const item = document.createElement('div');
+    item.className = 'pessoa-item';
+    item.dataset.nomeNorm = p.nomeNorm;
+    atualizarLabelPessoaItem(item, p);
+    const memorialSlot = document.createElement('div');
+    item.addEventListener('click', () => {
+      if (memorialSlot.childElementCount) { memorialSlot.innerHTML = ''; return; }
+      memorialSlot.appendChild(renderMemorial(p, item));
+    });
+    lista.appendChild(item);
+    lista.appendChild(memorialSlot);
+  });
+  container.appendChild(lista);
+}
+
+function atualizarLabelPessoaItem(item, p) {
+  item.classList.toggle('abaixo-minimo', !p.conta);
+  const horasTxt = p.temMedicao ? formatarMinutos(p.minutosMedidos) : '—';
+  let obs;
+  if (p.decisao === 'MANUAL_CONTA') obs = 'manual: conta';
+  else if (p.decisao === 'MANUAL_NAO_CONTA') obs = 'manual: não conta';
+  else obs = !p.temMedicao ? 'sem entrada/saída completa' : (!p.conta ? 'abaixo do mínimo' : '');
+  item.innerHTML = `<span>${escapeHtml(p.nomeOriginal)}</span><span class="p-horas">${horasTxt}${obs ? ` <span class="p-obs">(${escapeHtml(obs)})</span>` : ''}</span>`;
+}
+
+// itemEl (opcional): o .pessoa-item correspondente na listagem, se o memorial foi aberto
+// por lá (pra atualizar o rótulo dele junto). Vem null quando o memorial abre pela busca.
+// aoDecidir (opcional): callback chamado depois de qualquer decisão — usado pela tela
+// de Pendências pra re-renderizar a própria lista (o card some dela se já foi resolvido).
+function minutosDoDia(horaStr) {
+  const m = /^(\d{1,2}):(\d{2})/.exec(horaStr || '');
+  return m ? parseInt(m[1], 10) * 60 + parseInt(m[2], 10) : null;
+}
+
+// Barra 00h-24h com o período trabalhado preenchido em azul — turno noturno
+// (cruza meia-noite) vai até a borda direita com uma seta "»" indicando que
+// continua no dia seguinte. Batida incompleta vira um trecho hachurado
+// (amarelo) só na parte que dá pra inferir (do início até a saída solta, ou
+// da entrada solta até o fim do dia) — não é medição real, é só indicativo.
+function renderTimelineBar(p) {
+  const wrap = document.createElement('div');
+  wrap.className = 'timeline-bar';
+  const track = document.createElement('div');
+  track.className = 'timeline-track';
+
+  [6, 12, 18].forEach(h => {
+    const tick = document.createElement('div');
+    tick.className = 'timeline-tick';
+    tick.style.left = (h / 24 * 100) + '%';
+    track.appendChild(tick);
+  });
+
+  p.shifts.forEach(s => {
+    const seg = document.createElement('div');
+    if (s.minutos != null) {
+      const inicio = minutosDoDia(s.horaEntrada);
+      const cruzaDia = s.diaSaidaISO && s.diaSaidaISO !== p.dia;
+      const fim = cruzaDia ? 1440 : minutosDoDia(s.horaSaida);
+      if (inicio == null || fim == null) return;
+      seg.className = 'timeline-segment' + (cruzaDia ? ' continua' : '');
+      seg.style.left = (inicio / 1440 * 100) + '%';
+      seg.style.width = Math.max((fim - inicio) / 1440 * 100, 0.4) + '%';
+      seg.title = `${s.horaEntrada} → ${s.horaSaida}${cruzaDia ? ' (turno noturno)' : ''}`;
+    } else if (s.horaEntrada && !s.horaSaida) {
+      const inicio = minutosDoDia(s.horaEntrada);
+      if (inicio == null) return;
+      seg.className = 'timeline-segment incompleto';
+      seg.style.left = (inicio / 1440 * 100) + '%';
+      seg.style.width = ((1440 - inicio) / 1440 * 100) + '%';
+      seg.title = `Entrada ${s.horaEntrada}, sem saída registrada`;
+    } else if (s.horaSaida && !s.horaEntrada) {
+      const fim = minutosDoDia(s.horaSaida);
+      if (fim == null) return;
+      seg.className = 'timeline-segment incompleto';
+      seg.style.left = '0%';
+      seg.style.width = (fim / 1440 * 100) + '%';
+      seg.title = `Sem entrada registrada, saída ${s.horaSaida}`;
+    } else {
+      return;
+    }
+    track.appendChild(seg);
+  });
+
+  wrap.appendChild(track);
+  const labels = document.createElement('div');
+  labels.className = 'timeline-labels';
+  labels.innerHTML = '<span>00h</span><span>06h</span><span>12h</span><span>18h</span><span>24h</span>';
+  wrap.appendChild(labels);
+  return wrap;
+}
+
+function renderMemorial(p, itemEl, aoDecidir) {
+  const box = document.createElement('div');
+  box.className = 'memorial-box';
+
+  if (!p.shifts.length) {
+    const vazio = document.createElement('span');
+    vazio.style.cssText = 'color:var(--g4);font-size:12px';
+    vazio.textContent = 'Sem batidas registradas.';
+    box.appendChild(vazio);
+  } else {
+    box.appendChild(renderTimelineBar(p));
+    p.shifts.slice()
+      .sort((a, b) => (a.horaEntrada || a.horaSaida || '').localeCompare(b.horaEntrada || b.horaSaida || ''))
+      .forEach(s => {
+        const linha = document.createElement('div');
+        linha.className = 'memorial-linha';
+        if (s.minutos != null) {
+          const notaNoturno = s.diaSaidaISO && s.diaSaidaISO !== p.dia
+            ? ` <em>(turno noturno, saída em ${diaCurto(s.diaSaidaISO)})</em>` : '';
+          linha.innerHTML = `<span>${s.horaEntrada} → ${s.horaSaida}${notaNoturno}</span><span>${formatarMinutos(s.minutos)}</span>`;
+        } else {
+          const partes = [];
+          if (s.horaEntrada) partes.push('entrada ' + s.horaEntrada);
+          if (s.horaSaida) partes.push('saída ' + s.horaSaida);
+          linha.innerHTML = `<span class="m-obs">⚠ ${escapeHtml(s.observacao)}${partes.length ? ' (' + partes.join(', ') + ')' : ''}</span>`;
+        }
+        box.appendChild(linha);
+      });
+  }
+
+  const total = document.createElement('div');
+  atualizarTotalMemorial(total, p);
+  box.appendChild(total);
+
+  const decisaoWrap = document.createElement('div');
+  decisaoWrap.className = 'memorial-decisao';
+  const label = document.createElement('span');
+  label.textContent = 'Contar essa pessoa nesse dia?';
+  const btns = document.createElement('div');
+  btns.className = 'decisao-btns';
+  [['AUTOMATICO', 'Automático'], ['MANUAL_CONTA', 'Sim, contar'], ['MANUAL_NAO_CONTA', 'Não, não contar']].forEach(([val, texto]) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'decisao-btn' + (p.decisao === val ? ' ativo' : '');
+    btn.dataset.decisao = val;
+    btn.textContent = texto;
+    btn.addEventListener('click', () => aplicarDecisaoManual(p, val, total, btns, itemEl, aoDecidir));
+    btns.appendChild(btn);
+  });
+  decisaoWrap.appendChild(label);
+  decisaoWrap.appendChild(btns);
+  box.appendChild(decisaoWrap);
+
+  return box;
+}
+
+function atualizarTotalMemorial(totalEl, p) {
+  totalEl.className = 'memorial-total' + (!p.conta ? ' abaixo-minimo' : '') + (p.decisao !== 'AUTOMATICO' ? ' manual' : '');
+  const totalTxt = p.temMedicao ? formatarMinutos(p.minutosMedidos) : '—';
+  let sufixo = '';
+  if (p.decisao === 'MANUAL_NAO_CONTA') sufixo = ' — marcado manualmente como não contabilizado';
+  else if (p.decisao === 'MANUAL_CONTA') sufixo = ' — contabilizado manualmente';
+  else if (!p.conta) sufixo = ' — abaixo do mínimo, não contabilizado';
+  totalEl.innerHTML = `<span>Total do dia</span><span>${totalTxt}${sufixo}</span>`;
+}
+
+// Aplica a decisão manual (ou volta pro automático), atualiza o próprio memorial e,
+// se a decisão mudou se a pessoa conta ou não, propaga a diferença (+1/-1) direto nos
+// números já renderizados na tela (célula da empresa, total da obra, total geral, KPI) —
+// sem re-renderizar a tabela inteira, pra não fechar o que o usuário já tinha aberto.
+function aplicarDecisaoManual(p, decisao, totalEl, btnsEl, itemEl, aoDecidir) {
+  const key = [p.obra, p.empresa, p.dia, p.nomeNorm].join('||');
+  const contaAntes = p.conta;
+
+  if (decisao === 'AUTOMATICO') {
+    delete state.overridesManuais[key];
+    p.conta = p.temMedicao ? (p.minutosMedidos >= state.minMinutos) : true;
+  } else {
+    state.overridesManuais[key] = decisao;
+    p.conta = (decisao === 'MANUAL_CONTA');
+  }
+  p.decisao = decisao;
+
+  btnsEl.querySelectorAll('.decisao-btn').forEach(b => b.classList.toggle('ativo', b.dataset.decisao === decisao));
+  atualizarTotalMemorial(totalEl, p);
+  if (itemEl) atualizarLabelPessoaItem(itemEl, p);
+
+  // decisao pode ter mudado (ex.: virou MANUAL_CONTA numa pessoa que já contava por
+  // padrão) mesmo sem alterar o headcount — isso já basta pra sumir da lista de
+  // pendências pendentes, então atualiza o contador/callback sempre, não só quando muda a conta.
+  atualizarBadgePendencias();
+  if (typeof aoDecidir === 'function') aoDecidir();
+
+  if (p.conta === contaAntes) return;
+
+  const delta = p.conta ? 1 : -1;
+  const obra = state.pivot.obras.find(o => o.obra === p.obra);
+  const emp = obra.empresas.find(e => e.empresa === p.empresa);
+  emp.porDia[p.dia].headcount += delta;
+  obra.totalPorDia[p.dia] += delta;
+  state.pivot.totalGeralPorDia[p.dia] += delta;
+
+  const celula = document.querySelector(`td.celula-qtd[data-cell-key="${CSS.escape(p.obra + '||' + p.empresa + '||' + p.dia)}"]`);
+  if (celula) celula.textContent = emp.porDia[p.dia].headcount;
+
+  const totalObraCell = document.querySelector(`td[data-total-cell="${CSS.escape(p.obra + '||' + p.dia)}"]`);
+  if (totalObraCell) totalObraCell.textContent = obra.totalPorDia[p.dia];
+
+  const totalGeralCell = document.querySelector(`td[data-total-geral-cell="${CSS.escape(p.dia)}"]`);
+  if (totalGeralCell) totalGeralCell.textContent = state.pivot.totalGeralPorDia[p.dia];
+
+  const kpiEl = document.getElementById('kpi-pessoas-efetivo');
+  if (kpiEl) kpiEl.textContent = contarPessoasNoEfetivo();
+}
+
+function toggleListaNaoIdentificados(btn) {
+  const obraNome = btn.getAttribute('data-obra');
+  const empresaRow = btn.closest('tr');
+  const next = empresaRow.nextElementSibling;
+
+  if (next && next.classList.contains('linha-lista-nomes')) { next.remove(); return; }
+  if (next && (next.classList.contains('linha-detalhe') || next.classList.contains('linha-lista-nomes'))) next.remove();
+
+  const nomes = state.pivot.naoIdentificados.filter(n => n.obras.split(', ').includes(obraNome));
+
+  const tr = document.createElement('tr');
+  tr.className = 'linha-lista-nomes';
+  const td = document.createElement('td');
+  td.colSpan = empresaRow.children.length;
+
+  if (!nomes.length) {
+    td.innerHTML = '<span style="color:var(--g4);font-size:12px">Nenhum nome pendente nessa obra.</span>';
+  } else {
+    const div = document.createElement('div');
+    div.className = 'lista-simples';
+    const aviso = document.createElement('p');
+    aviso.style.cssText = 'font-size:12px;color:var(--g5);margin-bottom:6px';
+    aviso.textContent = `${nomes.length} pessoa(s) não encontrada(s) no Cadastro nessa obra — copie os nomes abaixo pra incluir no seu Cadastro:`;
+    div.appendChild(aviso);
+    nomes.forEach(n => {
+      const item = document.createElement('div');
+      item.className = 'l-item';
+      item.innerHTML = `<span>${escapeHtml(n.nomeOriginal)}</span><span style="color:var(--g4)">${n.turnos} turno(s)</span>`;
+      div.appendChild(item);
+    });
+    td.appendChild(div);
+  }
+  tr.appendChild(td);
+  empresaRow.after(tr);
+}
+
+/* ---------- Busca por pessoa ---------- */
+
+document.getElementById('input-busca-pessoa').addEventListener('input', e => renderBusca(e.target.value));
+
+function renderBusca(query) {
+  const wrap = document.getElementById('busca-resultado-wrap');
+  const q = query.trim();
+  wrap.innerHTML = '';
+  if (!q) { wrap.style.display = 'none'; return; }
+  wrap.style.display = '';
+
+  const resultados = buscarPessoa(state.pivot.porPessoaDia, q);
+  if (!resultados.length) {
+    wrap.innerHTML = '<div class="busca-resultado"><span class="busca-sem-resultado">Nenhuma pessoa encontrada com esse nome no período.</span></div>';
+    return;
+  }
+
+  const nomesDistintos = [...new Set(resultados.map(r => r.nomeNorm))];
+  const box = document.createElement('div');
+  box.className = 'busca-resultado';
+
+  if (nomesDistintos.length > 1) {
+    const aviso = document.createElement('p');
+    aviso.style.cssText = 'font-size:12px;color:var(--g5);margin-bottom:10px';
+    aviso.textContent = `${nomesDistintos.length} pessoas diferentes batem com "${query}" — escolha uma:`;
+    box.appendChild(aviso);
+    const escolha = document.createElement('div');
+    escolha.className = 'busca-escolha';
+    nomesDistintos.forEach(nn => {
+      const nomeOriginal = resultados.find(r => r.nomeNorm === nn).nomeOriginal;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = nomeOriginal;
+      btn.addEventListener('click', () => {
+        aviso.style.display = 'none';
+        escolha.style.display = 'none';
+        resultados.filter(r => r.nomeNorm === nn).forEach(r => box.appendChild(renderBuscaItem(r, state.pivot.dias)));
+      });
+      escolha.appendChild(btn);
+    });
+    box.appendChild(escolha);
+  } else {
+    resultados.forEach(r => box.appendChild(renderBuscaItem(r, state.pivot.dias)));
+  }
+
+  wrap.appendChild(box);
+}
+
+function renderBuscaItem(r, dias) {
+  const item = document.createElement('div');
+  item.className = 'busca-resultado-item';
+
+  const head = document.createElement('div');
+  head.className = 'busca-resultado-head';
+  head.innerHTML = `${escapeHtml(r.nomeOriginal)} <span class="tag-obra">— ${escapeHtml(r.obra)} — ${escapeHtml(r.empresa)}</span>`;
+  item.appendChild(head);
+
+  const grid = document.createElement('div');
+  grid.className = 'busca-dias-grid';
+  const memorialArea = document.createElement('div');
+
+  dias.forEach(d => {
+    const entry = r.porDia[d];
+    const cell = document.createElement('div');
+    cell.className = 'busca-dia-cell' + (!entry ? ' sem-presenca' : '');
+    const horas = entry ? (entry.temMedicao ? formatarMinutos(entry.minutosMedidos) : '—') : '—';
+    cell.innerHTML = `<div class="d-data">${diaCurto(d)}</div><div class="d-horas">${horas}</div>`;
+    if (entry) {
+      cell.addEventListener('click', () => {
+        const jaSelecionada = cell.classList.contains('selecionada');
+        grid.querySelectorAll('.busca-dia-cell.selecionada').forEach(c => c.classList.remove('selecionada'));
+        memorialArea.innerHTML = '';
+        if (!jaSelecionada) {
+          cell.classList.add('selecionada');
+          memorialArea.appendChild(renderMemorial(entry));
+        }
+      });
+    }
+    grid.appendChild(cell);
+  });
+
+  item.appendChild(grid);
+  item.appendChild(memorialArea);
+  return item;
+}
+
+/* ===================== EXPORTAÇÃO EXCEL (ExcelJS: 3 abas formatadas) ===================== */
+
+function argbCor(hex) { return { argb: 'FF' + hex.replace('#', '').toUpperCase() }; }
+
+const XCOR = {
+  navy: argbCor('#1a2744'), pale: argbCor('#dce8f8'), g1: argbCor('#f4f6fa'), g2: argbCor('#e8edf5'),
+  white: { argb: 'FFFFFFFF' }, text: argbCor('#1e2a3a'), amberRow: argbCor('#fffbe0'), amberL: argbCor('#fff4e6')
+};
+
+function bordaFinaXlsx() {
+  const cor = { argb: 'FFC5CEDD' };
+  return { top: { style: 'thin', color: cor }, left: { style: 'thin', color: cor }, bottom: { style: 'thin', color: cor }, right: { style: 'thin', color: cor } };
+}
+
+function estilizarCell(cell, { bg, fg, bold, size, align, wrap, indent } = {}) {
+  if (bg) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: bg };
+  cell.font = { name: 'Calibri', size: size || 11, bold: !!bold, color: fg || XCOR.text };
+  cell.alignment = { horizontal: align || 'center', vertical: 'middle', wrapText: !!wrap, indent: indent || 0 };
+  cell.border = bordaFinaXlsx();
+}
+
+// Devolve as obras (com empresas já filtradas dentro de cada uma) dentro do escopo
+// escolhido no modal — 'tudo' ignora os filtros da tela, 'filtrado' respeita os
+// mesmos filtros de Obra/Empreiteiro que estão ativos na tabela naquele momento.
+// obra.totalPorDia nunca é recalculado aqui (continua sendo o total real da obra,
+// igual ao comportamento da tela — filtrar empresa não mexe na linha TOTAL da obra).
+function obrasParaExport(modo) {
+  if (modo === 'tudo') return state.pivot.obras;
+  const filtroObra = document.getElementById('filtro-obra').value;
+  const filtroEmpresa = document.getElementById('filtro-empresa').value;
+  return state.pivot.obras
+    .filter(o => !filtroObra || o.obra === filtroObra)
+    .map(o => ({ ...o, empresas: o.empresas.filter(e => !filtroEmpresa || e.empresa === filtroEmpresa) }))
+    .filter(o => o.empresas.length > 0);
+}
+
+function construirAbaResumo(wb, obras, dias) {
+  const ws = wb.addWorksheet('Resumo', { views: [{ state: 'frozen', ySplit: 0, xSplit: 1, showGridLines: false }] });
+  ws.getColumn(1).width = 34;
+  dias.forEach((d, i) => { ws.getColumn(2 + i).width = 9; });
+  const totalCols = 1 + dias.length;
+
+  let r = 1;
+  obras.forEach(obra => {
+    ws.mergeCells(r, 1, r, totalCols);
+    estilizarCell(ws.getCell(r, 1), { bg: XCOR.navy, fg: XCOR.white, bold: true, size: 13, align: 'left' });
+    ws.getCell(r, 1).value = '🏗 ' + obra.obra;
+    ws.getRow(r).height = 22;
+    r++;
+
+    estilizarCell(ws.getCell(r, 1), { bg: XCOR.pale, fg: XCOR.navy, bold: true, align: 'left' });
+    ws.getCell(r, 1).value = 'Empreiteiro';
+    dias.forEach((d, i) => {
+      estilizarCell(ws.getCell(r, 2 + i), { bg: XCOR.pale, fg: XCOR.navy, bold: true });
+      ws.getCell(r, 2 + i).value = diaCurto(d);
+    });
+    r++;
+
+    obra.empresas.forEach(emp => {
+      const bg = emp.naoCadastrada ? XCOR.amberRow : XCOR.white;
+      estilizarCell(ws.getCell(r, 1), { bg, bold: emp.naoCadastrada, align: 'left' });
+      ws.getCell(r, 1).value = emp.naoCadastrada ? '⚠ EMPRESA NÃO CADASTRADA' : emp.empresa;
+      dias.forEach((d, i) => {
+        estilizarCell(ws.getCell(r, 2 + i), { bg });
+        ws.getCell(r, 2 + i).value = emp.porDia[d].headcount;
+      });
+      r++;
+    });
+
+    estilizarCell(ws.getCell(r, 1), { bg: XCOR.g2, bold: true, align: 'left' });
+    ws.getCell(r, 1).value = 'TOTAL ' + obra.obra;
+    dias.forEach((d, i) => {
+      estilizarCell(ws.getCell(r, 2 + i), { bg: XCOR.g2, bold: true });
+      ws.getCell(r, 2 + i).value = obra.totalPorDia[d];
+    });
+    r += 2;
+  });
+
+  if (obras.length > 1) {
+    estilizarCell(ws.getCell(r, 1), { bg: XCOR.navy, fg: XCOR.white, bold: true, align: 'left' });
+    ws.getCell(r, 1).value = 'TOTAL GERAL';
+    dias.forEach((d, i) => {
+      const total = obras.reduce((acc, o) => acc + o.totalPorDia[d], 0);
+      estilizarCell(ws.getCell(r, 2 + i), { bg: XCOR.navy, fg: XCOR.white, bold: true });
+      ws.getCell(r, 2 + i).value = total;
+    });
+  }
+}
+
+// Tabela Detalhada = Obra(0) > Empreiteiro(1) > Dia(2) > Pessoa(3) > Turno(4), usando
+// agrupamento nativo do Excel (outlineLevel) — os níveis 1 e 2 já entram recolhidos
+// ("hidden"), então ao abrir o arquivo só Obra e Empreiteiro aparecem, com os botões
+// [+] na margem esquerda pra ir descendo. Cor de fundo diferente por nível.
+function construirAbaDetalhada(wb, obras, dias) {
+  const ws = wb.addWorksheet('Tabela Detalhada', { views: [{ state: 'frozen', ySplit: 1, xSplit: 0, showGridLines: false }] });
+  ws.properties.outlineProperties = { summaryBelow: false, summaryRight: false };
+
+  const headers = ['Descrição', 'Entrada', 'Saída', 'Duração', 'Observação'];
+  headers.forEach((h, i) => {
+    estilizarCell(ws.getCell(1, i + 1), { bg: XCOR.navy, fg: XCOR.white, bold: true });
+    ws.getCell(1, i + 1).value = h;
+  });
+  ws.getColumn(1).width = 40; ws.getColumn(2).width = 10; ws.getColumn(3).width = 10;
+  ws.getColumn(4).width = 12; ws.getColumn(5).width = 32;
+
+  let r = 2;
+  function linha(nivel, valores, estilo) {
+    const row = ws.getRow(r);
+    valores.forEach((v, i) => {
+      const cell = row.getCell(i + 1);
+      cell.value = v;
+      estilizarCell(cell, i === 0 ? { ...estilo, indent: nivel, align: 'left' } : { ...estilo, align: estilo.align || 'center' });
+    });
+    row.outlineLevel = nivel;
+    if (nivel >= 1) row.hidden = true;
+    r++;
+  }
+
+  obras.forEach(obra => {
+    linha(0, ['🏗 ' + obra.obra, '', '', '', ''], { bg: XCOR.navy, fg: XCOR.white, bold: true });
+
+    obra.empresas.forEach(emp => {
+      const nomeEmp = emp.naoCadastrada ? '⚠ EMPRESA NÃO CADASTRADA' : emp.empresa;
+      linha(1, [nomeEmp, '', '', '', ''], { bg: emp.naoCadastrada ? XCOR.amberRow : XCOR.pale, fg: XCOR.navy, bold: true });
+
+      dias.forEach(dia => {
+        const info = emp.porDia[dia];
+        if (!info.pessoas.length) return;
+        linha(2, [diaCurto(dia), '', '', '', info.headcount + ' pessoa(s)'], { bg: XCOR.g1, bold: true });
+
+        info.pessoas.forEach(p => {
+          const horasTxt = p.temMedicao ? formatarMinutos(p.minutosMedidos) : '—';
+          const statusTxt = p.decisao === 'MANUAL_CONTA' ? 'manual: conta'
+            : p.decisao === 'MANUAL_NAO_CONTA' ? 'manual: não conta'
+            : (p.conta ? '' : 'abaixo do mínimo');
+          linha(3, [p.nomeOriginal, '', '', horasTxt, statusTxt], { bg: XCOR.white });
+
+          p.shifts.forEach(s => {
+            const cruzaDia = s.diaSaidaISO && s.diaSaidaISO !== p.dia;
+            const dur = s.minutos != null ? formatarMinutos(s.minutos) : '—';
+            const obs = s.minutos != null ? (cruzaDia ? 'turno noturno' : '') : s.observacao;
+            const destaque = s.minutos == null || cruzaDia;
+            linha(4, ['', s.horaEntrada || '—', s.horaSaida || '—', dur, obs || ''], { bg: destaque ? XCOR.amberL : XCOR.white });
+          });
+        });
+      });
+    });
+  });
+}
+
+// Ponderações: 2 tabelas na mesma aba — casos ambíguos (completos ou não, "os 2" tipos
+// pedidos: batida incompleta e abaixo do mínimo) e a lista de funcionários sem empresa.
+function construirAbaPonderacoes(wb, obras) {
+  const ws = wb.addWorksheet('Ponderações', { views: [{ showGridLines: false }] });
+  [30, 16, 26, 12, 30, 12, 20].forEach((w, i) => { ws.getColumn(i + 1).width = w; });
+
+  const empresasPermitidas = new Set();
+  obras.forEach(o => o.empresas.forEach(e => empresasPermitidas.add(o.obra + '||' + e.empresa)));
+
+  let r = 1;
+  ws.mergeCells(r, 1, r, 7);
+  estilizarCell(ws.getCell(r, 1), { bg: XCOR.navy, fg: XCOR.white, bold: true, align: 'left', size: 12 });
+  ws.getCell(r, 1).value = 'Casos de consideração manual (batida incompleta ou abaixo do mínimo)';
+  r++;
+  ['Nome', 'Obra', 'Empreiteiro', 'Dia', 'Motivo', 'Duração', 'Decisão'].forEach((h, i) => {
+    estilizarCell(ws.getCell(r, i + 1), { bg: XCOR.pale, fg: XCOR.navy, bold: true });
+    ws.getCell(r, i + 1).value = h;
+  });
+  r++;
+
+  const pendencias = state.pivot.porPessoaDia
+    .filter(e => ehPendencia(e) && empresasPermitidas.has(e.obra + '||' + e.empresa))
+    .sort((a, b) => a.obra.localeCompare(b.obra) || a.dia.localeCompare(b.dia) || a.nomeOriginal.localeCompare(b.nomeOriginal));
+
+  pendencias.forEach(p => {
+    const motivo = !p.temMedicao ? (p.shifts[0] ? p.shifts[0].observacao : 'Batida incompleta') : `Abaixo do mínimo (${formatarMinutos(state.minMinutos)})`;
+    const duracao = p.temMedicao ? formatarMinutos(p.minutosMedidos) : '—';
+    const decisao = p.decisao === 'MANUAL_CONTA' ? 'Manual - contou' : p.decisao === 'MANUAL_NAO_CONTA' ? 'Manual - não contou' : 'Automático';
+    const bg = p.decisao === 'AUTOMATICO' ? XCOR.amberRow : XCOR.white;
+    [p.nomeOriginal, p.obra, p.empresa, diaCurto(p.dia), motivo, duracao, decisao].forEach((v, i) => {
+      estilizarCell(ws.getCell(r, i + 1), { bg, align: (i === 0 || i === 2 || i === 4) ? 'left' : 'center' });
+      ws.getCell(r, i + 1).value = v;
+    });
+    r++;
+  });
+  if (!pendencias.length) {
+    ws.mergeCells(r, 1, r, 7);
+    estilizarCell(ws.getCell(r, 1), { align: 'left' });
+    ws.getCell(r, 1).value = 'Nenhum caso ambíguo nesse recorte.';
+    r++;
+  }
+
+  r += 2;
+  ws.mergeCells(r, 1, r, 3);
+  estilizarCell(ws.getCell(r, 1), { bg: XCOR.navy, fg: XCOR.white, bold: true, align: 'left', size: 12 });
+  ws.getCell(r, 1).value = 'Funcionários sem empresa (não encontrados no Cadastro)';
+  r++;
+  ['Nome (Acesso)', 'Obra(s)', 'Nº de turnos'].forEach((h, i) => {
+    estilizarCell(ws.getCell(r, i + 1), { bg: XCOR.pale, fg: XCOR.navy, bold: true });
+    ws.getCell(r, i + 1).value = h;
+  });
+  r++;
+
+  const naoIdent = state.pivot.naoIdentificados.filter(n => n.obras.split(', ').some(o => obras.some(ob => ob.obra === o)));
+  naoIdent.forEach(n => {
+    [n.nomeOriginal, n.obras, n.turnos].forEach((v, i) => {
+      estilizarCell(ws.getCell(r, i + 1), { align: i !== 2 ? 'left' : 'center' });
+      ws.getCell(r, i + 1).value = v;
+    });
+    r++;
+  });
+  if (!naoIdent.length) {
+    ws.mergeCells(r, 1, r, 3);
+    estilizarCell(ws.getCell(r, 1), { align: 'left' });
+    ws.getCell(r, 1).value = 'Nenhum nome pendente nesse recorte.';
+  }
+}
+
+async function gerarEBaixarExcel(modo) {
+  const btn = document.getElementById('btn-exportar');
+  const textoOriginal = btn.textContent;
+  btn.disabled = true; btn.textContent = '⏳ Gerando...';
+  try {
+    await comCarregando(
+      ['Montando as abas...', 'Aplicando formatação...', 'Organizando os agrupamentos...', 'Finalizando o arquivo...'],
+      10000,
+      async () => {
+        // só monta o arquivo em memória aqui — o clique que dispara o download de
+        // verdade fica pro aoFinalizar, que só roda depois do tempo mínimo de overlay.
+        const obras = obrasParaExport(modo);
+        const dias = state.pivot.dias;
+        const wb = new ExcelJS.Workbook();
+        wb.creator = 'Efetivo de Obra';
+        wb.created = new Date();
+
+        construirAbaResumo(wb, obras, dias);
+        construirAbaDetalhada(wb, obras, dias);
+        construirAbaPonderacoes(wb, obras);
+
+        return await wb.xlsx.writeBuffer();
+      },
+      buf => {
+        const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'Efetivo de Obra.xlsx';
+        a.click();
+      }
+    );
+  } finally {
+    btn.disabled = false; btn.textContent = textoOriginal;
+  }
+}
+
+document.getElementById('btn-exportar').addEventListener('click', () => {
+  const temFiltro = document.getElementById('filtro-obra').value || document.getElementById('filtro-empresa').value;
+  if (temFiltro) document.getElementById('modal-export').style.display = 'flex';
+  else gerarEBaixarExcel('tudo');
+});
+document.getElementById('btn-export-filtrado').addEventListener('click', () => { fecharModalExport(); gerarEBaixarExcel('filtrado'); });
+document.getElementById('btn-export-tudo').addEventListener('click', () => { fecharModalExport(); gerarEBaixarExcel('tudo'); });
+document.getElementById('btn-export-cancelar').addEventListener('click', fecharModalExport);
+function fecharModalExport() { document.getElementById('modal-export').style.display = 'none'; }
+
+/* ===================== NOVA ANÁLISE ===================== */
+
+document.getElementById('btn-nova-analise').addEventListener('click', () => {
+  state.cadastro = null; state.acessos = null;
+  state.equipToObra = {}; state.classFilter = null; state.minMinutos = 0; state.overridesManuais = {};
+  state.shifts = []; state.pivot = null;
+
+  ['dz-cadastro', 'dz-acessos'].forEach(id => {
+    const dz = document.getElementById(id);
+    dz.classList.remove('loaded', 'error');
+    dz.querySelector('.dz-status').textContent = '';
+  });
+  document.getElementById('input-cadastro').value = '';
+  document.getElementById('input-acessos').value = '';
+  document.getElementById('input-minimo').value = '';
+  checkContinuarHabilitado();
+  irParaTela('screen-upload');
+});
+</script>
+  <script src="https://mateusm23.github.io/HUB/assets/tracker.js" data-tool="ferramentas"></script>
+</body>
+</html>

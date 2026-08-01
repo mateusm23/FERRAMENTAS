@@ -33,15 +33,20 @@ ferramentas/
 ├── Microsoft Project/
 │   ├── Relatório Semanal/RELATORIO SEMANAL.html      (ativa, card visível — versão sem plugin Agilean)
 │   └── Linha de Balanço/gerador-linha-de-balanco.html (ativa, card visível)
-└── Prevision/
-    └── Programação Semanal/PROGRAMACAO SEMANAL PREVISION.html (ativa, card visível)
+├── Prevision/
+│   └── Programação Semanal/PROGRAMACAO SEMANAL PREVISION.html (ativa, card visível)
+└── Outros/
+    └── Efetivo de Obra/
+        ├── EFETIVO DE OBRA.html               (ativa, card visível — única ferramenta sem CDN, tudo inline)
+        └── base de teste/                       (arquivos reais de exemplo, nunca commitar, ver .gitignore)
 ```
 
 ## Cards do portal (`index.html`) — o que está visível/oculto e por quê
 
 - **Visíveis**: Programação Semanal (Agilean v2), Análise de Peso Financeiro,
   Análise Física do Projeto (v4), Relatório Semanal de Obra (Agilean e MS
-  Project), Gerador de Linha de Balanço, Programação Semanal (Prevision).
+  Project), Gerador de Linha de Balanço, Programação Semanal (Prevision),
+  Efetivo de Obra (seção **Outros**, nova em 2026-08-01).
 - **Ocultos** (`style="display:none"` no `<a class="tool-card">`):
   - Programação Semanal **HISTÓRICO** — versão anterior, mantida só como referência.
   - Análise Física do Projeto **v3** — obsoleta, substituída pela v4 (que tem
@@ -128,6 +133,330 @@ precise ser reaproveitado:
 5. **Resumo Semanal** — a base do Agilean só tem granularidade de mês; semana é
    estimada por rateio (`taxaDiária = contribuição do mês ÷ dias do mês`).
    Sempre rotulado como estimativa, não é avanço real reportado por semana.
+
+## Efetivo de Obra (Outros) — cruzamento Cadastro x Acesso por Equipamento
+
+Arquivo: `Outros/Efetivo de Obra/EFETIVO DE OBRA.html`. Calcula quantas pessoas
+trabalharam em cada obra, por dia e por empreiteiro, cruzando dois arquivos
+que o usuário sobe por drag-and-drop:
+
+- **Cadastro de Pessoas** (.csv/.xlsx): colunas por texto de cabeçalho —
+  Nome, Empresa (empreiteiro), Classificação. Não tem ID em comum com o outro
+  arquivo — o cruzamento é só por **nome normalizado** (maiúsculo, sem acento,
+  espaço colapsado).
+- **Acesso por Equipamento** (.xls/.xlsx): relatório paginado de
+  catraca/facial (testado com export do "Secullum Acesso"). Cada página repete
+  cabeçalho de impressão e uma linha `EQUIPAMENTO: <nome>` — não existe coluna
+  "Obra" própria, ela vem embutida no nome do equipamento (ex.:
+  `facial controlid GARDEN` → obra real "BE GARDEN", `Topdata - BONIFACIO` →
+  obra "BONIFACIO"). Como o texto do equipamento não corresponde 1:1 ao nome
+  real da obra, a ferramenta **não tenta adivinhar** — mostra uma tela de
+  confirmação manual (equipamento bruto → campo de texto editável) antes de
+  gerar o relatório, com o mesmo espírito da tela de Classificação da Linha de
+  Balanço. Colunas do relatório (NOME/DATA/HORA/DESCRIÇÃO) são localizadas por
+  texto de cabeçalho, redetectado a cada página — não por posição fixa.
+
+### Regra de pareamento Entrada/Saída (`pairEvents`)
+
+Por pessoa+equipamento, eventos ordenados cronologicamente e pareados em fila
+(Entrada abre, próxima Saída fecha). Decisões:
+
+- **O turno pertence ao dia da Entrada**, mesmo cruzando meia-noite — decisão
+  do usuário, pra não dividir nem duplicar a contagem de um plantão noturno
+  entre dois dias. Validado contra dado real: 48 turnos atravessando meia-noite
+  no arquivo de exemplo, todos com duração 13-16h (plantão noturno plausível).
+- **Limite de 16h por turno** (`MAX_SHIFT_MINUTES`): sem isso, uma pessoa que
+  simplesmente não bate ponto por 2-3 dias (foi embora, trocou de obra) faz o
+  pareamento sequencial juntar a Entrada de um dia com a Saída de dias depois,
+  gerando turnos de 70h+. Acima do limite, a Entrada vira "sem saída
+  registrada" e a Saída distante vira um evento órfão "sem entrada
+  registrada", em vez de 1 turno só. Threshold escolhido com folga sobre o
+  maior turno noturno real observado (~13.7h).
+- **Batidas repetidas em sequência** (Entrada→Entrada ou Saída→Saída, ruído
+  de catraca/facial) são colapsadas: fica a primeira Entrada e a última Saída
+  da sequência.
+- Entrada sem Saída depois, ou Saída sem Entrada antes (comum nas bordas do
+  período do relatório — 24 casos no exemplo) contam como presença no dia mas
+  não somam horas.
+
+### Tela de resultado — tabela expansível Obra > Empresa > Dia > Pessoa (reformulada em 2026-08-01)
+
+A tela de resultado não é mais uma tabela plana — virou uma tabela por obra
+(linhas = empreiteiro, colunas = dia, célula = nº de pessoas) com drill-down
+inline, tudo dentro da própria tabela (sem popup/modal, pedido explícito do
+usuário: "sem pop up"). Lógica em `buildPivot()`, substituiu a antiga
+`buildResumo()` (removida).
+
+- **Clicar numa célula** (empreiteiro × dia) insere uma `<tr>` embaixo com a
+  lista de pessoas daquele dia. **Clicar numa pessoa** abre, dentro da mesma
+  célula (sem nova linha de tabela — só um `<div>` que aparece/some), o
+  **memorial de cálculo**: cada intervalo Entrada→Saída pareado com a duração,
+  e turnos que cruzam meia-noite mostram explicitamente
+  `(turno noturno, saída em DD/MM)` usando o campo `diaSaidaISO` do turno (a
+  data real da Saída, guardada à parte do `diaISO` que é sempre o dia da
+  Entrada). Só um detalhe aberto por vez por linha de empresa — abrir outro
+  fecha o anterior.
+- **Cada bloco de obra tem uma linha TOTAL** (soma das empresas daquele dia),
+  e se houver mais de uma obra sem filtro ativo, um bloco final **Total Geral**
+  soma todas as obras — pedido do usuário: mostrar as obras separadas mas com
+  totalizador entre elas.
+- **Busca por pessoa** (`buscarPessoa()`): campo de texto acima da tabela,
+  não mexe na tabela principal — mostra um bloco à parte com o nome, obra,
+  empresa e um mini-grid de horas por dia (pra responder "em quais dias essa
+  pessoa trabalhou"). Se o texto bater com mais de uma pessoa diferente
+  (ex.: "silva"), mostra botões pra escolher qual antes de exibir o resultado.
+  Clicar num dia do resultado da busca abre o mesmo memorial de cálculo.
+- **Mínimo de tempo pra contar como presença** (tela de configuração, campo
+  `input-minimo`, formato `H:MM`): pessoa cujo total de minutos **medidos**
+  naquele dia (`minutosMedidos`, soma dos turnos com Entrada E Saída) fica
+  abaixo do mínimo não entra no headcount da célula, mas continua aparecendo
+  no drill-down (marcada "abaixo do mínimo", cinza) — nada fica escondido, só
+  não conta no número. **Importante**: o mínimo só se aplica quando existe
+  medição (`temMedicao === true`); gente com só batida incompleta (sem
+  entrada ou sem saída, `minutosMedidos` não confiável) sempre conta,
+  independente do mínimo — não dá pra aplicar "tempo mínimo" em cima de uma
+  duração que não foi medida. Em branco = 0 = sem filtro, não muda
+  comportamento de quem não configurar nada.
+- **Empresa não cadastrada**: uma linha só por obra, nome fixo
+  `EMPRESA NÃO CADASTRADA`, fundo amarelo claro + badge, com um botão
+  "Ver lista de nomes" que expande (inline, mesma mecânica de drill-down) uma
+  lista simples só de nomes + nº de turnos, pro usuário copiar e atualizar o
+  Cadastro real por fora da ferramenta depois. **Isso substituiu** a versão
+  anterior (painel com campo de texto pra digitar a empresa de cada pessoa na
+  hora, recalculando ali) — removida a pedido do usuário porque o valor
+  digitado se perdia ao fechar a ferramenta; o fluxo correto é atualizar o
+  Cadastro de verdade e re-processar.
+- A coluna Classificação do Cadastro continua um filtro configurável na tela
+  de configuração (checkboxes) — pessoas sem cadastro nenhum não são afetadas
+  por esse filtro (não têm Classificação pra filtrar).
+
+### Decisão manual (Automático / Sim / Não) por pessoa+dia (2026-08-01)
+
+Casos ambíguos — batida incompleta (sem Entrada ou sem Saída) ou turno abaixo
+do mínimo configurado — entram automaticamente numa regra padrão, mas o
+usuário pode **sobrepor manualmente** essa decisão pra qualquer pessoa em
+qualquer dia, direto no memorial de cálculo: 3 botões, **Automático / Sim,
+contar / Não, não contar**. Motivo do usuário: às vezes uma pessoa "só passou
+rapidinho" e ele quer decidir caso a caso se aquilo conta como dia trabalhado.
+
+- Override guardado em `state.overridesManuais` (chave
+  `obra||empresa||dia||nomeNorm` → `'MANUAL_CONTA'` ou `'MANUAL_NAO_CONTA'`),
+  aplicado dentro do próprio `buildPivot()` (parâmetro `overridesManuais`) —
+  ele decide `entry.conta`/`entry.decisao` ali, então qualquer rebuild futuro
+  (ex.: iria acontecer se "Gerar Relatório" fosse clicado de novo) já nasce
+  respeitando os overrides ativos. Zerado em "Nova análise".
+- **A tela não é re-renderizada por completo quando o usuário troca a
+  decisão** — de propósito, pra não fechar a célula/memorial que ele estava
+  olhando. Em vez disso, `aplicarDecisaoManual()` muda o objeto `entry`
+  direto (o mesmo objeto é compartilhado por referência entre
+  `pivot.porPessoaDia` e a árvore `pivot.obras[].empresas[].porDia[].pessoas`,
+  então mutar um só já reflete em ambos os lugares) e propaga a diferença
+  (+1/-1) manualmente pros números já desenhados na tela: célula da
+  empresa×dia (`data-cell-key`), linha TOTAL da obra (`data-total-cell`),
+  Total Geral (`data-total-geral-cell`) e o KPI "Pessoas no efetivo"
+  (`#kpi-pessoas-efetivo`). Se decidir mexer nessa lógica de novo, cuidado pra
+  não esquecer de atualizar um desses 4 pontos — não tem teste automático que
+  pegue isso, só validado manualmente com Playwright clicando de verdade.
+- Excel exportado ganhou a coluna **"Como foi decidido"** na aba Detalhado
+  (Automático / Manual - contou / Manual - não contou), separada da coluna
+  "Contabilizado no efetivo" (Sim/Não) — pedido explícito do usuário de
+  rastrear isso no relatório final.
+
+### Tela de Pendências (2026-08-01)
+
+Depois de usar a decisão manual, o usuário reclamou que precisava abrir célula
+por célula pra achar os casos ambíguos — pediu uma tela só com o que precisa
+revisar. Virou uma segunda "view" dentro da tela de resultado (botões
+**📋 Tabela / ⚠ Pendências pra revisar**, alternando `display` de dois `<div>`
+irmãos — `#pivot-view` e `#pendencias-view` —, a tabela principal nunca é
+destruída, só escondida, o que importa porque os updates cirúrgicos da decisão
+manual (`data-cell-key`, `data-total-cell` etc.) continuam funcionando em
+elementos escondidos).
+
+- **O que entra na lista** (`ehPendencia(e)`): batida incompleta
+  (`!e.temMedicao`) OU turno abaixo do mínimo configurado
+  (`e.minutosMedidos < state.minMinutos`) — os dois motivos que fazem a régua
+  automática não ter certeza. O badge no botão (`#badge-pendencias`) conta só
+  as que **ainda estão em `AUTOMATICO`** (não decididas manualmente).
+- Cada card reaproveita o **mesmo `renderMemorial()`** usado no drill-down da
+  tabela — mesmo componente, mesmos botões Automático/Sim/Não — só que exibido
+  direto na lista, sem precisar abrir célula → pessoa primeiro.
+- **Checkbox "Mostrar já decididas"** (desmarcado por padrão): ao decidir uma
+  pendência, ela some da lista na hora (`aoDecidir` callback passado pro
+  `renderMemorial`, chama `renderPendencias()` de novo) — efeito "checklist"
+  proposital. Marcando a checkbox, as já decididas voltam pra lista com opacidade
+  reduzida (classe `.resolvida`), útil pra revisar decisões tomadas antes.
+- Filtro de obra e busca por nome próprios dessa tela (`#pend-filtro-obra`,
+  `#pend-busca-nome`), independentes dos filtros da tabela principal.
+- **Cuidado se mexer em `aplicarDecisaoManual`**: o `atualizarBadgePendencias()`
+  e o `aoDecidir()` precisam rodar **sempre**, não só quando `p.conta` muda —
+  uma pessoa que já contava por padrão (batida incompleta) pode virar
+  `MANUAL_CONTA` sem alterar nenhum headcount, mas isso já é o suficiente pra
+  sair da lista de pendências abertas.
+
+### Barra de linha do tempo no memorial (2026-08-01)
+
+Dentro do memorial (`renderTimelineBar()`, topo do `renderMemorial()`, antes
+das linhas de texto), uma barra 00h–24h mostra visualmente quando a pessoa
+esteve no site naquele dia, sem precisar ler os horários em texto:
+
+- **Turno completo** (Entrada+Saída medidas): retângulo azul, posição/largura
+  calculadas em % de 1440 minutos (`minutosDoDia()` extrai HH:MM da string de
+  hora). Larguras muito pequenas (ex.: 8 segundos) têm um mínimo de `0.4%`
+  pra não sumir visualmente.
+- **Turno noturno** (cruza meia-noite, `diaSaidaISO !== dia`): o retângulo vai
+  até a borda direita (100%, fim do dia), não até a hora real da saída — e
+  ganha a classe `.continua`, que desenha um `»` na ponta pra deixar claro que
+  continua no dia seguinte (o texto abaixo já dizia isso; a barra reforça
+  visualmente).
+- **Batida incompleta** (sem Entrada ou sem Saída): em vez de barra sólida,
+  um trecho **hachurado laranja** (`repeating-linear-gradient` diagonal) só na
+  parte que dá pra inferir — do início do dia até a saída solta, ou da entrada
+  solta até o fim do dia. É propositalmente diferente visualmente da barra
+  azul sólida, porque não é uma medição real, só o que dá pra saber com o
+  dado que existe.
+- Mesmo componente reaproveitado em todo lugar que já usava `renderMemorial`
+  (drill-down da tabela, busca por pessoa, tela de Pendências) — não precisou
+  duplicar nada.
+
+### Bibliotecas via CDN (voltou atrás em 2026-08-01 — histórico abaixo)
+
+O requisito original era um arquivo **100% autocontido, sem CDN** — a
+biblioteca SheetJS chegou a ficar vendorizada inline em Base64 (`XLSX_LIB_B64`
++ `TextDecoder` + `eval` indireto, pra sobreviver a um bug real do Live
+Server do VS Code que corrompia o arquivo — ver histórico completo no
+`git log` do arquivo se precisar reconstruir esse raciocínio). **O usuário
+pediu pra abandonar essa regra** quando decidiu usar ExcelJS pra formatar o
+Excel exportado, alinhando com o padrão do resto do portal. Hoje o `<head>`
+carrega as duas bibliotecas normalmente:
+
+```html
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+```
+
+Mesmas versões usadas em `Agilean/Programação Semanal/MONTAGEM DE
+PROGRAMAÇÃO SEMANAL v2.html` (copiei o padrão de lá: `CL` de cores, `bdr()`
+de borda fina, `apply()`/`estilizarCell()` pra estilo de célula, `writeBuffer()`
++ `Blob` + `<a download>` pra baixar). Isso também significa que a ferramenta
+**precisa de internet** pra abrir agora (antes funcionava 100% offline) — se
+o usuário reclamar disso no futuro, é porque essa troca foi deliberada, não
+esquecimento.
+
+**Testando localmente sem internet**: o Playwright deste sandbox não tem
+acesso à internet real, então os testes interceptam as chamadas de CDN e
+respondem com as cópias locais (`node_modules/xlsx` e `node_modules/exceljs`
+baixados via `npm install` no diretório de scratch) via `page.route(...)` —
+ver `cdn_stub.js` nos scripts de teste. Isso é só uma necessidade do ambiente
+de teste; no navegador real do usuário, os `<script src>` batem no cdnjs
+normalmente.
+
+### Excel exportado: 3 abas com ExcelJS (2026-08-01)
+
+Reescrito do zero pra sair da lista corrida (SheetJS puro, sem estilo) e virar
+um relatório de verdade, espelhando o que já existe na tela:
+
+- **"Resumo"** — a mesma matriz Obra→Empreiteiro×Dia da tela, um bloco por
+  obra (título mesclado azul-marinho, cabeçalho de dias, linha "EMPRESA NÃO
+  CADASTRADA" em amarelo clarinho, linha TOTAL por obra, e um TOTAL GERAL no
+  fim se houver mais de uma obra no recorte). Primeira coluna congelada
+  (`views:[{state:'frozen', xSplit:1}]`).
+- **"Tabela Detalhada"** — usa o **agrupamento nativo do Excel** (outline —
+  os botões `+`/`-` na margem esquerda) em vez de reimplementar o drill-down:
+  `row.outlineLevel = 0..4` (Obra→Empreiteiro→Dia→Pessoa→Turno) e
+  `row.hidden = true` pra tudo com nível ≥ 1, então o arquivo abre só com
+  Obra/Empreiteiro visíveis (pedido do usuário: "recolhida só nível 1 e 2" —
+  na prática isso já esconde 2/3/4 em cascata, já que colapsar um nível
+  esconde tudo aninhado nele). Precisa de
+  `worksheet.properties.outlineProperties = {summaryBelow:false,
+  summaryRight:false}` porque a linha-resumo (Obra/Empreiteiro/Dia) fica
+  **acima** dos detalhes dela, não abaixo (padrão do Excel é `summaryBelow:
+  true`). Cor de fundo diferente por nível (navy/pale/g1/branco), e nível 4
+  (turno) fica com fundo âmbar quando é batida incompleta ou turno noturno —
+  mesma lógica visual do memorial da tela. **Não dá pra abrir Excel de
+  verdade neste ambiente pra conferir visualmente os botões `+`/`-`** —
+  validado programaticamente relendo o arquivo gerado com o próprio ExcelJS
+  (`row.outlineLevel`, `row.hidden`, cores) e confiando no formato OOXML
+  padrão pro resto.
+- **"Ponderações"** — duas tabelas na mesma aba: casos ambíguos (batida
+  incompleta OU abaixo do mínimo, **os dois tipos**, resolvidos ou não —
+  pedido explícito do usuário foi incluir ambos) com a coluna Decisão
+  (Automático/Manual-contou/Manual-não contou, linha em amarelo se ainda
+  `AUTOMATICO`), e a lista de funcionários sem empresa.
+
+**Exportar tela filtrada ou tudo**: se tiver filtro de Obra ou Empreiteiro
+ativo na tela ao clicar "Exportar Excel", abre um modal (`#modal-export`)
+perguntando "Somente filtrado" ou "Exportar tudo" — sem filtro nenhum, exporta
+direto sem perguntar. `obrasParaExport(modo)` devolve uma cópia rasa das
+obras com `empresas` filtradas, mas **nunca recalcula `totalPorDia`** — a
+linha TOTAL de cada obra sempre reflete o total real dela, mesmo filtrando por
+empreiteiro (mesmo comportamento já validado na tela pra não confundir
+"filtrei uma empresa" com "essa é a obra inteira").
+
+### Overlay de carregamento com duração mínima artificial (2026-08-01)
+
+`comCarregando(mensagens, duracaoMs, fn)` — pedido explícito do usuário: o
+processamento de verdade é rápido demais (dados de teste processam em
+milissegundos), e ele quer o overlay segurando por mais tempo de propósito
+("dar uma sensação de processamento"), com mensagens que trocam ao longo do
+tempo pra parecer um pipeline de várias etapas:
+
+- Ler Cadastro / ler Acessos: **5000ms mínimo**, mensagem única.
+- Gerar Relatório: **10000ms mínimo**, 4 mensagens rotativas (`Compilando
+  dados...` → `Cruzando com o Cadastro...` → `Tratando turnos noturnos...` →
+  `Calculando pendências e totais...`).
+- Exportar Excel: **10000ms mínimo**, outras 4 mensagens rotativas.
+
+Implementação: guarda o horário de início, roda `fn()` de verdade (que
+normalmente termina bem antes do tempo mínimo), e só esconde o overlay depois
+de completar `duracaoMs` no total (`await setTimeout(faltando)`) — ou seja,
+**o tempo mínimo nunca é pulado mesmo que o processamento real seja
+instantâneo**, mas também nunca trava mais que o necessário se o processamento
+real demorar mais que o mínimo configurado (usa `Math.max`). Continua tendo o
+`setTimeout(…, 30)` inicial antes de rodar `fn()`, pelo mesmo motivo de sempre:
+dar tempo do navegador pintar o spinner antes de travar a thread com trabalho
+síncrono pesado (parsing do Excel, `buildPivot`).
+
+**Parâmetro `aoFinalizar(resultado)`** (4º argumento, opcional): só roda
+**depois** do tempo mínimo todo ter passado, logo antes de esconder o overlay.
+Existe especificamente pro export Excel — na primeira versão, `fn()` já fazia
+`a.click()` pra disparar o download, e como `fn()` termina quase instantâneo,
+o download começava (barra de download do navegador aparece, é um efeito
+visível *fora* da nossa página, não fica escondido atrás do overlay) enquanto
+a tela ainda mostrava "Finalizando o arquivo..." por mais alguns segundos —
+quebrava a sensação de "terminou = já baixou" (usuário via o download começar
+antes da animação acabar). Correção: `fn()` só monta o workbook e devolve o
+buffer (`return await wb.xlsx.writeBuffer()`); o `a.click()` que dispara o
+download de verdade virou o `aoFinalizar`, que só roda depois do tempo mínimo
+— validado medindo com Playwright que o evento `download` dispara no mesmo
+instante (0ms de diferença) em que o overlay some.
+
+### Tutoriais na tela de upload (2026-08-01)
+
+Dois blocos expansíveis (`.tutorial-toggle` / `.tutorial-box`) abaixo dos
+dropzones, cada um explicando um arquivo:
+
+- **Cadastro de Pessoas**: mostra a estrutura esperada (tabela de exemplo) e
+  onde conseguir (`Cadastros → Pessoas` no portal do Secullum). **De
+  propósito não inclui a URL específica** do portal Secullum da empresa
+  (teria o nome do tenant/cliente, ex. `.../Bekaa/...`) — o repositório é
+  público, e isso identificaria a empresa. Confirmado com o usuário antes:
+  ele pode pedir pra incluir a URL depois se quiser, mas o padrão ficou sem.
+  **Dados de exemplo da tabela são fictícios** (`FULANO DA SILVA SANTOS`
+  etc.) — nunca usar nomes reais do arquivo de teste em conteúdo que vai pro
+  HTML commitado, mesmo que pareçam inofensivos.
+- **Acesso por Equipamento**: passo a passo exato validado com o usuário
+  (screenshot da tela de configuração do relatório no Secullum): Relatórios →
+  Acessos → Acesso por Equipamento → todos os filtros em Todos/Todas exceto
+  "Exibir somente acessos liberados" (marcado) → Concluir → Salvar → formato
+  Microsoft Excel.
+
+### Dados de teste
+
+`Outros/Efetivo de Obra/base de teste/` guarda os 2 arquivos reais de exemplo
+usados pra validar a lógica acima (cadastro pequeno de propósito, só pra
+testar o cruzamento — não é a base completa de nenhuma obra real). Coberto
+pela regra `**/base de teste/` do `.gitignore`.
 
 ## Como testar localmente
 
