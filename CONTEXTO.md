@@ -36,9 +36,12 @@ ferramentas/
 ├── Prevision/
 │   └── Programação Semanal/PROGRAMACAO SEMANAL PREVISION.html (ativa, card visível)
 └── Outros/
-    └── Efetivo de Obra/
-        ├── EFETIVO DE OBRA.html               (ativa, card visível — única ferramenta sem CDN, tudo inline)
-        └── base de teste/                       (arquivos reais de exemplo, nunca commitar, ver .gitignore)
+    ├── Efetivo de Obra/
+    │   ├── EFETIVO DE OBRA.html               (ativa, card visível — única ferramenta sem CDN, tudo inline)
+    │   └── base de teste/                       (arquivos reais de exemplo, nunca commitar, ver .gitignore)
+    └── Chamada de Aporte Semanal/
+        ├── CHAMADA DE APORTE SEMANAL.html      (ativa, card visível, gera PDF a partir do Excel)
+        └── Modelo_Chamada_de_Aporte_Semanal.xlsx (modelo pra download, clone sanitizado do arquivo real - ver seção abaixo)
 ```
 
 ## Cards do portal (`index.html`) — o que está visível/oculto e por quê
@@ -46,7 +49,8 @@ ferramentas/
 - **Visíveis**: Programação Semanal (Agilean v2), Análise de Peso Financeiro,
   Análise Física do Projeto (v4), Relatório Semanal de Obra (Agilean e MS
   Project), Gerador de Linha de Balanço, Programação Semanal (Prevision),
-  Efetivo de Obra (seção **Outros**, nova em 2026-08-01).
+  Efetivo de Obra (seção **Outros**, nova em 2026-08-01), Chamada de Aporte
+  Semanal (seção **Outros**, nova em 2026-08-10).
 - **Ocultos** (`style="display:none"` no `<a class="tool-card">`):
   - Programação Semanal **HISTÓRICO** — versão anterior, mantida só como referência.
   - Análise Física do Projeto **v3** — obsoleta, substituída pela v4 (que tem
@@ -457,6 +461,130 @@ dropzones, cada um explicando um arquivo:
 usados pra validar a lógica acima (cadastro pequeno de propósito, só pra
 testar o cruzamento — não é a base completa de nenhuma obra real). Coberto
 pela regra `**/base de teste/` do `.gitignore`.
+
+## Chamada de Aporte Semanal (Outros)
+
+Arquivo: `Outros/Chamada de Aporte Semanal/CHAMADA DE APORTE SEMANAL.html`. Sobe
+a planilha do modelo "Chamada de Aporte Semanal" e gera um PDF, replicando o
+visual real do Excel (cores, grade, hierarquia) em vez de um layout próprio,
+a pedido explícito do usuário depois de ver a primeira versão redesenhada.
+
+- **Biblioteca de PDF**: usa **pdfmake** (`cdn.jsdelivr.net`), diferente do
+  padrão `jsPDF + html2canvas` usado no Relatório Semanal (Agilean/MS
+  Project). Decisão deliberada, não inconsistência: pdfmake gera PDF vetorial
+  de verdade (texto selecionável, arquivo pequeno) e tem suporte nativo a
+  `headerRows` repetindo em cada página, essencial pra uma tabela de EAP com
+  300+ linhas espalhadas por várias páginas. `jsPDF+html2canvas` rasteriza a
+  tela, o que não fazia sentido aqui.
+- **Cores extraídas da planilha real** (não inventadas): navy `#1F3864` /
+  `#2E5395` pros títulos e cabeçalhos de tabela, amarelo `#FFF2CC` com fonte
+  azul pras células de preenchimento manual, cinza `#F2F2F2` pras células
+  calculadas, laranja `#C55A11` + pêssego `#FCE4D6` pro destaque do valor do
+  aporte. Verificado abrindo a planilha com `openpyxl` e lendo `cell.fill`
+  célula por célula, não adivinhado.
+- **Coluna `NIVEL` da aba "Controle EAP"** mapeia direto pro que o usuário
+  pediu como "Sintético" x "Analítico": Sintético = linhas com `NIVEL <= 3`,
+  Analítico = todas. O nível pedido inicialmente foi 2, o usuário corrigiu
+  pra 3 depois de ver o PDF (nível 2 sozinho ficava com poucas linhas,
+  informação insuficiente pra um resumo). Cor de fundo por nível
+  (`levelTint1/2/3`, degradê de azul mais forte pra mais claro) é reforço
+  visual criado pra esta ferramenta, não existe assim na planilha original.
+- **Coluna "Processo" da aba Detalhado**: a célula é um valor de data por
+  baixo, mas o formato de exibição do Excel mostra texto tipo "17-Jan". Ler
+  `cell.v` (interpretado como Date) e reformatar como `dd/mm/aaaa` fica
+  errado. Correto é ler `cell.w` (a string já formatada pelo Excel) e exibir
+  como texto puro, sem reformatar.
+- **Repetição de título de seção em tabelas longas**: em vez de tentar fazer
+  o `header` do documento pdfmake saber em qual seção lógica cada página está
+  (não dá, pdfmake não expõe isso antes de paginar), a barra de título e o
+  subtítulo de cada seção (ex.: "Controle de EAP - Analítico") são embutidos
+  como as primeiras linhas da própria tabela (`headerRows: 2` ou `3`, função
+  `titleHeaderRows()`), então repetem automaticamente em toda página que a
+  tabela ocupar. Mais simples e confiável do que qualquer tentativa de
+  rastrear posição de página.
+- **Cuidado ao trocar orientação da página no meio do documento**
+  (`pageOrientation: 'landscape'` numa seção específica, usado nas 3 tabelas
+  vindas da aba Detalhado): colunas de largura fixa que somam menos do que a
+  largura útil real da página (761.89pt numa A4 paisagem com margem de 40pt)
+  ainda assim vazaram 2 a 4pt da borda direita **da página**, não só da
+  margem, quando a soma ficava perto do limite. Não foi totalmente
+  diagnosticado (comportamento consistente entre várias tentativas, parece
+  ligado especificamente à página onde a troca de orientação acontece), mas
+  contornado dando bastante folga: usar `LANDSCAPE_CENTER_WIDTH = 730` (não
+  761.89) como referência pra centralizar/dimensionar colunas, e preferir
+  larguras fixas em vez de coluna `'*'` nessas tabelas. Validado renderizando
+  o PDF de verdade com `pdfjs-dist` + `@napi-rs/canvas` num teste headless e
+  medindo a posição real (`x + width`) do texto mais à direita de cada
+  página contra `page.view[2]`, não só "parece certo visualmente".
+- **Sem travessão longo em nada do código desta ferramenta** (HTML, CSS, JS,
+  textos do PDF), pedido explícito do usuário, separado da regra já
+  existente pras descrições do `index.html`. Trocado por hífen, parênteses
+  ou vírgula conforme o contexto.
+- **Tudo roda no navegador do usuário**: leitura do Excel (SheetJS), extração
+  da logo embutida (JSZip) e montagem do PDF (pdfmake) são 100% client-side,
+  nenhum dado sobe pra servidor algum, importante porque a planilha de
+  origem tem informação financeira sensível (valores de contrato, saldo
+  bancário, fornecedores).
+- **Opções de seção configuráveis**: checkboxes (Resumo Gerencial, EAP
+  Sintético, EAP Analítico, Histórico de Pagamentos, Histórico de Contratos,
+  Projeção) deixam escolher o que entra no PDF antes de gerar. Uma seção
+  vinda da aba Detalhado (Pagamentos/Contratos/Projeção) some sozinha do PDF
+  se não tiver nenhuma linha de dado, mesmo com o checkbox marcado.
+- **Fluxo de duas etapas**: arrastar/selecionar o arquivo só marca o
+  `dropzone` como carregado (`.dropzone.loaded`) e habilita o botão "Gerar
+  PDF"; o processamento de verdade só roda no clique do botão, não no
+  drop. Pedido do usuário pra poder ajustar as seções antes de gerar.
+- **Botão "Baixar planilha modelo"**: link estático (`<a href="Modelo_
+  Chamada_de_Aporte_Semanal.xlsx" download>`) pro arquivo `Outros/Chamada de
+  Aporte Semanal/Modelo_Chamada_de_Aporte_Semanal.xlsx`, que **é** commitado
+  no repositório. Isso mudou de ideia em relação à primeira versão (que
+  gerava o modelo em memória com ExcelJS, igual ao site de referência
+  `mateusm23.github.io/Relatorios`) porque o usuário quis que o modelo fosse
+  **exatamente** o arquivo real (mesma formatação, fórmulas, células
+  mescladas, comentário de instrução na célula do saldo bancário etc.) - uma
+  réplica gerada via ExcelJS nunca ia ficar 100% igual (não recria fórmulas,
+  formatação condicional, comentários de célula).
+  - **Como o arquivo real virou modelo público sem expor dado de cliente**:
+    o arquivo original (planilha de uma obra real, cliente "SAGA DENZA" /
+    "SAGA SHENZHEN") foi clonado e sanitizado por **edição cirúrgica do XML
+    dentro do .xlsx** (script Python usando só `zipfile` + `re`, não
+    `openpyxl`) - troca de texto em `sharedStrings.xml` (nome de
+    empresa/fornecedor por genérico, incluindo referências à marca do
+    cliente escondidas dentro de descrições de item, ex. "CABO HOMOLOGADO
+    DENZA"), remoção do bloco `<mc:AlternateContent>` do `workbook.xml` (o
+    Excel grava ali o caminho do SharePoint de onde salvou por último, que
+    incluía o nome do cliente na URL), e remoção do anchor da logo do
+    cliente em `drawing1.xml` (mantendo só a logo da própria Trinus).
+  - **Cuidado importante, já vivido aqui**: **não usar `openpyxl` pra esse
+    tipo de sanitização** (carregar com `load_workbook` e salvar de novo).
+    Ele preserva a fórmula (`cell.value` volta a string `"=..."`), mas
+    **descarta o valor em cache** de toda célula com fórmula ao salvar -
+    testado e confirmado lendo o resultado com SheetJS depois: toda célula
+    com `<f>` voltava `undefined`. Como esta ferramenta (e o Excel, até
+    reabrir e recalcular) lê o valor em cache (`cell.w`/`cell.v`), isso
+    quebraria o "parece preenchido" do modelo. A edição direta do XML não
+    toca em nenhum `<f>`, só no `<v>` das células-alvo, preservando o cache
+    de tudo que não foi tocado.
+  - **Zerar a folha não zera o total sozinho**: os valores reais de orçamento
+    (292 itens-folha da EAP, nível 4) e de pagamento/contrato (Detalhado)
+    foram zerados no `<v>` literal, mas as fórmulas de agregação (SUMIFS por
+    nível na EAP, SUM nos totais do Detalhado, cálculo do "Valor do Aporte
+    Necessário" no Resumo) continuavam com o **cache antigo** mostrando o
+    total real, porque ninguém reabriu no Excel pra recalcular. Precisou
+    zerar o `<v>` em cache de toda a coluna ORÇADO/INCORRIDO/SALDO da EAP
+    (linhas 6-332, não só as linhas-folha) e das células de fórmula do
+    Resumo/Detalhado também - ao abrir esse arquivo em Excel de verdade, ele
+    recalcula normal a partir das fórmulas intactas.
+  - Duas células (`I106`/`I107` na EAP) vieram *self-closing* (`<c .../>`,
+    sem `<v>` nenhum) em vez do padrão `<c>...<v>N</v></c>` - regex que
+    assume a segunda forma decodifica errado sobre uma célula vazia e acaba
+    consumindo a célula vizinha seguinte. Detectado só porque a checagem
+    "essa célula não devia ser fórmula" disparou num caso real.
+  - Validado gerando o PDF de verdade a partir do arquivo sanitizado e
+    varrendo **todo** o `.xlsx` (todo arquivo XML dentro do zip, não só as
+    3 abas usadas pela ferramenta) por nome do cliente, nomes de fornecedor
+    reais e trecho da URL do SharePoint, pra garantir que nada sensível
+    sobrou em aba oculta (CONFIG), metadado ou `customXml`.
 
 ## Como testar localmente
 

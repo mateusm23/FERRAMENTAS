@@ -1,0 +1,956 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chamada de Aporte Semanal</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💰</text></svg>">
+<style>
+:root {
+  --navy:    #1a2744;
+  --blue:    #2a4a8e;
+  --mid:     #3d6abf;
+  --pale:    #dce8f8;
+  --g1:      #f4f6fa;
+  --g2:      #e8edf5;
+  --g3:      #c5cedd;
+  --g4:      #8a97ab;
+  --g5:      #4a5568;
+  --text:    #1e2a3a;
+  --green:   #0f9b6e;
+  --green-l: #e8f8f2;
+  --red:     #c0392b;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  background: var(--g1); color: var(--text); min-height: 100vh;
+  display: flex; flex-direction: column;
+}
+
+.header {
+  background: linear-gradient(135deg, var(--navy) 0%, #1e3a6e 100%);
+  padding: 32px 32px 36px; text-align: center; position: relative; overflow: hidden;
+}
+.header::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.025'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E");
+}
+.header-content { position: relative; }
+.header-icon { font-size: 34px; margin-bottom: 8px; }
+.header h1 { font-size: 24px; font-weight: 800; color: #fff; letter-spacing: -.02em; margin-bottom: 6px; }
+.header p { color: rgba(255,255,255,.55); font-size: 13px; }
+.header a.voltar-portal {
+  position: absolute; top: 0; left: 0; color: rgba(255,255,255,.65); font-size: 12.5px;
+  text-decoration: none; padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,.2);
+}
+.header a.voltar-portal:hover { background: rgba(255,255,255,.08); color: #fff; }
+
+.main { flex: 1; max-width: 720px; width: 100%; margin: 0 auto; padding: 32px 24px 48px; }
+
+.card {
+  background: #fff; border-radius: 14px; border: 1px solid var(--g2);
+  box-shadow: 0 2px 12px rgba(26,39,68,.06); padding: 24px; margin-bottom: 20px;
+}
+.card h2 { font-size: 16px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+.card .card-hint { font-size: 12.5px; color: var(--g4); margin-bottom: 16px; line-height: 1.5; }
+
+.check-list { list-style: none; display: flex; flex-direction: column; gap: 2px; }
+.check-list li label {
+  display: flex; align-items: center; gap: 10px; padding: 7px 4px;
+  font-size: 13.5px; color: var(--text); cursor: pointer;
+}
+.check-list input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--mid); cursor: pointer; }
+
+.dropzone {
+  border: 2px dashed var(--g3); border-radius: 12px; padding: 32px 18px;
+  text-align: center; cursor: pointer; transition: border-color .15s, background .15s;
+  background: var(--g1);
+}
+.dropzone:hover, .dropzone.dragover { border-color: var(--mid); background: var(--pale); }
+.dropzone.loaded { border-style: solid; border-color: var(--green); background: var(--green-l); }
+.dropzone.error { border-style: solid; border-color: var(--red); background: #fdecea; }
+.dropzone .dz-icon { font-size: 30px; margin-bottom: 8px; }
+.dropzone .dz-title { font-size: 14px; font-weight: 700; color: var(--navy); margin-bottom: 4px; }
+.dropzone .dz-hint { font-size: 12px; color: var(--g4); line-height: 1.5; }
+.dropzone .dz-status { font-size: 12.5px; margin-top: 10px; font-weight: 600; }
+.dropzone.loaded .dz-status { color: var(--green); }
+.dropzone.error .dz-status { color: var(--red); }
+.dropzone input[type=file] { display: none; }
+
+.btn {
+  font-family: inherit; font-size: 14px; font-weight: 700; border: none; border-radius: 10px;
+  padding: 13px 20px; cursor: pointer; transition: box-shadow .15s, opacity .15s; display: flex;
+  align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: 16px;
+  text-decoration: none; box-sizing: border-box;
+}
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn-primary { background: linear-gradient(90deg, var(--blue), var(--mid)); color: #fff; }
+.btn-primary:not(:disabled):hover { box-shadow: 0 6px 18px rgba(61,106,191,.35); }
+.btn-secondary { background: var(--g2); color: var(--g5); margin-top: 0; margin-bottom: 14px; }
+.btn-secondary:not(:disabled):hover { background: var(--g3); }
+
+.gen-status { margin-top: 12px; font-size: 13px; font-weight: 600; text-align: center; white-space: pre-line; }
+.gen-status.info { color: var(--mid); }
+.gen-status.success { color: var(--green); }
+.gen-status.error { color: var(--red); }
+
+.note { margin-top: 16px; font-size: 11.5px; color: var(--g4); border-top: 1px solid var(--g2); padding-top: 12px; line-height: 1.5; }
+.note code { background: var(--g2); padding: 1px 5px; border-radius: 5px; font-size: 11px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <a class="voltar-portal" href="../../index.html">Portal</a>
+  <div class="header-content">
+    <div class="header-icon">💰</div>
+    <h1>Chamada de Aporte Semanal</h1>
+    <p>Gera o PDF da chamada de aporte a partir da planilha do modelo, no mesmo padrão visual do Excel</p>
+  </div>
+</div>
+
+<div class="main">
+
+  <div class="card">
+    <h2>1. Seções do relatório</h2>
+    <p class="card-hint">Escolha o que entra no PDF. Tabelas sem nenhum registro são omitidas automaticamente, mesmo com a seção marcada.</p>
+    <ul class="check-list">
+      <li><label><input type="checkbox" id="opt-resumo" checked> Resumo Gerencial</label></li>
+      <li><label><input type="checkbox" id="opt-eap-sintetico" checked> Controle de EAP, Sintético (nível 3)</label></li>
+      <li><label><input type="checkbox" id="opt-eap-analitico" checked> Controle de EAP, Analítico (completo)</label></li>
+      <li><label><input type="checkbox" id="opt-pagamentos" checked> Histórico de Pagamentos</label></li>
+      <li><label><input type="checkbox" id="opt-contratos" checked> Histórico de Contratos</label></li>
+      <li><label><input type="checkbox" id="opt-projecao" checked> Projeção de Contratação do Período</label></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>2. Suba a planilha e gere o PDF</h2>
+    <p class="card-hint">Nada sai do seu navegador, o processamento é todo local.</p>
+
+    <a href="Modelo_Chamada_de_Aporte_Semanal.xlsx" download class="btn btn-secondary">⬇️ Baixar planilha modelo</a>
+
+    <div id="dropzone" class="dropzone">
+      <div class="dz-icon">📄</div>
+      <div class="dz-title">Arraste o arquivo .xlsx aqui</div>
+      <div class="dz-hint">ou clique para escolher</div>
+      <div class="dz-status" id="dzStatus"></div>
+      <input type="file" id="fileInput" accept=".xlsx">
+    </div>
+
+    <button class="btn btn-primary" id="generateBtn" disabled>Gerar PDF</button>
+    <div id="genStatus" class="gen-status"></div>
+
+    <p class="note">Modelo esperado: abas <code>Resumo Gerencial</code>, <code>Controle EAP</code> e <code>Detalhado</code>, no mesmo padrão do arquivo "Modelo Chamada de Aporte Semanal".</p>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfmake@0.2.10/build/pdfmake.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfmake@0.2.10/build/vfs_fonts.js"></script>
+<script>
+'use strict';
+
+/* ==========================================================================
+   Config: nomes das abas esperadas no modelo
+   ========================================================================== */
+const SHEET_RESUMO = 'Resumo Gerencial';
+const SHEET_EAP = 'Controle EAP';
+const SHEET_DET = 'Detalhado';
+
+// Largura usada para centralizar tabelas em paisagem. Um pouco menor do que a
+// largura útil real da página (761.89pt) para dar folga a arredondamentos do pdfmake.
+const LANDSCAPE_CENTER_WIDTH = 730;
+
+/* Paleta extraída das cores reais usadas na planilha modelo. */
+const COLOR = {
+  titleBar: '#1F3864',    // barra do título principal ("CHAMADA DE APORTE SEMANAL", títulos de seção)
+  sectionBar: '#2E5395',  // barras de subseção e cabeçalhos de tabela
+  lightBlue: '#D9E2F3',   // cabeçalho da tabela de rateio
+  levelTint1: '#9FBEE0',  // EAP nível 1
+  levelTint2: '#C9DCF0',  // EAP nível 2
+  levelTint3: '#E8EFFA',  // EAP nível 3
+  yellow: '#FFF2CC',      // célula de preenchimento manual
+  yellowText: '#0000FF',
+  gray: '#F2F2F2',        // célula calculada/total
+  orange: '#C55A11',      // destaque "Valor do Aporte Solicitado"
+  peach: '#FCE4D6',       // valor do aporte necessário
+  grid: '#BFBFBF',        // linhas de grade
+  text: '#000000',
+  muted: '#595959',
+};
+
+/* ==========================================================================
+   Helpers de formatação
+   ========================================================================== */
+function cellVal(ws, addr) {
+  const c = ws[addr];
+  return c ? c.v : undefined;
+}
+
+/* Valor formatado como o Excel exibe (respeita o number format da célula, ex: "17-Jan"). */
+function cellText(ws, addr) {
+  const c = ws[addr];
+  if (!c) return undefined;
+  return c.w !== undefined ? c.w : c.v;
+}
+
+function isEmpty(v) {
+  return v === undefined || v === null || v === '';
+}
+
+function textOrDash(v) {
+  return isEmpty(v) ? '-' : String(v);
+}
+
+function fmtBRL(v) {
+  if (isEmpty(v)) return '-';
+  const n = Number(v);
+  if (Number.isNaN(n)) return String(v);
+  return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function fmtPct(v) {
+  if (isEmpty(v)) return '-';
+  const n = Number(v);
+  if (Number.isNaN(n)) return String(v);
+  return (n * 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
+}
+
+function fmtDate(v) {
+  if (isEmpty(v)) return '-';
+  const d = (v instanceof Date) ? v : new Date(v);
+  if (Number.isNaN(d.getTime())) return String(v);
+  return d.toLocaleDateString('pt-BR');
+}
+
+/* ==========================================================================
+   Extração de dados do workbook (SheetJS)
+   ========================================================================== */
+function extractResumo(wb) {
+  const ws = wb.Sheets[SHEET_RESUMO];
+  const g = (addr) => cellVal(ws, addr);
+
+  const identidade = {
+    empreendimento: g('C7'),
+    cnpj: g('C8'),
+    razaoSocial: g('C9'),
+    gestorVertical: g('C10'),
+    gestorContrato: g('C11'),
+  };
+
+  const periodo = {
+    de: g('C21'),
+    ate: g('E21'),
+    dataAporte: g('C22') !== undefined ? g('C22') : g('D22'),
+  };
+
+  const bancario = {
+    banco: g('C25'),
+    agencia: g('E25'),
+    contaCorrente: g('C26'),
+    cnpjConta: g('E26'),
+  };
+
+  const resumo = {
+    saldoBancarioData: g('D29'),
+    saldoBancario: g('E29'),
+    contasAPagarSistema: g('E30'),
+    contasALancarGerencial: g('E31'),
+    totalSaidas: g('E32'),
+    fundoReserva: g('E33'),
+    valorAporteNecessario: g('E36'),
+  };
+
+  const eapResumo = {
+    orcamentoAlvo: g('E44'),
+    incorridoAcumulado: g('E45'),
+    saldoDisponivel: g('E46'),
+    percExecutado: g('E47'),
+  };
+
+  const rateio = [];
+  let rateioTotal = null;
+  for (let r = 40; r <= 200; r++) {
+    const label = g(`B${r}`);
+    if (isEmpty(label)) break;
+    const row = { investidor: label, percentual: g(`D${r}`), valor: g(`E${r}`) };
+    if (String(label).trim().toUpperCase() === 'TOTAL') {
+      rateioTotal = row;
+      break;
+    }
+    rateio.push(row);
+  }
+
+  return { identidade, periodo, bancario, resumo, eapResumo, rateio, rateioTotal };
+}
+
+function extractEAP(wb) {
+  const ws = wb.Sheets[SHEET_EAP];
+  const lastRow = XLSX.utils.decode_range(ws['!ref']).e.r + 1;
+  const g = (addr) => cellVal(ws, addr);
+
+  let grandTotal = null;
+  const rows = [];
+
+  for (let r = 6; r <= lastRow; r++) {
+    const descricao = g(`D${r}`);
+    if (isEmpty(descricao)) continue;
+    const nivelRaw = g(`F${r}`);
+    const row = {
+      itemPl: g(`B${r}`),
+      codServico: g(`C${r}`),
+      descricao,
+      tipo: g(`E${r}`),
+      nivel: isEmpty(nivelRaw) ? null : Number(nivelRaw),
+      orcado: g(`I${r}`),
+      incorrido: g(`J${r}`),
+      saldo: g(`K${r}`),
+    };
+    if (row.nivel === null) {
+      grandTotal = row;
+    } else {
+      rows.push(row);
+    }
+  }
+
+  return { grandTotal, rows };
+}
+
+function readTable(ws, headerRow, colLetters, textColumns) {
+  const tc = textColumns || [];
+  const g = (addr) => cellVal(ws, addr);
+  const headers = colLetters.map(c => g(`${c}${headerRow}`));
+  const rows = [];
+  let r = headerRow + 1;
+  while (r < headerRow + 5000) {
+    const vals = colLetters.map(c => (tc.includes(c) ? cellText(ws, `${c}${r}`) : g(`${c}${r}`)));
+    if (vals.every(isEmpty)) break;
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = vals[i]; });
+    rows.push(obj);
+    r++;
+  }
+  return { headers, rows };
+}
+
+function extractDetalhado(wb) {
+  const ws = wb.Sheets[SHEET_DET];
+  return {
+    // PROCESSO (coluna I) é exibido com formatação de texto própria do Excel (ex: "17-Jan"),
+    // não deve ser reinterpretado como data.
+    pagamentos: readTable(ws, 5, ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N'], ['I']),
+    contratos: readTable(ws, 5, ['P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y']),
+    projecao: readTable(ws, 5, ['AB', 'AC', 'AD']),
+  };
+}
+
+async function extractLogo(arrayBuffer) {
+  try {
+    const zip = await JSZip.loadAsync(arrayBuffer);
+    const mediaFiles = Object.keys(zip.files)
+      .filter(name => /^xl\/media\/image\d+\.(png|jpe?g)$/i.test(name))
+      .sort();
+    if (!mediaFiles.length) return null;
+    const name = mediaFiles[0]; // image1.png = logo Trinus no modelo
+    const base64 = await zip.files[name].async('base64');
+    const ext = /\.png$/i.test(name) ? 'png' : 'jpeg';
+    return `data:image/${ext};base64,${base64}`;
+  } catch (e) {
+    return null;
+  }
+}
+
+/* ==========================================================================
+   Widgets de layout (pdfmake), estilo grade do Excel
+   ========================================================================== */
+function excelGridLayout() {
+  return {
+    hLineWidth: () => 0.5,
+    vLineWidth: () => 0.5,
+    hLineColor: () => COLOR.grid,
+    vLineColor: () => COLOR.grid,
+    paddingLeft: () => 5,
+    paddingRight: () => 5,
+    paddingTop: () => 3,
+    paddingBottom: () => 3,
+  };
+}
+
+function noBorderLayout() {
+  return {
+    hLineWidth: () => 0,
+    vLineWidth: () => 0,
+    paddingLeft: () => 12,
+    paddingRight: () => 12,
+    paddingTop: () => 9,
+    paddingBottom: () => 9,
+  };
+}
+
+/* Linha de tabela com uma única célula ocupando todas as colunas (usada para
+   repetir título/subtítulo de seção via headerRows em cada página). */
+function spanRow(cellDef, numCols) {
+  const row = [Object.assign({ colSpan: numCols }, cellDef)];
+  for (let i = 1; i < numCols; i++) row.push({});
+  return row;
+}
+
+function titleHeaderRows(title, subtitle, numCols) {
+  const rows = [spanRow({ text: title, style: 'pageTitle', fillColor: COLOR.titleBar }, numCols)];
+  if (subtitle) {
+    rows.push(spanRow({ text: subtitle, style: 'pageSubtitleCell' }, numCols));
+  }
+  return rows;
+}
+
+function variantStyle(variant) {
+  switch (variant) {
+    case 'yellow': return { fillColor: COLOR.yellow, color: COLOR.yellowText };
+    case 'gray': return { fillColor: COLOR.gray, color: COLOR.text };
+    default: return { fillColor: null, color: COLOR.text };
+  }
+}
+
+function kv(label, value, variant) {
+  return { label, value, variant };
+}
+
+function card(title, rows, labelWidth) {
+  const lw = labelWidth || 190;
+  const body = [[{ text: title, style: 'cardHeader', colSpan: 2, fillColor: COLOR.sectionBar }, {}]];
+  rows.forEach(r => {
+    const vs = variantStyle(r.variant);
+    body.push([
+      { text: r.label, style: 'cellLabel' },
+      { text: r.value, style: 'cellValue', fillColor: vs.fillColor, color: vs.color },
+    ]);
+  });
+  return {
+    table: { widths: [lw, '*'], body, dontBreakRows: true },
+    layout: excelGridLayout(),
+    margin: [0, 0, 0, 14],
+  };
+}
+
+function highlightBox(headerText, label, value) {
+  return {
+    table: {
+      widths: [190, '*'],
+      body: [
+        [{ text: headerText, colSpan: 2, style: 'orangeHeader', fillColor: COLOR.orange }, {}],
+        [{ text: label, style: 'cellLabelBold' }, { text: value, style: 'peachValue', fillColor: COLOR.peach }],
+      ],
+    },
+    layout: excelGridLayout(),
+    margin: [0, 0, 0, 16],
+  };
+}
+
+function buildRateioTable(rateio, rateioTotal) {
+  const body = [[
+    { text: 'RATEIO DO APORTE POR INVESTIDOR (opcional)', style: 'cardHeader', colSpan: 3, fillColor: COLOR.sectionBar },
+    {}, {},
+  ]];
+  body.push([
+    { text: 'Investidor / Quotista', style: 'thCellLight', fillColor: COLOR.lightBlue },
+    { text: '% Participação', style: 'thCellLightRight', fillColor: COLOR.lightBlue },
+    { text: 'Valor do Aporte', style: 'thCellLightRight', fillColor: COLOR.lightBlue },
+  ]);
+  rateio.forEach(r => {
+    body.push([
+      { text: textOrDash(r.investidor), style: 'td', fillColor: COLOR.yellow, color: COLOR.yellowText },
+      { text: fmtPct(r.percentual), style: 'tdRight', fillColor: COLOR.yellow, color: COLOR.yellowText },
+      { text: fmtBRL(r.valor), style: 'tdRight' },
+    ]);
+  });
+  if (rateioTotal) {
+    body.push([
+      { text: 'TOTAL', style: 'tdBold', fillColor: COLOR.gray },
+      { text: fmtPct(rateioTotal.percentual), style: 'tdBoldRight' },
+      { text: fmtBRL(rateioTotal.valor), style: 'tdBoldRight', fillColor: COLOR.gray },
+    ]);
+  }
+  return {
+    table: { widths: ['*', 90, 100], body, dontBreakRows: true },
+    layout: excelGridLayout(),
+    margin: [0, 0, 0, 16],
+  };
+}
+
+function progressBar(pct, width) {
+  const p = Math.max(0, Math.min(1, pct || 0));
+  const w = width || 515;
+  return {
+    canvas: [
+      { type: 'rect', x: 0, y: 0, w, h: 10, r: 5, color: COLOR.gray },
+      { type: 'rect', x: 0, y: 0, w: Math.max(5, w * p), h: 10, r: 5, color: COLOR.sectionBar },
+    ],
+    margin: [0, 4, 0, 16],
+    unbreakable: true,
+  };
+}
+
+function buildGenericTable(columns, rows, title, subtitle, pageContentWidth) {
+  const numCols = columns.length;
+  const titleRows = titleHeaderRows(title, subtitle, numCols);
+  const body = [...titleRows];
+  body.push(columns.map(c => ({
+    text: c.label,
+    style: c.align === 'right' ? 'thCellRight' : 'thCell',
+    fillColor: COLOR.sectionBar,
+  })));
+  rows.forEach((row, i) => {
+    const zebra = i % 2 === 1 ? COLOR.gray : null;
+    body.push(columns.map(c => ({
+      text: c.format ? c.format(row[c.key]) : textOrDash(row[c.key]),
+      style: c.align === 'right' ? 'tdRight' : 'td',
+      fillColor: zebra,
+    })));
+  });
+
+  // Centraliza a tabela na página quando as colunas (todas com largura fixa)
+  // somam menos do que a largura disponível.
+  const hasFluidColumn = columns.some(c => !c.width || c.width === '*');
+  let leftMargin = 0;
+  if (pageContentWidth && !hasFluidColumn) {
+    const totalWidth = columns.reduce((s, c) => s + (typeof c.width === 'number' ? c.width : 0), 0);
+    leftMargin = Math.max(0, (pageContentWidth - totalWidth) / 2);
+  }
+
+  return {
+    table: { headerRows: titleRows.length + 1, widths: columns.map(c => c.width || '*'), body, dontBreakRows: true },
+    layout: excelGridLayout(),
+    margin: [leftMargin, 0, 0, 10],
+  };
+}
+
+function levelStyle(nivel) {
+  if (nivel === 1) return { fillColor: COLOR.levelTint1, bold: true };
+  if (nivel === 2) return { fillColor: COLOR.levelTint2, bold: true };
+  if (nivel === 3) return { fillColor: COLOR.levelTint3, bold: true };
+  return { fillColor: null, bold: false };
+}
+
+function buildEapTable(rows, grandTotal, title, subtitle) {
+  const numCols = 6;
+  const titleRows = titleHeaderRows(title, subtitle, numCols);
+  const body = [...titleRows];
+  body.push([
+    { text: 'ITEM', style: 'thCell', fillColor: COLOR.sectionBar },
+    { text: 'CÓD.', style: 'thCell', fillColor: COLOR.sectionBar },
+    { text: 'DESCRIÇÃO', style: 'thCell', fillColor: COLOR.sectionBar },
+    { text: 'ORÇADO', style: 'thCellRight', fillColor: COLOR.sectionBar },
+    { text: 'INCORRIDO', style: 'thCellRight', fillColor: COLOR.sectionBar },
+    { text: 'SALDO', style: 'thCellRight', fillColor: COLOR.sectionBar },
+  ]);
+
+  if (grandTotal) {
+    body.push([
+      { text: 'TOTAL GERAL', style: 'tdBold', colSpan: 3, fillColor: COLOR.sectionBar, color: '#ffffff' }, {}, {},
+      { text: fmtBRL(grandTotal.orcado), style: 'tdBoldRight', fillColor: COLOR.sectionBar, color: '#ffffff' },
+      { text: fmtBRL(grandTotal.incorrido), style: 'tdBoldRight', fillColor: COLOR.sectionBar, color: '#ffffff' },
+      { text: fmtBRL(grandTotal.saldo), style: 'tdBoldRight', fillColor: COLOR.sectionBar, color: '#ffffff' },
+    ]);
+  }
+
+  rows.forEach(r => {
+    const lv = levelStyle(r.nivel);
+    const indent = Math.max(0, r.nivel - 1) * 8;
+    const baseStyle = lv.bold ? 'tdBold' : 'td';
+    const baseStyleRight = lv.bold ? 'tdBoldRight' : 'tdRight';
+    body.push([
+      { text: textOrDash(r.itemPl), style: baseStyle, fillColor: lv.fillColor },
+      { text: textOrDash(r.codServico), style: baseStyle, fillColor: lv.fillColor },
+      { text: textOrDash(r.descricao), style: baseStyle, fillColor: lv.fillColor, margin: [indent, 0, 0, 0] },
+      { text: fmtBRL(r.orcado), style: baseStyleRight, fillColor: lv.fillColor },
+      { text: fmtBRL(r.incorrido), style: baseStyleRight, fillColor: lv.fillColor },
+      { text: fmtBRL(r.saldo), style: baseStyleRight, fillColor: lv.fillColor },
+    ]);
+  });
+
+  return {
+    table: { headerRows: titleRows.length + 1, widths: [50, 42, '*', 68, 68, 68], body, dontBreakRows: true },
+    layout: excelGridLayout(),
+    margin: [0, 0, 0, 10],
+  };
+}
+
+/* ==========================================================================
+   Seções do relatório
+   ========================================================================== */
+function buildCapaTitle() {
+  return {
+    table: {
+      widths: ['*'],
+      body: [[{
+        fillColor: COLOR.titleBar,
+        stack: [
+          { text: 'CHAMADA DE APORTE SEMANAL', style: 'coverTitle' },
+          { text: 'Modelo: Resumo Gerencial', style: 'coverSubtitle' },
+        ],
+      }]],
+    },
+    layout: noBorderLayout(),
+    margin: [0, 0, 0, 14],
+  };
+}
+
+function buildResumoSection(r) {
+  const { identidade, periodo, bancario, resumo, eapResumo, rateio, rateioTotal } = r;
+
+  const identidadeCard = card('Identificação', [
+    kv('Empreendimento', textOrDash(identidade.empreendimento), 'yellow'),
+    kv('CNPJ', textOrDash(identidade.cnpj), 'yellow'),
+    kv('Razão Social', textOrDash(identidade.razaoSocial), 'yellow'),
+    kv('Gestor Vertical', textOrDash(identidade.gestorVertical), 'yellow'),
+    kv('Gestor do Contrato', textOrDash(identidade.gestorContrato), 'yellow'),
+  ]);
+
+  const periodoCard = card('Período e Data do Aporte', [
+    kv('Referência', `${fmtDate(periodo.de)} até ${fmtDate(periodo.ate)}`, 'yellow'),
+    kv('Data do Aporte', fmtDate(periodo.dataAporte), 'yellow'),
+  ], 100);
+
+  const bancarioCard = card('Dados Bancários', [
+    kv('Banco', textOrDash(bancario.banco), 'yellow'),
+    kv('Agência', textOrDash(bancario.agencia), 'yellow'),
+    kv('Conta Corrente', textOrDash(bancario.contaCorrente), 'yellow'),
+    kv('CNPJ da Conta', textOrDash(bancario.cnpjConta), 'yellow'),
+  ], 100);
+
+  const resumoCard = card('Resumo Gerencial do Aporte', [
+    kv('Saldo Bancário' + (resumo.saldoBancarioData ? ` (${fmtDate(resumo.saldoBancarioData)})` : ''), fmtBRL(resumo.saldoBancario), 'yellow'),
+    kv('(-) Contas a Pagar (Sistema)', fmtBRL(resumo.contasAPagarSistema)),
+    kv('(-) Contas a Lançar (Gerencial)', fmtBRL(resumo.contasALancarGerencial)),
+    kv('Total de Saídas do Período', fmtBRL(resumo.totalSaidas), 'gray'),
+    kv('(-) Fundo de Reserva', fmtBRL(resumo.fundoReserva), 'yellow'),
+  ]);
+
+  const highlight = highlightBox('VALOR DO APORTE SOLICITADO', 'Valor do Aporte Necessário', fmtBRL(resumo.valorAporteNecessario));
+
+  const eapCard = card('Execução Orçamentária (EAP)', [
+    kv('Orçamento Alvo Total', fmtBRL(eapResumo.orcamentoAlvo), 'gray'),
+    kv('Incorrido Acumulado (Pago)', fmtBRL(eapResumo.incorridoAcumulado), 'gray'),
+    kv('Saldo Orçamentário Disponível', fmtBRL(eapResumo.saldoDisponivel), 'gray'),
+    kv('% Executado do Orçamento', fmtPct(eapResumo.percExecutado), 'gray'),
+  ]);
+
+  const pct = Number(eapResumo.percExecutado) || 0;
+
+  return {
+    stack: [
+      buildCapaTitle(),
+      identidadeCard,
+      { columns: [{ width: '48%', stack: [periodoCard] }, { width: '4%', text: '' }, { width: '48%', stack: [bancarioCard] }] },
+      resumoCard,
+      highlight,
+      buildRateioTable(rateio, rateioTotal),
+      eapCard,
+      progressBar(pct, 515),
+    ],
+  };
+}
+
+function buildEapSinteticoSection(eap) {
+  const rows = eap.rows.filter(r => r.nivel <= 3);
+  return buildEapTable(
+    rows, eap.grandTotal,
+    'Controle de EAP - Sintético (Nível 3)',
+    'Consolidado até o 3º nível da estrutura orçamentária'
+  );
+}
+
+function buildEapAnaliticoSection(eap) {
+  return buildEapTable(
+    eap.rows, eap.grandTotal,
+    'Controle de EAP - Analítico (Completo)',
+    `${eap.rows.length} itens orçamentários detalhados`
+  );
+}
+
+function buildPagamentosSection(pagamentos) {
+  const { rows } = pagamentos;
+  const columns = [
+    { key: 'SERVICO', label: 'Serviço', width: 140 },
+    { key: 'INSUMO', label: 'Insumo', width: 140 },
+    { key: 'FORNECEDOR', label: 'Fornecedor', width: 140 },
+    { key: 'PROCESSO', label: 'Processo', width: 70 },
+    { key: 'DATA_DE_PAGAMENTO', label: 'Data Pagto.', width: 75, format: fmtDate },
+    { key: 'PAGO', label: 'Pago', width: 75, format: fmtBRL, align: 'right' },
+    { key: 'A_PAGAR', label: 'A Pagar', width: 75, format: fmtBRL, align: 'right' },
+  ];
+  const table = buildGenericTable(columns, rows, 'Histórico de Pagamentos', 'Processos de pagamento lançados no ERP', LANDSCAPE_CENTER_WIDTH);
+  const totalPago = rows.reduce((s, x) => s + (Number(x.PAGO) || 0), 0);
+  const totalAPagar = rows.reduce((s, x) => s + (Number(x.A_PAGAR) || 0), 0);
+
+  return {
+    stack: [
+      table,
+      { text: `Total Pago: ${fmtBRL(totalPago)}     Total a Pagar: ${fmtBRL(totalAPagar)}`, style: 'tdBold', alignment: 'right', margin: [0, 8, 0, 0] },
+    ],
+  };
+}
+
+function buildContratosSection(contratos) {
+  const { rows } = contratos;
+  const columns = [
+    { key: 'SERVIÇO', label: 'Serviço', width: 120 },
+    { key: 'INSUMO', label: 'Insumo', width: 120 },
+    { key: 'FORNECEDOR', label: 'Fornecedor', width: 120 },
+    { key: 'ITEM PL', label: 'Item PL', width: 60 },
+    { key: 'CONTRATO', label: 'Contrato', width: 48 },
+    { key: 'TOTAL DO CONTRATO', label: 'Total Contrato', width: 78, format: fmtBRL, align: 'right' },
+    { key: 'TOTAL APROVADO', label: 'Total Aprovado', width: 78, format: fmtBRL, align: 'right' },
+    { key: 'TOTAL SALDO', label: 'Saldo', width: 72, format: fmtBRL, align: 'right' },
+  ];
+  const table = buildGenericTable(columns, rows, 'Histórico de Contratos', 'Contratos lançados no ERP', LANDSCAPE_CENTER_WIDTH);
+  const totalContrato = rows.reduce((s, x) => s + (Number(x['TOTAL DO CONTRATO']) || 0), 0);
+  const totalAprovado = rows.reduce((s, x) => s + (Number(x['TOTAL APROVADO']) || 0), 0);
+  const totalSaldo = rows.reduce((s, x) => s + (Number(x['TOTAL SALDO']) || 0), 0);
+
+  return {
+    stack: [
+      table,
+      { text: `Total do Contrato: ${fmtBRL(totalContrato)}     Total Aprovado: ${fmtBRL(totalAprovado)}     Saldo Total: ${fmtBRL(totalSaldo)}`, style: 'tdBold', alignment: 'right', margin: [0, 8, 0, 0] },
+    ],
+  };
+}
+
+function buildProjecaoSection(projecao) {
+  const { rows } = projecao;
+  const columns = [
+    { key: 'ITEM', label: 'Item', width: '*' },
+    { key: 'ALOCAÇÃO', label: 'Alocação', width: '*' },
+    { key: 'VALOR PREVISTO', label: 'Valor Previsto', width: 120, format: fmtBRL, align: 'right' },
+  ];
+  const table = buildGenericTable(columns, rows, 'Projeção de Contratação do Período', 'Contas a lançar (gerencial, previstas, ainda não lançadas)', LANDSCAPE_CENTER_WIDTH);
+  const total = rows.reduce((s, x) => s + (Number(x['VALOR PREVISTO']) || 0), 0);
+  return {
+    stack: [
+      table,
+      { text: `Total Previsto: ${fmtBRL(total)}`, style: 'tdBold', alignment: 'right', margin: [0, 8, 0, 0] },
+    ],
+  };
+}
+
+/* ==========================================================================
+   Documento final
+   ========================================================================== */
+function buildHeaderFn(logo) {
+  return () => {
+    if (!logo) return null;
+    return {
+      columns: [
+        { text: '', width: '*' },
+        { image: logo, fit: [55, 20], alignment: 'right' },
+      ],
+      margin: [40, 14, 40, 0],
+    };
+  };
+}
+
+function buildFooterFn() {
+  const today = new Date().toLocaleDateString('pt-BR');
+  return (currentPage, pageCount, pageSize) => {
+    const width = pageSize.width - 80;
+    return {
+      stack: [
+        { canvas: [{ type: 'line', x1: 0, y1: 0, x2: width, y2: 0, lineWidth: 0.5, lineColor: COLOR.grid }] },
+        {
+          columns: [
+            { text: 'Trinus | Chamada de Aporte Semanal', style: 'footerText' },
+            { text: `Página ${currentPage} de ${pageCount}`, style: 'footerText', alignment: 'center' },
+            { text: `Emitido em: ${today}`, style: 'footerText', alignment: 'right' },
+          ],
+          margin: [0, 4, 0, 0],
+        },
+      ],
+      margin: [40, 6, 40, 0],
+    };
+  };
+}
+
+const styles = {
+  pageTitle: { fontSize: 13, bold: true, color: '#ffffff' },
+  pageSubtitle: { fontSize: 9, color: COLOR.muted, italics: true },
+  pageSubtitleCell: { fontSize: 8.5, color: COLOR.muted, italics: true },
+  coverTitle: { fontSize: 18, bold: true, color: '#ffffff' },
+  coverSubtitle: { fontSize: 10, color: COLOR.lightBlue, italics: true, margin: [0, 2, 0, 0] },
+  cardHeader: { fontSize: 10.5, bold: true, color: '#ffffff' },
+  cellLabel: { fontSize: 9, bold: true, color: COLOR.text },
+  cellLabelBold: { fontSize: 9.5, bold: true, color: COLOR.text },
+  cellValue: { fontSize: 9, color: COLOR.text },
+  orangeHeader: { fontSize: 10.5, bold: true, color: '#ffffff' },
+  peachValue: { fontSize: 15, bold: true, color: COLOR.orange },
+  thCell: { fontSize: 8, bold: true, color: '#ffffff' },
+  thCellRight: { fontSize: 8, bold: true, color: '#ffffff', alignment: 'right' },
+  thCellLight: { fontSize: 8, bold: true, color: COLOR.text },
+  thCellLightRight: { fontSize: 8, bold: true, color: COLOR.text, alignment: 'right' },
+  td: { fontSize: 8, color: COLOR.text },
+  tdRight: { fontSize: 8, color: COLOR.text, alignment: 'right' },
+  tdBold: { fontSize: 8, color: COLOR.text, bold: true },
+  tdBoldRight: { fontSize: 8, color: COLOR.text, bold: true, alignment: 'right' },
+  footerText: { fontSize: 7.5, color: COLOR.muted },
+};
+
+function buildDocDefinition(data, logo, options) {
+  const opts = options || {};
+  const enabled = (key) => opts[key] !== false;
+
+  const content = [];
+  const push = (section, extra) => {
+    const isFirst = content.length === 0;
+    content.push(Object.assign({}, section, isFirst ? {} : { pageBreak: 'before' }, extra || {}));
+  };
+
+  if (enabled('resumo')) push(buildResumoSection(data.resumo));
+  if (enabled('eapSintetico')) push(buildEapSinteticoSection(data.eap));
+  if (enabled('eapAnalitico')) push(buildEapAnaliticoSection(data.eap));
+
+  let landscapeApplied = false;
+  const pushDetalhado = (section) => {
+    const extra = landscapeApplied ? {} : { pageOrientation: 'landscape' };
+    push(section, extra);
+    landscapeApplied = true;
+  };
+  if (enabled('pagamentos') && data.detalhado.pagamentos.rows.length) pushDetalhado(buildPagamentosSection(data.detalhado.pagamentos));
+  if (enabled('contratos') && data.detalhado.contratos.rows.length) pushDetalhado(buildContratosSection(data.detalhado.contratos));
+  if (enabled('projecao') && data.detalhado.projecao.rows.length) pushDetalhado(buildProjecaoSection(data.detalhado.projecao));
+
+  return {
+    pageSize: 'A4',
+    pageMargins: [40, 58, 40, 60],
+    header: buildHeaderFn(logo),
+    footer: buildFooterFn(),
+    content,
+    styles,
+  };
+}
+
+/* ==========================================================================
+   Interface: seleção de arquivo + opções + botão de gerar PDF
+   ========================================================================== */
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const dzStatus = document.getElementById('dzStatus');
+const generateBtn = document.getElementById('generateBtn');
+const genStatusEl = document.getElementById('genStatus');
+
+const OPTION_IDS = {
+  resumo: 'opt-resumo',
+  eapSintetico: 'opt-eap-sintetico',
+  eapAnalitico: 'opt-eap-analitico',
+  pagamentos: 'opt-pagamentos',
+  contratos: 'opt-contratos',
+  projecao: 'opt-projecao',
+};
+
+let selectedFile = null;
+
+function readOptions() {
+  const options = {};
+  Object.keys(OPTION_IDS).forEach(key => {
+    const el = document.getElementById(OPTION_IDS[key]);
+    options[key] = el ? el.checked : true;
+  });
+  return options;
+}
+
+function setGenStatus(type, message) {
+  genStatusEl.className = 'gen-status ' + type;
+  genStatusEl.textContent = message;
+}
+
+function clearGenStatus() {
+  genStatusEl.className = 'gen-status';
+  genStatusEl.textContent = '';
+}
+
+function selectFile(file) {
+  clearGenStatus();
+  if (!/\.xlsx$/i.test(file.name)) {
+    dropzone.classList.remove('loaded');
+    dropzone.classList.add('error');
+    dzStatus.textContent = 'Envie um arquivo .xlsx (o mesmo formato do modelo).';
+    generateBtn.disabled = true;
+    selectedFile = null;
+    return;
+  }
+  selectedFile = file;
+  dropzone.classList.remove('error');
+  dropzone.classList.add('loaded');
+  dzStatus.textContent = `Selecionado: ${file.name}`;
+  generateBtn.disabled = false;
+}
+
+dropzone.addEventListener('click', () => fileInput.click());
+
+['dragenter', 'dragover'].forEach(evt => {
+  dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
+});
+['dragleave', 'drop'].forEach(evt => {
+  dropzone.addEventListener(evt, (e) => { e.preventDefault(); dropzone.classList.remove('dragover'); });
+});
+dropzone.addEventListener('drop', (e) => {
+  const file = e.dataTransfer.files[0];
+  if (file) selectFile(file);
+});
+fileInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (file) selectFile(file);
+  fileInput.value = '';
+});
+
+generateBtn.addEventListener('click', () => {
+  if (selectedFile) generatePdf(selectedFile);
+});
+
+async function generatePdf(file) {
+  const options = readOptions();
+  if (!Object.values(options).some(Boolean)) {
+    setGenStatus('error', 'Selecione ao menos uma seção para incluir no PDF.');
+    return;
+  }
+
+  setGenStatus('info', 'Lendo o arquivo e gerando o PDF...');
+  generateBtn.disabled = true;
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const wb = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array', cellDates: true });
+
+    const missing = [SHEET_RESUMO, SHEET_EAP, SHEET_DET].filter(name => !wb.Sheets[name]);
+    if (missing.length) {
+      throw new Error(`Este arquivo não segue o modelo esperado.\nAbas não encontradas: ${missing.join(', ')}`);
+    }
+
+    const resumo = extractResumo(wb);
+    const eap = extractEAP(wb);
+    const detalhado = extractDetalhado(wb);
+    const logo = await extractLogo(arrayBuffer);
+
+    const docDefinition = buildDocDefinition({ resumo, eap, detalhado }, logo, options);
+
+    const slug = textOrDash(resumo.identidade.empreendimento)
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '_');
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const filename = `Chamada_de_Aporte_${slug}_${dateStr}.pdf`;
+
+    pdfMake.createPdf(docDefinition).download(filename);
+    setGenStatus('success', 'PDF gerado com sucesso! O download deve começar automaticamente.');
+  } catch (err) {
+    console.error(err);
+    setGenStatus('error', 'Não foi possível gerar o PDF.\n' + (err && err.message ? err.message : String(err)));
+  } finally {
+    generateBtn.disabled = false;
+  }
+}
+</script>
+<script src="https://mateusm23.github.io/HUB/assets/tracker.js" data-tool="ferramentas"></script>
+</body>
+</html>
