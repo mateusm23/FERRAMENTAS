@@ -469,6 +469,33 @@ a planilha do modelo "Chamada de Aporte Semanal" e gera um PDF, replicando o
 visual real do Excel (cores, grade, hierarquia) em vez de um layout próprio,
 a pedido explícito do usuário depois de ver a primeira versão redesenhada.
 
+- **Extração por rótulo, não por endereço fixo de célula** (2026-08-14):
+  a primeira versão lia a aba "Resumo Gerencial" por endereço fixo (`C7`,
+  `E36` etc.). Quebrou na primeira semana de uso real: a planilha real do
+  financeiro (SAGA DENZA) diverge do modelo — tem **dois** blocos de
+  identificação parecidos ("GERENCIAMENTO DE OBRAS", com dados da própria
+  Trinus, e "DADOS DO EMPREENDIMENTO", com dados do projeto/cliente) e o
+  usuário precisou excluir linhas de cada bloco, o que desalinhou todo
+  endereço fixo abaixo deles e fez o PDF sair com dado errado/em branco sem
+  nenhum erro visível. Reescrito pra localizar cada campo pelo **texto do
+  rótulo** (coluna B, dentro do intervalo de linhas da seção correspondente
+  — `locateSections()`/`findFieldRow()`/`fieldVal()`), e a tabela "Controle
+  EAP" pelo **texto do cabeçalho de coluna** (`DESCRIÇÃO`, `NÍVEL` etc. —
+  `extractEAP()` acha a linha de cabeçalho procurando "DESCRICAO" e mapeia
+  cada coluna esperada pelo texto encontrado naquela linha, em vez de
+  assumir letra de coluna fixa). A aba "Detalhado" manteve letra de coluna
+  fixa (nunca divergiu do modelo em produção) mas passou a achar a linha de
+  cabeçalho dinamicamente (procurando "ATUALIZACAO") em vez de assumir linha
+  5. Card "Identificação" agora lê do bloco "DADOS DO EMPREENDIMENTO"
+  (antes lia, por engano, do bloco da Trinus); "Gestor Vertical" cai de
+  volta pro bloco "GERENCIAMENTO DE OBRAS" quando a planilha não tem essa
+  linha no bloco do empreendimento (caso real do SAGA DENZA). `extractEAP()`
+  agora lança erro explícito se não achar as colunas "DESCRIÇÃO" ou "NÍVEL"
+  (falha alto e claro em vez de silenciosamente misturar dados). Validado
+  rodando a extração completa + geração de PDF fora do navegador (Node +
+  pacote `pdfmake` server-side) contra o modelo e contra uma planilha real
+  de produção, e conferindo visualmente (`pdftoppm`) que os valores batem
+  célula a célula com o arquivo de origem.
 - **Biblioteca de PDF**: usa **pdfmake** (`cdn.jsdelivr.net`), diferente do
   padrão `jsPDF + html2canvas` usado no Relatório Semanal (Agilean/MS
   Project). Decisão deliberada, não inconsistência: pdfmake gera PDF vetorial

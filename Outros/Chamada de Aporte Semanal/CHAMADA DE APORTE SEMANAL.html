@@ -230,60 +230,170 @@ function fmtDate(v) {
 
 /* ==========================================================================
    Extração de dados do workbook (SheetJS)
+
+   Nenhum campo é lido por endereço fixo de célula (tipo "C7"). Cada valor é
+   localizado pelo TEXTO do rótulo (coluna B na aba "Resumo Gerencial", linha
+   de cabeçalho nas outras abas), então inserir ou remover uma linha na
+   planilha de produção não desalinha o resto da extração — só afeta o campo
+   cujo rótulo eventualmente for removido. Motivo: a planilha real usada pelo
+   financeiro diverge do modelo (blocos reorganizados, linhas adicionadas/
+   removidas), e a versão anterior (endereço fixo) lia silenciosamente o
+   campo errado quando isso acontecia.
    ========================================================================== */
+function normLabel(v) {
+  return isEmpty(v) ? '' : String(v).replace(/\s+/g, ' ').trim().toUpperCase();
+}
+
+/* Acha a linha de cada título de seção (coluna B) e devolve o intervalo de
+   linhas "pertencentes" a cada seção (da linha seguinte ao título até a
+   linha anterior ao próximo título encontrado). */
+function locateSections(ws, titles, col, maxRow) {
+  const rows = {};
+  titles.forEach(t => { rows[t] = null; });
+  for (let r = 1; r <= maxRow; r++) {
+    const v = normLabel(cellVal(ws, `${col}${r}`));
+    if (!v) continue;
+    const match = titles.find(t => rows[t] === null && normLabel(t) === v);
+    if (match) rows[match] = r;
+  }
+  const ranges = {};
+  titles.forEach((t, i) => {
+    const start = rows[t];
+    if (start === null) { ranges[t] = null; return; }
+    let end = start + 40;
+    for (let j = i + 1; j < titles.length; j++) {
+      if (rows[titles[j]] !== null) { end = rows[titles[j]] - 1; break; }
+    }
+    // +1 pula a própria linha do título (evita, por ex., que "DADOS DO
+    // EMPREENDIMENTO" "bata" com a busca pelo campo "Empreendimento").
+    ranges[t] = [start + 1, end];
+  });
+  return ranges;
+}
+
+/* Procura, dentro de um intervalo de linhas, a primeira linha cujo texto da
+   coluna `col` contém `keyword` (case-insensitive). */
+function findFieldRow(ws, col, keyword, range) {
+  if (!range) return null;
+  const target = normLabel(keyword);
+  for (let r = range[0]; r <= range[1]; r++) {
+    const v = normLabel(cellVal(ws, `${col}${r}`));
+    if (v && v.includes(target)) return r;
+  }
+  return null;
+}
+
+function fieldVal(ws, col, keyword, range, valueCol) {
+  const r = findFieldRow(ws, col, keyword, range);
+  return r ? cellVal(ws, `${valueCol}${r}`) : undefined;
+}
+
+/* Varre uma faixa de linhas/colunas procurando uma célula que contenha o
+   texto informado. Usado pra achar a linha de cabeçalho das tabelas
+   (Controle EAP, Detalhado) sem depender de número de linha fixo. */
+function findRowContaining(ws, keyword, maxRow, maxCol) {
+  const target = normLabel(keyword);
+  for (let r = 1; r <= maxRow; r++) {
+    for (let ci = 0; ci <= maxCol; ci++) {
+      const col = XLSX.utils.encode_col(ci);
+      const v = normLabel(cellVal(ws, `${col}${r}`));
+      if (v && v.includes(target)) return r;
+    }
+  }
+  return null;
+}
+
+const SECTIONS_RESUMO = [
+  'GERENCIAMENTO DE OBRAS',
+  'DADOS DO EMPREENDIMENTO',
+  'PERÍODO E DATA DO APORTE',
+  'DADOS BANCÁRIOS PARA DESCIDA DE RECURSOS',
+  'RESUMO GERENCIAL DO APORTE',
+  'VALOR DO APORTE SOLICITADO',
+  'RATEIO DO APORTE POR INVESTIDOR (OPCIONAL)',
+  'EXECUÇÃO ORÇAMENTÁRIA (EAP)',
+];
+
 function extractResumo(wb) {
   const ws = wb.Sheets[SHEET_RESUMO];
-  const g = (addr) => cellVal(ws, addr);
+  const sec = locateSections(ws, SECTIONS_RESUMO, 'B', 300);
 
+  // "DADOS DO EMPREENDIMENTO" é o bloco correto pro card "Identificação"
+  // (identifica o projeto/cliente). "GERENCIAMENTO DE OBRAS" descreve a
+  // própria Trinus e serve só de fallback pra campo que não exista no
+  // bloco do empreendimento (ex.: planilhas em que "Gestor Vertical" só
+  // aparece uma vez, no nível da gerenciadora).
+  const empreendRange = sec['DADOS DO EMPREENDIMENTO'];
+  const gerObrasRange = sec['GERENCIAMENTO DE OBRAS'];
+  function identField(keyword) {
+    let v = fieldVal(ws, 'B', keyword, empreendRange, 'C');
+    if (isEmpty(v)) v = fieldVal(ws, 'B', keyword, gerObrasRange, 'C');
+    return v;
+  }
   const identidade = {
-    empreendimento: g('C7'),
-    cnpj: g('C8'),
-    razaoSocial: g('C9'),
-    gestorVertical: g('C10'),
-    gestorContrato: g('C11'),
+    empreendimento: identField('Empreendimento'),
+    cnpj: identField('CNPJ'),
+    razaoSocial: identField('Razão Social'),
+    gestorVertical: identField('Gestor Vertical'),
+    gestorContrato: identField('Gestor do Contrato'),
   };
 
+  const periodoRange = sec['PERÍODO E DATA DO APORTE'];
+  const periodoRow = findFieldRow(ws, 'B', 'Período de Referência', periodoRange);
+  const dataAporteRow = findFieldRow(ws, 'B', 'Data do Aporte', periodoRange);
   const periodo = {
-    de: g('C21'),
-    ate: g('E21'),
-    dataAporte: g('C22') !== undefined ? g('C22') : g('D22'),
+    de: periodoRow ? cellVal(ws, `C${periodoRow}`) : undefined,
+    ate: periodoRow ? cellVal(ws, `E${periodoRow}`) : undefined,
+    dataAporte: dataAporteRow
+      ? (cellVal(ws, `C${dataAporteRow}`) !== undefined ? cellVal(ws, `C${dataAporteRow}`) : cellVal(ws, `D${dataAporteRow}`))
+      : undefined,
   };
 
+  const bancarioRange = sec['DADOS BANCÁRIOS PARA DESCIDA DE RECURSOS'];
+  const bancoRow = findFieldRow(ws, 'B', 'Banco', bancarioRange);
+  const contaRow = findFieldRow(ws, 'B', 'Conta Corrente', bancarioRange);
   const bancario = {
-    banco: g('C25'),
-    agencia: g('E25'),
-    contaCorrente: g('C26'),
-    cnpjConta: g('E26'),
+    banco: bancoRow ? cellVal(ws, `C${bancoRow}`) : undefined,
+    agencia: bancoRow ? cellVal(ws, `E${bancoRow}`) : undefined,
+    contaCorrente: contaRow ? cellVal(ws, `C${contaRow}`) : undefined,
+    cnpjConta: contaRow ? cellVal(ws, `E${contaRow}`) : undefined,
   };
 
+  const resumoRange = sec['RESUMO GERENCIAL DO APORTE'];
+  const saldoRow = findFieldRow(ws, 'B', 'Saldo Bancário', resumoRange);
   const resumo = {
-    saldoBancarioData: g('D29'),
-    saldoBancario: g('E29'),
-    contasAPagarSistema: g('E30'),
-    contasALancarGerencial: g('E31'),
-    totalSaidas: g('E32'),
-    fundoReserva: g('E33'),
-    valorAporteNecessario: g('E36'),
+    saldoBancarioData: saldoRow ? cellVal(ws, `D${saldoRow}`) : undefined,
+    saldoBancario: saldoRow ? cellVal(ws, `E${saldoRow}`) : undefined,
+    contasAPagarSistema: fieldVal(ws, 'B', 'Contas a Pagar', resumoRange, 'E'),
+    contasALancarGerencial: fieldVal(ws, 'B', 'Contas a Lançar', resumoRange, 'E'),
+    totalSaidas: fieldVal(ws, 'B', 'Total de Saídas', resumoRange, 'E'),
+    fundoReserva: fieldVal(ws, 'B', 'Fundo de Reserva', resumoRange, 'E'),
+    valorAporteNecessario: fieldVal(ws, 'B', 'Valor do Aporte Necessário', sec['VALOR DO APORTE SOLICITADO'], 'E'),
   };
 
+  const eapRange = sec['EXECUÇÃO ORÇAMENTÁRIA (EAP)'];
   const eapResumo = {
-    orcamentoAlvo: g('E44'),
-    incorridoAcumulado: g('E45'),
-    saldoDisponivel: g('E46'),
-    percExecutado: g('E47'),
+    orcamentoAlvo: fieldVal(ws, 'B', 'Orçamento Alvo', eapRange, 'E'),
+    incorridoAcumulado: fieldVal(ws, 'B', 'Incorrido Acumulado', eapRange, 'E'),
+    saldoDisponivel: fieldVal(ws, 'B', 'Saldo Orçamentário Disponível', eapRange, 'E'),
+    percExecutado: fieldVal(ws, 'B', 'Executado do Orçamento', eapRange, 'E'),
   };
 
+  const rateioRange = sec['RATEIO DO APORTE POR INVESTIDOR (OPCIONAL)'];
   const rateio = [];
   let rateioTotal = null;
-  for (let r = 40; r <= 200; r++) {
-    const label = g(`B${r}`);
-    if (isEmpty(label)) break;
-    const row = { investidor: label, percentual: g(`D${r}`), valor: g(`E${r}`) };
-    if (String(label).trim().toUpperCase() === 'TOTAL') {
-      rateioTotal = row;
-      break;
+  const rateioHeaderRow = findFieldRow(ws, 'B', 'Investidor', rateioRange);
+  if (rateioHeaderRow && rateioRange) {
+    for (let r = rateioHeaderRow + 1; r <= rateioRange[1]; r++) {
+      const label = cellVal(ws, `B${r}`);
+      if (isEmpty(label)) break;
+      const row = { investidor: label, percentual: cellVal(ws, `D${r}`), valor: cellVal(ws, `E${r}`) };
+      if (String(label).trim().toUpperCase() === 'TOTAL') {
+        rateioTotal = row;
+        break;
+      }
+      rateio.push(row);
     }
-    rateio.push(row);
   }
 
   return { identidade, periodo, bancario, resumo, eapResumo, rateio, rateioTotal };
@@ -292,24 +402,62 @@ function extractResumo(wb) {
 function extractEAP(wb) {
   const ws = wb.Sheets[SHEET_EAP];
   const lastRow = XLSX.utils.decode_range(ws['!ref']).e.r + 1;
-  const g = (addr) => cellVal(ws, addr);
 
+  // Acha a linha de cabeçalho pela coluna "DESCRIÇÃO" (em vez de assumir
+  // linha 6 fixa), depois mapeia cada coluna esperada pelo texto do
+  // cabeçalho naquela linha (em vez de assumir letra de coluna fixa).
+  let headerRow = null;
+  for (let r = 1; r <= Math.min(20, lastRow) && !headerRow; r++) {
+    for (let ci = 0; ci <= 20; ci++) {
+      const col = XLSX.utils.encode_col(ci);
+      const v = normLabel(cellVal(ws, `${col}${r}`));
+      if (v.includes('DESCRICAO') || v.includes('DESCRIÇÃO')) { headerRow = r; break; }
+    }
+  }
+  if (!headerRow) {
+    throw new Error('Não encontrei a coluna "DESCRIÇÃO" na aba "Controle EAP". Verifique se o cabeçalho da tabela não foi alterado.');
+  }
+
+  const HEADER_ALIASES = {
+    itemPl: ['ITEM_PL', 'ITEM PL'],
+    codServico: ['COD_SERVICO', 'CÓD. SERVIÇO', 'COD SERVICO'],
+    descricao: ['DESCRICAO', 'DESCRIÇÃO'],
+    tipo: ['TIPO_HIERARQUICO', 'TIPO'],
+    nivel: ['NIVEL', 'NÍVEL'],
+    orcado: ['VALOR ORÇADO', 'VALOR ORCADO', 'ORÇADO'],
+    incorrido: ['VALOR INCORRIDO', 'INCORRIDO'],
+    saldo: ['SALDO DE ORÇAMENTO', 'SALDO DE ORCAMENTO', 'SALDO'],
+  };
+  const colMap = {};
+  for (let ci = 0; ci <= 20; ci++) {
+    const col = XLSX.utils.encode_col(ci);
+    const v = normLabel(cellVal(ws, `${col}${headerRow}`));
+    if (!v) continue;
+    Object.keys(HEADER_ALIASES).forEach(key => {
+      if (!colMap[key] && HEADER_ALIASES[key].some(alias => v.includes(alias))) colMap[key] = col;
+    });
+  }
+  if (!colMap.nivel) {
+    throw new Error('Não encontrei a coluna "NÍVEL" na aba "Controle EAP". Verifique se o cabeçalho da tabela não foi alterado.');
+  }
+
+  const g = (col, r) => (col ? cellVal(ws, `${col}${r}`) : undefined);
   let grandTotal = null;
   const rows = [];
 
-  for (let r = 6; r <= lastRow; r++) {
-    const descricao = g(`D${r}`);
+  for (let r = headerRow + 1; r <= lastRow; r++) {
+    const descricao = g(colMap.descricao, r);
     if (isEmpty(descricao)) continue;
-    const nivelRaw = g(`F${r}`);
+    const nivelRaw = g(colMap.nivel, r);
     const row = {
-      itemPl: g(`B${r}`),
-      codServico: g(`C${r}`),
+      itemPl: g(colMap.itemPl, r),
+      codServico: g(colMap.codServico, r),
       descricao,
-      tipo: g(`E${r}`),
+      tipo: g(colMap.tipo, r),
       nivel: isEmpty(nivelRaw) ? null : Number(nivelRaw),
-      orcado: g(`I${r}`),
-      incorrido: g(`J${r}`),
-      saldo: g(`K${r}`),
+      orcado: g(colMap.orcado, r),
+      incorrido: g(colMap.incorrido, r),
+      saldo: g(colMap.saldo, r),
     };
     if (row.nivel === null) {
       grandTotal = row;
@@ -340,12 +488,17 @@ function readTable(ws, headerRow, colLetters, textColumns) {
 
 function extractDetalhado(wb) {
   const ws = wb.Sheets[SHEET_DET];
+  // Acha a linha de cabeçalho pela coluna "ATUALIZACAO" (1º cabeçalho da
+  // tabela de Pagamentos) em vez de assumir linha 5 fixa — protege contra
+  // uma linha extra ser inserida/removida acima do cabeçalho. As 3 tabelas
+  // (Pagamentos/Contratos/Projeção) compartilham a mesma linha de cabeçalho.
+  const headerRow = findRowContaining(ws, 'ATUALIZACAO', 15, 35) || 5;
   return {
     // PROCESSO (coluna I) é exibido com formatação de texto própria do Excel (ex: "17-Jan"),
     // não deve ser reinterpretado como data.
-    pagamentos: readTable(ws, 5, ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N'], ['I']),
-    contratos: readTable(ws, 5, ['P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y']),
-    projecao: readTable(ws, 5, ['AB', 'AC', 'AD']),
+    pagamentos: readTable(ws, headerRow, ['B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N'], ['I']),
+    contratos: readTable(ws, headerRow, ['P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y']),
+    projecao: readTable(ws, headerRow, ['AB', 'AC', 'AD']),
   };
 }
 
