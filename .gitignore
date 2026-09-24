@@ -8,3 +8,5 @@ EXEMPLO DE BASE DE DADOS.xlsx
 02_CRONOGRAMA*.xml
 **/*CRONOGRAMA*.xml
 **/base de teste/
+# PDFs reais de exemplo do Conversor de Verbas Rescisórias (nomes e salários de funcionários), só a nível informativo
+**/EXEMPLOS DE PDF/

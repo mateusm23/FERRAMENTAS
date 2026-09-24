@@ -39,9 +39,11 @@ ferramentas/
     ├── Efetivo de Obra/
     │   ├── EFETIVO DE OBRA.html               (ativa, card visível — única ferramenta sem CDN, tudo inline)
     │   └── base de teste/                       (arquivos reais de exemplo, nunca commitar, ver .gitignore)
-    └── Chamada de Aporte Semanal/
-        ├── CHAMADA DE APORTE SEMANAL.html      (ativa, card visível, gera PDF a partir do Excel)
-        └── Modelo_Chamada_de_Aporte_Semanal.xlsx (modelo pra download, clone sanitizado do arquivo real - ver seção abaixo)
+    ├── Chamada de Aporte Semanal/
+    │   ├── CHAMADA DE APORTE SEMANAL.html      (ativa, card visível, gera PDF a partir do Excel)
+    │   └── Modelo_Chamada_de_Aporte_Semanal.xlsx (modelo pra download, clone sanitizado do arquivo real - ver seção abaixo)
+    └── Conversor de Verbas Rescisórias/
+        └── CONVERSOR DE VERBAS RESCISORIAS.html (ativa, card visível, PDF do UAU! -> Excel tabulado)
 ```
 
 ## Cards do portal (`index.html`) — o que está visível/oculto e por quê
@@ -50,7 +52,8 @@ ferramentas/
   Análise Física do Projeto (v4), Relatório Semanal de Obra (Agilean e MS
   Project), Gerador de Linha de Balanço, Programação Semanal (Prevision),
   Efetivo de Obra (seção **Outros**, nova em 2026-08-01), Chamada de Aporte
-  Semanal (seção **Outros**, nova em 2026-08-10).
+  Semanal (seção **Outros**, nova em 2026-08-10), Conversor de Verbas
+  Rescisórias (seção **Outros**, nova em 2026-09-24).
 - **Ocultos** (`style="display:none"` no `<a class="tool-card">`):
   - Programação Semanal **HISTÓRICO** — versão anterior, mantida só como referência.
   - Análise Física do Projeto **v3** — obsoleta, substituída pela v4 (que tem
@@ -612,6 +615,104 @@ a pedido explícito do usuário depois de ver a primeira versão redesenhada.
     3 abas usadas pela ferramenta) por nome do cliente, nomes de fornecedor
     reais e trecho da URL do SharePoint, pra garantir que nada sensível
     sobrou em aba oculta (CONFIG), metadado ou `customXml`.
+
+## Conversor de Verbas Rescisórias (Outros)
+
+Arquivo: `Outros/Conversor de Verbas Rescisórias/CONVERSOR DE VERBAS RESCISORIAS.html`.
+Lê o PDF "Simulação de rescisão de contrato de trabalho" do **UAU!** (relatório
+que o financeiro/RH gera por empresa/obra) e exporta Excel tabulado, uma linha
+por funcionário, pra usar em outras planilhas. Tudo local no navegador (pdf.js
+3.11.174 + ExcelJS 4.3.0, ambos via cdnjs).
+
+- **PDFs de exemplo**: ficam em `PORTAL DE FERRAMENTAS/EXEMPLOS DE PDF/` (5
+  arquivos: Novitta, Quebec, Orla, Be Bonifacio, Be Kaa, mês ref. 09/2026), **fora
+  do repositório** e cobertos por `**/EXEMPLOS DE PDF/` no `.gitignore` (têm
+  nome e salário real de funcionário, repositório é público). Só a nível
+  informativo, decisão do usuário: nunca commitar.
+- **Leitura por posição, não por ordem de texto**: o texto bruto do PDF sai
+  embaralhado (principalmente o Be Kaa). Cada funcionário ocupa **2 linhas** no
+  PDF (linha A: salário base, qtde férias vencidas, fer. venc., meses 13º, 13º,
+  aviso, FGTS, INSS, total; linha B: sal.+médias, meses férias prop., fer. prop.,
+  meses 13º ind., 13º ind., saldo sal., multa FGTS) e viram uma linha só. A
+  coluna de cada número é decidida pelos separadores `|` da linha de cabeçalho
+  (`acharSeparadores()`), usando o **centro** do texto (não a borda direita, que
+  fica a 2pt do separador). Se não achar os 9 separadores, cai em posições fixas
+  proporcionais à largura da página.
+- **Empresa/Obra/Total ficam à direita do 1º separador**: a primeira versão
+  filtrava só o texto à esquerda dele pra achar "Empresa:" e "Obra:", e o nome
+  da empresa/obra (que começa depois) sumia, deixando código e nome vazios em
+  tudo. Passou despercebido nos PDFs de 1 obra porque a conferência ainda
+  fechava (tudo caía no mesmo grupo vazio); só a Orla, com 2 obras, denunciou.
+  Lição: a conferência precisa ser por grupo com código preenchido, e o teste
+  precisa imprimir os grupos (empresa/obra), não só "0 divergências".
+- **Conferência automática (o que dá segurança pra usar os números)**: soma dos
+  funcionários por obra e por empresa contra as linhas "Total obra" e "Total
+  Empresa" impressas no PDF (10 campos, tolerância de 5 centavos), e o Total de
+  cada funcionário contra a soma das 9 verbas dele (fer. venc. + fer. prop. +
+  13º + 13º ind. + aviso + saldo sal. + FGTS + multa FGTS + INSS). Nos 5 PDFs de
+  exemplo (103 funcionários, 6 obras) tudo fecha em centavos. Se não fechar, a
+  ferramenta avisa mas deixa exportar. Também avisa se o mesmo funcionário
+  (empresa + matrícula + mês) aparece em dois arquivos (PDF subido em duplicidade).
+- **Salário base e Sal.+médias não têm total impresso** no PDF, então não são
+  conferidos contra total, só lidos.
+- **Colunas "M" do PDF** (confirmado no guia do usuário, PASSO A PASSO.MD):
+  linha 1 tem Qtde. (períodos de férias vencidas) e M (meses de 13º); linha 2
+  tem M (meses de férias proporcionais) e M (meses de projeção do aviso, sempre
+  1,0). No Excel a coluna de meses do aviso se chama "Meses projeção aviso".
+- **Organização das abas (pedido do usuário)**: a ferramenta pergunta na tela 2:
+  **uma aba só (padrão)**, uma aba por empresa ou uma aba por obra, mais a
+  opção de incluir a aba "Resumo" (totais por obra + "Confere com o PDF?"). Cada
+  aba de dados é uma **Tabela do Excel** (`addTable`, filtro e estilo), com
+  Empresa/Obra sempre como colunas. Nomes de aba truncados em 31 caracteres e
+  deduplicados.
+- **Tipos no Excel**: valores como número (formato `#,##0.00`, meses `0.0`),
+  admissão e mês de referência como data real (`dd/mm/aaaa`). Matrícula e código
+  da empresa viram **número** quando só têm dígitos e não começam com zero (pra
+  PROCV com outras planilhas), senão ficam texto.
+- **Não foi possível abrir o .xlsx no Excel de verdade** neste ambiente: validado
+  relendo com ExcelJS (abas, tabela, tipos, formatos, somas) e rodando o fluxo
+  completo no Chrome (upload dos 5 PDFs, 3 modos de aba, download). Se o Excel
+  reclamar de "reparar arquivo", suspeitar primeiro das Tabelas (`addTable`).
+- **Origem do relatório e parâmetros (tutorial da tela 1, do guia do usuário)**:
+  UAU!, módulo Folha, Relatórios > Rescisão > "Simulação de rescisão de
+  contrato" (rotina nativa, não aparece no gerador de relatórios). Uso: calcular
+  o **passivo rescisório já em aberto** por obra (quanto custaria desligar hoje
+  todos), pra compor a tendência de custo ao término; a projeção futura é feita
+  à parte. Parâmetros: **Data Referência sempre dia 01 do mês vigente** (com o
+  último dia do mês o sistema conta 30 dias de saldo + 30 indenizados e o saldo
+  duplica com a folha), médias no mês anterior, premissas fixas (aviso
+  indenizado Lei 12.506, sem afastamentos no 13º, sem férias em dobro, sem
+  desconto de faltas). O print do usuário (PARAMETROS.png) mostra 30/09/2026 na
+  data, contradizendo o guia; a legenda no tutorial avisa que o correto é dia 01.
+  As duas imagens do tutorial vão **embutidas em base64** no HTML (mantém o
+  arquivo autônomo); não têm dado sensível.
+- **Checagens automáticas dos parâmetros** (`avaliarParametros()`, dentro do
+  bloco do parser): data da rescisão diferente de dia 01; médias que não são o
+  mês anterior à rescisão; saldo de salário zerado em algum colaborador (sinal de
+  folha do mês já calculada, ponto de atenção do guia). Nos 5 PDFs de exemplo, só
+  o Quebec dispara aviso (médias em 01/09 em vez de 01/08, diferente dos outros
+  4). Não bloqueiam exportação. A aba Resumo do Excel só usa a conferência de
+  totais, não esses avisos.
+- **Legenda das colunas (2026-09-24, pedido do usuário)**: array `LEGENDA` no
+  script é a fonte única de duas saídas: aba **"Legenda"** do Excel (checkbox
+  marcado por padrão, última aba, grupos com célula mesclada, dicas no rodapé) e
+  duas seções recolhíveis na ferramenta (tela 1 e tela 2, via `htmlLegenda()`).
+  Se mudar/adicionar coluna em `COLUNAS_DADOS`, tem que mudar `LEGENDA` na mesma
+  ordem (o teste compara os dois). **Regras de cálculo documentadas, todas
+  conferidas nos 103 colaboradores dos PDFs de exemplo, ao centavo**: 13º = Sal.+médias
+  ÷ 12 × meses 13º; 13º ind. = Sal.+médias ÷ 12 × meses de projeção do aviso; Fér.
+  prop. = (Sal.+médias ÷ 12 × meses) × 4/3 (1/3 constitucional); Saldo sal. =
+  Salário base ÷ 30 (1 dia, por causa da data dia 01); Aviso = 0 se menos de 1 ano
+  de casa, senão Sal.+médias ÷ 30 × (30 + 3 × anos completos); **FGTS = 8% e INSS
+  empresa = 20%, ambos sobre Fér. prop. + 13º + 13º ind. + Aviso + Saldo sal.**
+  (férias vencidas ficam fora dessa base). A **Multa FGTS** NÃO foi reproduzida: é
+  40% do FGTS acumulado do colaborador, dado que não está no PDF (a legenda diz que
+  vem do UAU!, inferência pela razão multa/FGTS de 1,7x a 5,5x).
+- **Design (2026-09-24)**: stepper de 3 passos, tutorial em cards com as imagens e
+  seções recolhíveis (`<details>`, sem JS), cards de opção de aba, KPIs com ícone,
+  conferência por arquivo (arquivos sem observação viram uma linha só quando há
+  mais de um), prévia com busca e coluna Nome fixa, barra de ação fixa embaixo.
+  Passos 2 e 3 do stepper vivem na mesma tela (`irParaTela()`).
 
 ## Como testar localmente
 
