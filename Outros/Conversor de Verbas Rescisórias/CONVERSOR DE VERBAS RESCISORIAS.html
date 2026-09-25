@@ -201,6 +201,19 @@ details.saiba .conteudo strong { color: var(--navy); }
 }
 .arquivo-remover:hover { color: var(--err); background: var(--err-l); }
 
+/* ---- exemplos ---- */
+.exemplos {
+  margin-top: 16px; padding: 14px 16px; border-radius: 12px; background: var(--tint);
+  display: grid; grid-template-columns: 1fr auto; gap: 8px 16px; align-items: center;
+}
+.exemplos .btn { background: var(--white); color: var(--primary); border: 1px solid var(--border-strong); }
+.exemplos .btn:hover { background: var(--light); }
+.exemplos-txt { font-size: 12.5px; color: var(--navy); line-height: 1.55; }
+.exemplos-links { grid-column: 1 / -1; font-size: 12px; color: var(--muted); }
+.exemplos-links a { color: var(--primary); font-weight: 600; text-decoration: none; }
+.exemplos-links a:hover { text-decoration: underline; }
+@media (max-width: 640px) { .exemplos { grid-template-columns: 1fr; } }
+
 /* ---- botões ---- */
 .btn {
   font-family: inherit; font-size: 13.5px; font-weight: 700; border: none; border-radius: 10px;
@@ -472,6 +485,16 @@ table.previa td.cod { color: var(--faint); font-variant-numeric: tabular-nums; }
       </div>
 
       <div id="arquivo-lista" class="arquivo-lista"></div>
+
+      <div class="exemplos">
+        <div class="exemplos-txt"><strong>Quer só testar?</strong> Use os PDFs de exemplo, todos com dados fictícios. Um deles (Gama) traz 2 pontos de atenção de propósito, para você ver a conferência funcionando.</div>
+        <button type="button" class="btn btn-secondary" id="btn-exemplos">Carregar os 3 exemplos</button>
+        <div class="exemplos-links">Ou baixe e arraste:
+          <a href="pdfs-exemplo/Simula%C3%A7%C3%A3o%20rescis%C3%A3o%20Exemplo%20Alfa%200926.pdf" download>Alfa</a>,
+          <a href="pdfs-exemplo/Simula%C3%A7%C3%A3o%20rescis%C3%A3o%20Exemplo%20Beta%200926.pdf" download>Beta</a>,
+          <a href="pdfs-exemplo/Simula%C3%A7%C3%A3o%20rescis%C3%A3o%20Exemplo%20Gama%200926.pdf" download>Gama</a>
+        </div>
+      </div>
     </div>
 
     <div class="btn-row">
@@ -914,6 +937,26 @@ function renderArquivos() {
   }).join('');
   $('btn-continuar').disabled = !state.arquivos.some(a => a.status === 'ok');
 }
+const EXEMPLOS = ['Simulação rescisão Exemplo Alfa 0926.pdf', 'Simulação rescisão Exemplo Beta 0926.pdf', 'Simulação rescisão Exemplo Gama 0926.pdf'];
+$('btn-exemplos').addEventListener('click', async () => {
+  mostrarCarregando('Carregando exemplos...');
+  await pausa();
+  let files;
+  try {
+    files = await Promise.all(EXEMPLOS.map(async nome => {
+      const r = await fetch('pdfs-exemplo/' + encodeURIComponent(nome));
+      if (!r.ok) throw new Error(nome);
+      return new File([await r.blob()], nome, { type: 'application/pdf' });
+    }));
+  } catch (err) {
+    esconderCarregando();
+    alert('Não consegui carregar os exemplos automaticamente (isso acontece quando o arquivo é aberto direto do disco). Baixe os PDFs pelos links abaixo do botão e arraste para a área de upload.');
+    return;
+  }
+  esconderCarregando();
+  await receberArquivos(files);
+});
+
 $('arquivo-lista').addEventListener('click', e => {
   const b = e.target.closest('.arquivo-remover');
   if (!b) return;

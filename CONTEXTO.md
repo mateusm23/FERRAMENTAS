@@ -732,6 +732,14 @@ por funcionário, pra usar em outras planilhas. Tudo local no navegador (pdf.js
   coluna como "13º salário", que precisam bater com o Excel. Os erros
   `ERR_NAME_NOT_RESOLVED` no console vêm do `tracker.js` do portal (countapi.xyz),
   comum a todas as ferramentas.
+- **PDFs de exemplo na ferramenta (2026-09-24)**: pasta `pdfs-exemplo/` ao lado do
+  HTML, com 3 PDFs **100% fictícios** (Alfa, Beta, Gama) no layout do UAU!, gerados por
+  script (dados inventados, totais fechando pelas regras confirmadas). O botão
+  "Carregar os 3 exemplos" faz `fetch` dessa pasta e injeta os arquivos no fluxo normal
+  (só funciona por http; do disco cai num aviso e nos links de download). O Gama
+  dispara 2 avisos de propósito (médias em 01/09 e saldo de salário zerado). Os PDFs
+  **reais** (`PORTAL DE FERRAMENTAS/EXEMPLOS DE PDF/`) continuam fora do repositório
+  (público, têm nome e salário de funcionário real).
 - **Design (2026-09-24)**: stepper de 3 passos, tutorial em cards com as imagens e
   seções recolhíveis (`<details>`, sem JS), cards de opção de aba, KPIs com ícone,
   conferência por arquivo (arquivos sem observação viram uma linha só quando há
