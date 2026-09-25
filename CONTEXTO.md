@@ -708,6 +708,30 @@ por funcionário, pra usar em outras planilhas. Tudo local no navegador (pdf.js
   (férias vencidas ficam fora dessa base). A **Multa FGTS** NÃO foi reproduzida: é
   40% do FGTS acumulado do colaborador, dado que não está no PDF (a legenda diz que
   vem do UAU!, inferência pela razão multa/FGTS de 1,7x a 5,5x).
+- **Identidade Trinus (teste de paleta, 2026-09-24)**: tela e Excel seguem o brand
+  (Azul Conexão #1A6EE8, Oceano #1A3EB5, Navy #000D5C, Horizonte #0FE4F5, neutros
+  #191A1C/#F5F5F5, Plus Jakarta Sans, degradê 120° institucional, raios 8 a 12px,
+  sem sombra pesada, ícones de linha com casa e seta). O banner é só degradê + ícone
+  (o padrão de setas foi testado e reprovado pelo usuário). Cores de estado (verde,
+  âmbar, vermelho) ficam fora da paleta de propósito. **Excel**: sem linhas de grade,
+  faixa de título com degradê (célula mesclada A1:F2 na aba de dados, Navy contínuo
+  no resto da linha, que é a cor final do degradê), filete Azul Horizonte na linha 3,
+  cabeçalho Navy com borda inferior Horizonte, linhas zebradas, coluna Total
+  destacada, cor de aba. Tabela do Excel com `theme: null` (sem estilo padrão,
+  todo o visual é por célula). Cabeçalho da tabela na linha 4 (`CABECALHO_DADOS`).
+  **Atenção**: o Excel só mostra Plus Jakarta Sans se a fonte estiver instalada na
+  máquina de quem abre; sem ela, substitui (no teste desta máquina virou Arial).
+  Validado abrindo o .xlsx no Excel real via COM e exportando as abas pra PDF.
+- **Padrão da pasta TEMPLATES DE IA (2026-09-24)**: o código desta ferramenta segue
+  o padrão do deck de referência do usuário. Tokens em `:root` com os nomes
+  `--primary/--secondary/--accent/--navy/--ink/--light/--white/--muted/--border`
+  (mais apoio: `--tint`, `--border-strong`, `--faint`, e estados `--ok/--warn/--err`
+  com `-l` e `-b`), CSS agrupado por comentários `/* ---- secao ---- */`, e a regra
+  geral de texto: nada de travessão e todo texto começa com letra maiúscula, nunca
+  com número ("Funcionários: 35", não "35 funcionários"). Única exceção: nomes de
+  coluna como "13º salário", que precisam bater com o Excel. Os erros
+  `ERR_NAME_NOT_RESOLVED` no console vêm do `tracker.js` do portal (countapi.xyz),
+  comum a todas as ferramentas.
 - **Design (2026-09-24)**: stepper de 3 passos, tutorial em cards com as imagens e
   seções recolhíveis (`<details>`, sem JS), cards de opção de aba, KPIs com ícone,
   conferência por arquivo (arquivos sem observação viram uma linha só quando há

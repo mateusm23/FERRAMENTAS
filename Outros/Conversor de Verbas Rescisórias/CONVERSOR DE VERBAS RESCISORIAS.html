@@ -4,58 +4,63 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Conversor de Verbas Rescisórias</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧾</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231A6EE8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M4 11l8-7 8 7v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z'/><path d='M9 15h6M12.5 12.5L15 15l-2.5 2.5'/></svg>">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
 :root {
-  --navy:    #1a2744;
-  --blue:    #2a4a8e;
-  --mid:     #3d6abf;
-  --pale:    #dce8f8;
-  --g1:      #f4f6fa;
-  --g2:      #e8edf5;
-  --g3:      #c5cedd;
-  --g4:      #8a97ab;
-  --g5:      #4a5568;
-  --text:    #1e2a3a;
-  --teal:    #0e7490;
-  --teal-l:  #e3f4f8;
-  --green:   #0f9b6e;
-  --green-l: #e8f8f2;
-  --green-b: #b8e6da;
-  --amber:   #b45309;
-  --amber-l: #fff4e6;
-  --amber-b: #fcd9b0;
-  --red:     #c0392b;
-  --red-l:   #fdecea;
-  --red-b:   #f1b9b3;
-  --shadow:  0 2px 12px rgba(26,39,68,.07);
+  /* paleta institucional Trinus (mesmos nomes do deck de referência) */
+  --primary:   #1A6EE8;   /* Azul Conexão */
+  --secondary: #1A3EB5;   /* Azul Oceano */
+  --accent:    #0FE4F5;   /* Azul Horizonte */
+  --navy:      #000D5C;
+  --ink:       #191A1C;
+  --light:     #F5F5F5;
+  --white:     #FFFFFF;
+  --muted:     rgba(25,26,28,0.68);
+  --border:    #E4E4E4;
+  /* apoio da interface */
+  --tint:          #E4EDFC;   /* tom claro da primária */
+  --border-strong: #CDCFD5;
+  --faint:         #8B8E97;
+  /* estados (funcionais, fora da paleta de marca) */
+  --ok:      #0F9B6E;
+  --ok-l:    #E8F8F2;
+  --ok-b:    #B8E6DA;
+  --warn:    #B45309;
+  --warn-l:  #FFF4E6;
+  --warn-b:  #FCD9B0;
+  --err:     #C0392B;
+  --err-l:   #FDECEA;
+  --err-b:   #F1B9B3;
+  --shadow:  0 1px 2px rgba(25,26,28,.05);
+  --grad-inst: linear-gradient(120deg, #1A6EE8, #000D5C);
+  --grad-prim: linear-gradient(120deg, #0FE4F5, #1A6EE8, #1A3EB5);
 }
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-  background: var(--g1); color: var(--text); min-height: 100vh;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  background: var(--light); color: var(--ink); min-height: 100vh;
   display: flex; flex-direction: column;
 }
 
-/* HEADER */
+/* ---- header ---- */
 .header {
-  background: linear-gradient(135deg, var(--navy) 0%, #1e3a6e 100%);
+  background: var(--grad-inst);
   padding: 30px 32px 34px; text-align: center; position: relative; overflow: hidden;
-}
-.header::before {
-  content: '';
-  position: absolute; inset: 0;
-  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='0.025'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E");
 }
 .header-content { position: relative; }
 .header-icon {
-  width: 56px; height: 56px; margin: 0 auto 12px; border-radius: 16px; font-size: 28px;
+  width: 56px; height: 56px; margin: 0 auto 12px; border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18);
+  background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.22);
 }
-.header h1 { font-size: 24px; font-weight: 800; color: #fff; letter-spacing: -.02em; margin-bottom: 6px; }
+.header-icon svg { width: 30px; height: 30px; stroke: #fff; fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.header-icon svg .acc { stroke: var(--accent); }
+.header h1 { font-size: 24px; font-weight: 800; color: #fff; letter-spacing: -.03em; margin-bottom: 6px; }
 .header p { color: rgba(255,255,255,.6); font-size: 13px; max-width: 620px; margin: 0 auto; line-height: 1.5; }
 .header a.voltar-portal {
   position: absolute; top: 0; left: 0; color: rgba(255,255,255,.65); font-size: 12.5px;
@@ -65,19 +70,19 @@ body {
 
 .main { flex: 1; max-width: 1100px; width: 100%; margin: 0 auto; padding: 26px 24px 48px; }
 
-/* STEPPER */
+/* ---- stepper ---- */
 .stepper { display: flex; align-items: center; justify-content: center; gap: 0; margin-bottom: 26px; }
-.step { display: flex; align-items: center; gap: 9px; font-size: 12.5px; font-weight: 700; color: var(--g4); }
+.step { display: flex; align-items: center; gap: 9px; font-size: 12.5px; font-weight: 700; color: var(--faint); }
 .step .bolinha {
   width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-  font-size: 12px; background: var(--g2); color: var(--g4); transition: background .2s, color .2s;
+  font-size: 12px; background: var(--border); color: var(--faint); transition: background .2s, color .2s;
 }
 .step.ativo { color: var(--navy); }
-.step.ativo .bolinha { background: linear-gradient(135deg, var(--blue), var(--mid)); color: #fff; box-shadow: 0 3px 10px rgba(61,106,191,.35); }
-.step.feito { color: var(--green); }
-.step.feito .bolinha { background: var(--green); color: #fff; }
-.step-linha { width: 48px; height: 2px; background: var(--g2); margin: 0 12px; border-radius: 2px; }
-.step-linha.feito { background: var(--green); }
+.step.ativo .bolinha { background: linear-gradient(120deg, var(--primary), var(--secondary)); color: #fff; }
+.step.feito { color: var(--navy); }
+.step.feito .bolinha { background: var(--accent); color: var(--navy); }
+.step-linha { width: 48px; height: 2px; background: var(--border); margin: 0 12px; border-radius: 2px; }
+.step-linha.feito { background: var(--accent); }
 @media (max-width: 640px) { .step span.rot { display: none; } .step-linha { width: 24px; margin: 0 6px; } }
 
 .screen { display: none; }
@@ -85,257 +90,261 @@ body {
 @keyframes fadein { from { opacity:0; transform: translateY(6px);} to { opacity:1; transform:none; } }
 
 .card {
-  background: #fff; border-radius: 16px; border: 1px solid var(--g2);
+  background: #fff; border-radius: 12px; border: 1px solid var(--border);
   box-shadow: var(--shadow); padding: 24px 26px; margin-bottom: 20px;
 }
 .card-titulo { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
 .card-num {
   width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-  background: var(--pale); color: var(--blue); font-size: 13px; font-weight: 800;
+  background: var(--tint); color: var(--secondary); font-size: 13px; font-weight: 800;
 }
-.card h2 { font-size: 16px; font-weight: 800; color: var(--navy); letter-spacing: -.01em; }
-.card .card-hint { font-size: 12.5px; color: var(--g4); margin: 2px 0 18px 40px; line-height: 1.55; }
+.card h2 { font-size: 16px; font-weight: 800; color: var(--navy); letter-spacing: -.02em; }
+.card .card-hint { font-size: 12.5px; color: var(--faint); margin: 2px 0 18px 40px; line-height: 1.55; }
 
-/* GUIA UAU */
-.guia { border-color: #cfe9f0; background: linear-gradient(180deg, #fff 0%, #fbfeff 100%); }
-.guia .card-num { background: var(--teal-l); color: var(--teal); }
+/* ---- guia uau ---- */
+.guia { border-color: #D5E3FB; }
+.guia .card-num { background: var(--tint); color: var(--primary); }
 .guia-objetivo {
-  display: flex; gap: 12px; align-items: flex-start; background: var(--teal-l); border-radius: 12px;
-  padding: 12px 16px; font-size: 12.5px; line-height: 1.55; color: #0b566b; margin-bottom: 20px;
+  display: flex; gap: 12px; align-items: flex-start; background: var(--tint); border-radius: 12px;
+  padding: 12px 16px; font-size: 12.5px; line-height: 1.55; color: var(--navy); margin-bottom: 20px;
 }
-.guia-objetivo .ico { font-size: 18px; line-height: 1.3; }
+.guia-objetivo .ico { flex-shrink: 0; width: 22px; height: 22px; }
+.guia-objetivo .ico svg { width: 22px; height: 22px; stroke: var(--primary); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .passos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 @media (max-width: 900px) { .passos { grid-template-columns: 1fr; } }
-.passo { background: #fff; border: 1px solid var(--g2); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.passo { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
 .passo-cab { display: flex; align-items: center; gap: 10px; }
 .passo-num {
-  width: 26px; height: 26px; border-radius: 8px; background: linear-gradient(135deg, var(--teal), #22b8cf); color: #fff;
+  width: 26px; height: 26px; border-radius: 8px; background: var(--grad-prim); color: #fff;
   display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; flex-shrink: 0;
 }
-.passo h3 { font-size: 13.5px; font-weight: 800; color: var(--navy); }
-.passo p { font-size: 12.5px; color: var(--g5); line-height: 1.6; }
+.passo h3 { font-size: 13.5px; font-weight: 800; color: var(--navy); letter-spacing: -.01em; }
+.passo p { font-size: 12.5px; color: var(--muted); line-height: 1.6; }
 .passo p strong { color: var(--navy); }
 .passo .quadro {
-  border: 1px solid var(--g2); border-radius: 10px; background: var(--g1); padding: 8px;
+  border: 1px solid var(--border); border-radius: 10px; background: var(--light); padding: 8px;
   display: flex; align-items: center; justify-content: center; min-height: 120px;
 }
-.passo .quadro img { max-width: 100%; height: auto; display: block; border-radius: 6px; box-shadow: 0 1px 6px rgba(26,39,68,.15); }
-.passo .legenda { font-size: 11px; color: var(--g4); line-height: 1.45; margin-top: -2px; }
+.passo .quadro img { max-width: 100%; height: auto; display: block; border-radius: 8px; border: 1px solid var(--border-strong); }
+.passo .legenda { font-size: 11px; color: var(--faint); line-height: 1.45; margin-top: -2px; }
 .caminho { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; font-size: 12px; font-weight: 700; color: var(--navy); }
-.caminho i { font-style: normal; color: var(--g4); font-weight: 400; }
+.caminho i { font-style: normal; color: var(--faint); font-weight: 400; }
 
 details.saiba {
-  border: 1px solid var(--g2); border-radius: 12px; background: #fff; margin-top: 12px; overflow: hidden;
+  border: 1px solid var(--border); border-radius: 12px; background: #fff; margin-top: 12px; overflow: hidden;
 }
 details.saiba > summary {
   list-style: none; cursor: pointer; padding: 13px 16px; font-size: 13px; font-weight: 700; color: var(--navy);
   display: flex; align-items: center; gap: 10px; user-select: none;
 }
 details.saiba > summary::-webkit-details-marker { display: none; }
-details.saiba > summary::after { content: '▾'; margin-left: auto; color: var(--g4); transition: transform .15s; }
+details.saiba > summary::before { content: '→'; color: var(--primary); font-weight: 800; }
+details.saiba > summary::after { content: '▾'; margin-left: auto; color: var(--faint); transition: transform .15s; }
 details.saiba[open] > summary::after { transform: rotate(180deg); }
-details.saiba > summary:hover { background: var(--g1); }
-details.saiba .conteudo { padding: 4px 18px 18px; font-size: 12.5px; color: var(--g5); line-height: 1.65; }
+details.saiba > summary:hover { background: var(--light); }
+details.saiba .conteudo { padding: 4px 18px 18px; font-size: 12.5px; color: var(--muted); line-height: 1.65; }
 details.saiba .conteudo p { margin-bottom: 10px; }
 details.saiba .conteudo strong { color: var(--navy); }
 .tab-guia { width: 100%; border-collapse: collapse; margin: 6px 0 12px; font-size: 12px; }
-.tab-guia th, .tab-guia td { border: 1px solid var(--g2); padding: 7px 10px; text-align: left; vertical-align: top; }
-.tab-guia th { background: var(--pale); color: var(--navy); font-size: 11.5px; }
-.tab-guia tr:nth-child(even) td { background: var(--g1); }
+.tab-guia th, .tab-guia td { border: 1px solid var(--border); padding: 7px 10px; text-align: left; vertical-align: top; }
+.tab-guia th { background: var(--tint); color: var(--navy); font-size: 11.5px; }
+.tab-guia tr:nth-child(even) td { background: var(--light); }
 .tab-guia td.rot { font-weight: 700; color: var(--navy); }
 .checks { display: flex; flex-wrap: wrap; gap: 8px 26px; }
 .tab-legenda td.rot { white-space: nowrap; }
-.tab-legenda tr.grupo td { background: var(--navy); color: #fff; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; padding: 5px 10px; }
+.tab-legenda tr.grupo td { background: var(--navy); color: #fff; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; padding: 5px 10px; }
 .aviso-box { border-radius: 10px; padding: 11px 14px; font-size: 12.5px; line-height: 1.6; margin-bottom: 10px; }
-.aviso-box.info { background: var(--teal-l); color: #0b566b; }
-.aviso-box.atencao { background: var(--amber-l); border: 1px solid var(--amber-b); color: #7a3a06; }
+.aviso-box.info { background: var(--tint); color: var(--navy); }
+.aviso-box.atencao { background: var(--warn-l); border: 1px solid var(--warn-b); color: #7a3a06; }
 .aviso-box strong { color: inherit; }
 .aviso-box:last-child { margin-bottom: 0; }
 
-/* UPLOAD */
+/* ---- upload ---- */
 .dropzone {
-  border: 2px dashed var(--g3); border-radius: 16px; padding: 38px 18px;
+  border: 2px dashed var(--border-strong); border-radius: 12px; padding: 38px 18px;
   text-align: center; cursor: pointer; transition: border-color .15s, background .15s, transform .15s;
-  background: var(--g1);
+  background: var(--light);
 }
-.dropzone:hover, .dropzone.dragover { border-color: var(--mid); background: var(--pale); }
+.dropzone:hover, .dropzone.dragover { border-color: var(--primary); background: var(--tint); }
 .dropzone.dragover { transform: scale(1.01); }
 .dropzone .dz-icone {
-  width: 60px; height: 60px; margin: 0 auto 12px; border-radius: 18px; background: #fff;
-  display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 14px rgba(26,39,68,.1);
+  width: 60px; height: 60px; margin: 0 auto 12px; border-radius: 12px; background: #fff;
+  display: flex; align-items: center; justify-content: center; border: 1px solid var(--border);
 }
-.dropzone .dz-icone svg { width: 30px; height: 30px; stroke: var(--mid); }
-.dropzone .dz-title { font-size: 14.5px; font-weight: 800; color: var(--navy); margin-bottom: 4px; }
-.dropzone .dz-hint { font-size: 12px; color: var(--g4); line-height: 1.5; }
+.dropzone .dz-icone svg { width: 30px; height: 30px; stroke: var(--primary); }
+.dropzone .dz-title { font-size: 14.5px; font-weight: 800; color: var(--navy); margin-bottom: 4px; letter-spacing: -.02em; }
+.dropzone .dz-hint { font-size: 12px; color: var(--faint); line-height: 1.5; }
 .dropzone input[type=file] { display: none; }
 
 .arquivo-lista { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
 .arquivo-item {
   display: flex; align-items: center; gap: 12px; padding: 11px 14px; border-radius: 12px;
-  border: 1px solid var(--g2); background: #fff; font-size: 12.5px; animation: fadein .2s ease;
+  border: 1px solid var(--border); background: #fff; font-size: 12.5px; animation: fadein .2s ease;
 }
 .arquivo-item .a-ico {
   width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
-  font-size: 13px; font-weight: 800; flex-shrink: 0; background: var(--green-l); color: var(--green);
+  font-size: 13px; font-weight: 800; flex-shrink: 0; background: var(--ok-l); color: var(--ok);
 }
-.arquivo-item.ok { border-color: var(--green-b); }
-.arquivo-item.erro { border-color: var(--red-b); background: #fffafa; }
-.arquivo-item.erro .a-ico { background: var(--red-l); color: var(--red); }
-.arquivo-item.atencao { border-color: var(--amber-b); }
-.arquivo-item.atencao .a-ico { background: var(--amber-l); color: var(--amber); }
+.arquivo-item.ok { border-color: var(--ok-b); }
+.arquivo-item.erro { border-color: var(--err-b); background: #fffafa; }
+.arquivo-item.erro .a-ico { background: var(--err-l); color: var(--err); }
+.arquivo-item.atencao { border-color: var(--warn-b); }
+.arquivo-item.atencao .a-ico { background: var(--warn-l); color: var(--warn); }
 .arquivo-nome { flex: 1; min-width: 0; }
 .arquivo-nome b { display: block; font-weight: 700; color: var(--navy); word-break: break-all; }
-.arquivo-status { font-size: 11.5px; color: var(--g5); margin-top: 1px; }
-.arquivo-item.ok .arquivo-status { color: var(--green); }
-.arquivo-item.erro .arquivo-status { color: var(--red); }
-.arquivo-item.atencao .arquivo-status { color: var(--amber); }
+.arquivo-status { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
+.arquivo-item.ok .arquivo-status { color: var(--ok); }
+.arquivo-item.erro .arquivo-status { color: var(--err); }
+.arquivo-item.atencao .arquivo-status { color: var(--warn); }
 .arquivo-remover {
-  background: none; border: none; color: var(--g4); cursor: pointer; font-size: 14px; padding: 6px 8px; border-radius: 8px;
+  background: none; border: none; color: var(--faint); cursor: pointer; font-size: 14px; padding: 6px 8px; border-radius: 8px;
 }
-.arquivo-remover:hover { color: var(--red); background: var(--red-l); }
+.arquivo-remover:hover { color: var(--err); background: var(--err-l); }
 
-/* BOTÕES */
+/* ---- botões ---- */
 .btn {
-  font-family: inherit; font-size: 13.5px; font-weight: 700; border: none; border-radius: 11px;
+  font-family: inherit; font-size: 13.5px; font-weight: 700; border: none; border-radius: 10px;
   padding: 12px 22px; cursor: pointer; transition: transform .1s, box-shadow .15s; display: inline-flex;
   align-items: center; gap: 8px;
 }
 .btn:disabled { opacity: .4; cursor: not-allowed; }
-.btn-primary { background: linear-gradient(90deg, var(--blue), var(--mid)); color: #fff; }
-.btn-primary:not(:disabled):hover { box-shadow: 0 6px 18px rgba(61,106,191,.35); transform: translateY(-1px); }
-.btn-secondary { background: var(--g2); color: var(--g5); }
-.btn-secondary:hover { background: var(--g3); }
+.btn-primary { background: linear-gradient(120deg, var(--primary), var(--secondary)); color: #fff; }
+.btn-primary:not(:disabled):hover { background: linear-gradient(120deg, var(--secondary), var(--navy)); }
+.btn-secondary { background: var(--border); color: var(--muted); }
+.btn-secondary:hover { background: var(--border-strong); }
 .btn-row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; }
 
 .barra-acao {
   position: sticky; bottom: 0; z-index: 20; margin: 8px -24px -48px; padding: 14px 24px;
-  background: rgba(244,246,250,.92); backdrop-filter: blur(6px); border-top: 1px solid var(--g2);
+  background: rgba(244,246,250,.92); backdrop-filter: blur(6px); border-top: 1px solid var(--border);
   display: flex; align-items: center; gap: 12px;
 }
-.barra-acao .resumo-acao { flex: 1; font-size: 12.5px; color: var(--g5); }
+.barra-acao .resumo-acao { flex: 1; font-size: 12.5px; color: var(--muted); }
 .barra-acao .resumo-acao strong { color: var(--navy); }
 @media (max-width: 640px) { .barra-acao .resumo-acao { display: none; } .barra-acao { justify-content: flex-end; } }
 
-/* OPÇÕES DE ABAS */
+/* ---- opções de abas ---- */
 .opcao-lista { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 @media (max-width: 800px) { .opcao-lista { grid-template-columns: 1fr; } }
 .opcao {
-  position: relative; display: flex; flex-direction: column; gap: 6px; padding: 16px; border-radius: 14px;
-  border: 1.5px solid var(--g2); background: #fff; cursor: pointer; transition: border-color .15s, background .15s, box-shadow .15s;
+  position: relative; display: flex; flex-direction: column; gap: 6px; padding: 16px; border-radius: 12px;
+  border: 1.5px solid var(--border); background: #fff; cursor: pointer; transition: border-color .15s, background .15s, box-shadow .15s;
 }
-.opcao:hover { border-color: var(--mid); }
-.opcao.ativa { border-color: var(--mid); background: #f6f9fe; box-shadow: 0 0 0 3px rgba(61,106,191,.12); }
+.opcao:hover { border-color: var(--primary); }
+.opcao.ativa { border-color: var(--primary); background: #F3F7FE; }
 .opcao input { position: absolute; opacity: 0; pointer-events: none; }
 .opcao .o-icone {
-  width: 38px; height: 38px; border-radius: 10px; background: var(--g1); display: flex; align-items: center; justify-content: center;
-  font-size: 18px; transition: background .15s;
+  width: 38px; height: 38px; border-radius: 10px; background: var(--light); display: flex; align-items: center; justify-content: center;
+  transition: background .15s;
 }
-.opcao.ativa .o-icone { background: var(--pale); }
+.opcao.ativa .o-icone { background: var(--tint); }
 .opcao .o-check {
-  position: absolute; top: 14px; right: 14px; width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--g3);
+  position: absolute; top: 14px; right: 14px; width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--border-strong);
   display: flex; align-items: center; justify-content: center; font-size: 11px; color: transparent; transition: all .15s;
 }
-.opcao.ativa .o-check { background: var(--mid); border-color: var(--mid); color: #fff; }
-.opcao-titulo { font-size: 13.5px; font-weight: 800; color: var(--navy); }
+.opcao.ativa .o-check { background: var(--primary); border-color: var(--primary); color: #fff; }
+.opcao-titulo { font-size: 13.5px; font-weight: 800; color: var(--navy); letter-spacing: -.01em; }
 .opcao-titulo .tag {
-  font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
-  background: var(--green); color: #fff; border-radius: 20px; padding: 2px 8px; margin-left: 6px; vertical-align: middle;
+  font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;
+  background: var(--primary); color: #fff; border-radius: 20px; padding: 2px 8px; margin-left: 6px; vertical-align: middle;
 }
-.opcao-desc { font-size: 12px; color: var(--g5); line-height: 1.5; }
-.opcao-extra { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--g2); }
-.check-item { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; color: var(--g5); cursor: pointer; }
-.check-item input { width: 16px; height: 16px; accent-color: var(--mid); }
-.abas-previa { margin-top: 12px; font-size: 12px; color: var(--g5); line-height: 1.9; }
+.opcao-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+.opcao-extra { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
+.check-item { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; color: var(--muted); cursor: pointer; }
+.check-item input { width: 16px; height: 16px; accent-color: var(--primary); }
+.abas-previa { margin-top: 12px; font-size: 12px; color: var(--muted); line-height: 1.9; }
 .abas-previa .aba-chip {
-  display: inline-block; background: var(--g1); border: 1px solid var(--g3); border-radius: 8px;
+  display: inline-block; background: var(--light); border: 1px solid var(--border-strong); border-radius: 8px;
   padding: 1px 9px; margin: 2px 4px 2px 0; font-size: 11.5px; color: var(--navy); font-weight: 600;
 }
-.abas-previa .aba-chip em { font-style: normal; color: var(--g4); font-weight: 500; }
+.abas-previa .aba-chip em { font-style: normal; color: var(--faint); font-weight: 500; }
 
-/* KPIs */
+/* ---- kpis ---- */
 .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
 @media (max-width: 800px) { .kpi-row { grid-template-columns: 1fr 1fr; } }
 .kpi {
-  background: #fff; border: 1px solid var(--g2); border-radius: 14px; padding: 16px 18px;
+  background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px;
   box-shadow: var(--shadow); display: flex; align-items: center; gap: 14px;
 }
+.kpi .kpi-ico svg, .opcao .o-icone svg { width: 22px; height: 22px; stroke: var(--primary); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .kpi .kpi-ico {
-  width: 42px; height: 42px; border-radius: 12px; background: var(--pale); font-size: 19px;
+  width: 42px; height: 42px; border-radius: 10px; background: var(--tint);
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .kpi .kpi-num { font-size: 21px; font-weight: 800; color: var(--navy); line-height: 1.1; letter-spacing: -.01em; }
-.kpi .kpi-label { font-size: 10.5px; color: var(--g4); text-transform: uppercase; letter-spacing: .06em; margin-top: 3px; font-weight: 600; }
-.kpi.destaque { background: linear-gradient(135deg, var(--navy), #24407a); border-color: transparent; }
+.kpi .kpi-label { font-size: 10.5px; color: var(--faint); text-transform: uppercase; letter-spacing: 1px; margin-top: 3px; font-weight: 600; }
+.kpi.destaque { background: var(--grad-inst); border-color: transparent; }
 .kpi.destaque .kpi-ico { background: rgba(255,255,255,.14); }
+.kpi.destaque .kpi-ico svg { stroke: var(--accent); }
 .kpi.destaque .kpi-num { color: #fff; font-size: 19px; }
 .kpi.destaque .kpi-label { color: rgba(255,255,255,.6); }
 
-/* CONFERÊNCIA */
+/* ---- conferência ---- */
 .conf-resumo { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border-radius: 12px; font-size: 12.5px; line-height: 1.6; margin-bottom: 14px; }
 .conf-resumo .ic { width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; color: #fff; }
-.conf-resumo.ok { background: var(--green-l); border: 1px solid var(--green-b); color: #0b6e50; }
-.conf-resumo.ok .ic { background: var(--green); }
-.conf-resumo.aviso { background: var(--amber-l); border: 1px solid var(--amber-b); color: #7a3a06; }
-.conf-resumo.aviso .ic { background: var(--amber); }
-.conf-arq { border: 1px solid var(--g2); border-radius: 12px; margin-bottom: 10px; overflow: hidden; }
-.conf-arq-cab { background: var(--g1); padding: 10px 14px; font-size: 12.5px; font-weight: 700; color: var(--navy); word-break: break-all; }
-.conf-linha { display: flex; gap: 12px; padding: 10px 14px; border-top: 1px solid var(--g2); font-size: 12.5px; line-height: 1.55; }
+.conf-resumo.ok { background: var(--ok-l); border: 1px solid var(--ok-b); color: #0b6e50; }
+.conf-resumo.ok .ic { background: var(--ok); }
+.conf-resumo.aviso { background: var(--warn-l); border: 1px solid var(--warn-b); color: #7a3a06; }
+.conf-resumo.aviso .ic { background: var(--warn); }
+.conf-arq { border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px; overflow: hidden; }
+.conf-arq-cab { background: var(--light); padding: 10px 14px; font-size: 12.5px; font-weight: 700; color: var(--navy); word-break: break-all; }
+.conf-linha { display: flex; gap: 12px; padding: 10px 14px; border-top: 1px solid var(--border); font-size: 12.5px; line-height: 1.55; }
 .conf-linha .ic {
   width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
   font-size: 11px; font-weight: 800; margin-top: 1px;
 }
-.conf-linha.ok .ic { background: var(--green-l); color: var(--green); }
-.conf-linha.aviso .ic { background: var(--amber-l); color: var(--amber); }
+.conf-linha.ok .ic { background: var(--ok-l); color: var(--ok); }
+.conf-linha.aviso .ic { background: var(--warn-l); color: var(--warn); }
 .conf-linha .tit { font-weight: 700; color: var(--navy); }
-.conf-linha .det { color: var(--g5); font-size: 12px; }
-.conf-linha ul { margin: 4px 0 0 16px; color: var(--g5); font-size: 12px; }
+.conf-linha .det { color: var(--muted); font-size: 12px; }
+.conf-linha ul { margin: 4px 0 0 16px; color: var(--muted); font-size: 12px; }
 .conf-linha ul li { margin-bottom: 2px; }
-.conf-ok-lista { font-size: 12px; color: var(--g5); line-height: 1.7; padding: 4px 2px; }
+.conf-ok-lista { font-size: 12px; color: var(--muted); line-height: 1.7; padding: 4px 2px; }
 
-/* PRÉVIA */
+/* ---- prévia ---- */
 .previa-topo { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
 .previa-topo input[type=text] {
   flex: 1; min-width: 220px; font-family: inherit; font-size: 12.5px; padding: 9px 12px 9px 34px; border-radius: 10px;
-  border: 1px solid var(--g3); background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238a97ab' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-3.5-3.5'/%3E%3C/svg%3E") no-repeat 11px center;
-  color: var(--text);
+  border: 1px solid var(--border-strong); background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238a97ab' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-3.5-3.5'/%3E%3C/svg%3E") no-repeat 11px center;
+  color: var(--ink);
 }
-.previa-topo input[type=text]:focus { outline: none; border-color: var(--mid); box-shadow: 0 0 0 3px rgba(61,106,191,.12); }
-.table-scroll { overflow: auto; border-radius: 12px; border: 1px solid var(--g2); max-height: 480px; }
+.previa-topo input[type=text]:focus { outline: none; border-color: var(--primary); }
+.table-scroll { overflow: auto; border-radius: 12px; border: 1px solid var(--border); max-height: 480px; }
 table.previa { border-collapse: separate; border-spacing: 0; font-size: 12px; width: 100%; }
 table.previa th {
   position: sticky; top: 0; background: var(--navy); color: #fff; padding: 10px 12px; text-align: left;
-  font-size: 10.5px; font-weight: 700; white-space: nowrap; z-index: 2; text-transform: uppercase; letter-spacing: .04em;
+  font-size: 10.5px; font-weight: 600; white-space: nowrap; z-index: 2; text-transform: uppercase; letter-spacing: 1px;
 }
 table.previa th.num, table.previa td.num { text-align: right; font-variant-numeric: tabular-nums; }
-table.previa td { padding: 8px 12px; border-bottom: 1px solid var(--g2); white-space: nowrap; background: #fff; }
+table.previa td { padding: 8px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; background: #fff; }
 table.previa tr:nth-child(even) td { background: #fafbfd; }
-table.previa tr:hover td { background: var(--pale); }
-table.previa th.fixa, table.previa td.fixa { position: sticky; left: 0; z-index: 1; box-shadow: 1px 0 0 var(--g2); }
+table.previa tr:hover td { background: var(--tint); }
+table.previa th.fixa, table.previa td.fixa { position: sticky; left: 0; z-index: 1; box-shadow: 1px 0 0 var(--border); }
 table.previa th.fixa { z-index: 3; }
 table.previa td.fixa { font-weight: 600; color: var(--navy); }
 table.previa td.total { font-weight: 800; color: var(--navy); background: #f1f5fc; }
-table.previa tr:hover td.total { background: var(--pale); }
-table.previa td.cod { color: var(--g4); font-variant-numeric: tabular-nums; }
-.previa-nota { font-size: 11.5px; color: var(--g4); margin-top: 10px; }
+table.previa tr:hover td.total { background: var(--tint); }
+table.previa td.cod { color: var(--faint); font-variant-numeric: tabular-nums; }
+.previa-nota { font-size: 11.5px; color: var(--faint); margin-top: 10px; }
 
-/* SCROLLBAR */
+/* ---- scrollbar ---- */
 ::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-thumb { background: var(--g3); border-radius: 4px; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
 
 .author {
   max-width: 860px; margin: 0 auto; padding: 32px 24px 32px; text-align: center;
-  color: var(--g4); font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 10px;
+  color: var(--faint); font-size: 12px; display: flex; align-items: center; justify-content: center; gap: 10px;
 }
-.author-divider { width: 1px; height: 12px; background: var(--g3); }
+.author-divider { width: 1px; height: 12px; background: var(--border-strong); }
 
-/* OVERLAY DE CARREGAMENTO */
+/* ---- overlay de carregamento ---- */
 .loading-overlay {
   position: fixed; inset: 0; background: rgba(244,246,250,.88); backdrop-filter: blur(2px);
   display: flex; align-items: center; justify-content: center; z-index: 200;
 }
 .loading-box { display: flex; flex-direction: column; align-items: center; gap: 16px; }
 .spinner {
-  width: 42px; height: 42px; border: 4px solid var(--g2); border-top-color: var(--mid);
+  width: 42px; height: 42px; border: 4px solid var(--border); border-top-color: var(--primary);
   border-radius: 50%; animation: girar .8s linear infinite;
 }
 @keyframes girar { to { transform: rotate(360deg); } }
@@ -347,7 +356,7 @@ table.previa td.cod { color: var(--g4); font-variant-numeric: tabular-nums; }
 <div class="header">
   <a class="voltar-portal" href="../../index.html">← Portal</a>
   <div class="header-content">
-    <div class="header-icon">🧾</div>
+    <div class="header-icon" data-icone="casa"></div>
     <h1>Conversor de Verbas Rescisórias</h1>
     <p>Transforma o PDF "Simulação de rescisão de contrato de trabalho" do UAU! em Excel tabulado, pronto pra usar em outras planilhas</p>
   </div>
@@ -371,7 +380,7 @@ table.previa td.cod { color: var(--g4); font-variant-numeric: tabular-nums; }
       <p class="card-hint">Passo a passo pra emitir o PDF que esta ferramenta lê.</p>
 
       <div class="guia-objetivo">
-        <div class="ico">🎯</div>
+        <div class="ico" data-icone="seta"></div>
         <div><strong>Pra que serve:</strong> calcular o <strong>passivo rescisório já em aberto</strong> de cada obra, ou seja, quanto custaria desligar hoje todos os colaboradores, pra compor a tendência de custo ao término. A projeção futura é feita à parte; este relatório cobre só o passivo acumulado até o mês vigente.</div>
       </div>
 
@@ -398,7 +407,7 @@ table.previa td.cod { color: var(--g4); font-variant-numeric: tabular-nums; }
       </div>
 
       <details class="saiba">
-        <summary>📐 Parâmetros e por que usar o dia 01</summary>
+        <summary>Parâmetros e por que usar o dia 01</summary>
         <div class="conteudo">
           <table class="tab-guia">
             <thead><tr><th>Parâmetro</th><th>Como usar</th></tr></thead>
@@ -413,7 +422,7 @@ table.previa td.cod { color: var(--g4); font-variant-numeric: tabular-nums; }
       </details>
 
       <details class="saiba">
-        <summary>📖 Como ler o relatório (o que cada coluna significa)</summary>
+        <summary>Como ler o relatório (o que cada coluna significa)</summary>
         <div class="conteudo">
           <p>Cada colaborador ocupa <strong>duas linhas</strong> no PDF. No Excel exportado elas viram <strong>uma linha só</strong>, com as colunas nomeadas como abaixo.</p>
           <table class="tab-guia">
@@ -423,7 +432,7 @@ table.previa td.cod { color: var(--g4); font-variant-numeric: tabular-nums; }
               <tr><td>Qtde.: períodos de férias vencidas</td><td>M: meses de férias proporcionais</td></tr>
               <tr><td>Férias vencidas</td><td>Férias proporcionais</td></tr>
               <tr><td>M: meses de 13º</td><td>M: meses de projeção do aviso</td></tr>
-              <tr><td>13º salário proporcional</td><td>13º indenizado (reflexo do aviso)</td></tr>
+              <tr><td>Proporcional do 13º salário</td><td>Indenizado do 13º (reflexo do aviso)</td></tr>
               <tr><td>Aviso prévio indenizado (30 dias + 3 por ano)</td><td>Saldo de salário</td></tr>
               <tr><td>FGTS sobre as verbas</td><td>Multa de 40% do FGTS</td></tr>
               <tr><td>INSS patronal</td><td></td></tr>
@@ -434,12 +443,12 @@ table.previa td.cod { color: var(--g4); font-variant-numeric: tabular-nums; }
       </details>
 
       <details class="saiba">
-        <summary>🗂️ Legenda do Excel: o que significa cada coluna exportada</summary>
+        <summary>Legenda do Excel: o que significa cada coluna exportada</summary>
         <div class="conteudo" id="legenda-tela1"></div>
       </details>
 
       <details class="saiba">
-        <summary>⚠️ Pontos de atenção ao emitir</summary>
+        <summary>Pontos de atenção ao emitir</summary>
         <div class="conteudo">
           <div class="aviso-box atencao"><strong>Fechamento de folha:</strong> se a folha do mês já foi calculada pra empresa, a simulação abate o valor e o saldo de salário aparece zerado pra alguns colaboradores. Resultado: obras emitidas no mesmo dia podem ter critérios diferentes. Sempre conferir a coluna <strong>Saldo sal.</strong> antes de consolidar.</div>
           <div class="aviso-box atencao"><strong>Consistência mensal:</strong> emitir sempre na mesma data de corte e com o mesmo parâmetro, de preferência antes do fechamento da folha.</div>
@@ -480,19 +489,19 @@ table.previa td.cod { color: var(--g4); font-variant-numeric: tabular-nums; }
       <div class="opcao-lista" id="opcao-lista">
         <label class="opcao ativa">
           <input type="radio" name="modo-abas" value="unica" checked>
-          <div class="o-icone">🗂️</div><div class="o-check">✓</div>
+          <div class="o-icone" data-icone="camadas"></div><div class="o-check">✓</div>
           <div class="opcao-titulo">Uma aba só <span class="tag">Padrão</span></div>
           <div class="opcao-desc">Todos os funcionários numa tabela única. A melhor opção pra cruzar com outras planilhas ou montar tabela dinâmica.</div>
         </label>
         <label class="opcao">
           <input type="radio" name="modo-abas" value="empresa">
-          <div class="o-icone">🏢</div><div class="o-check">✓</div>
+          <div class="o-icone" data-icone="predio"></div><div class="o-check">✓</div>
           <div class="opcao-titulo">Uma aba por empresa</div>
           <div class="opcao-desc">Cada empresa (CNPJ) do relatório ganha a própria aba.</div>
         </label>
         <label class="opcao">
           <input type="radio" name="modo-abas" value="obra">
-          <div class="o-icone">🏗️</div><div class="o-check">✓</div>
+          <div class="o-icone" data-icone="casa"></div><div class="o-check">✓</div>
           <div class="opcao-titulo">Uma aba por obra</div>
           <div class="opcao-desc">Cada obra do relatório ganha a própria aba.</div>
         </label>
@@ -521,7 +530,7 @@ table.previa td.cod { color: var(--g4); font-variant-numeric: tabular-nums; }
     </div>
 
     <details class="saiba" style="margin:0 0 20px">
-      <summary>🗂️ Legenda: o que significa cada coluna do Excel</summary>
+      <summary>Legenda: o que significa cada coluna do Excel</summary>
       <div class="conteudo" id="legenda-tela2"></div>
     </details>
 
@@ -554,6 +563,16 @@ table.previa td.cod { color: var(--g4); font-variant-numeric: tabular-nums; }
 if (window.pdfjsLib) {
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 }
+
+// Ícones de linha da identidade (casa e seta são os símbolos da marca)
+const ICONES = {
+  casa: '<svg viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path class="acc" d="M9 15h6M12.5 12.5L15 15l-2.5 2.5"/></svg>',
+  seta: '<svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+  pessoas: '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14c2.3 0 4 1.8 4 4.2"/></svg>',
+  predio: '<svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="1.5"/><path d="M9 8h2M13 8h2M9 12h2M13 12h2M10 21v-4h4v4"/></svg>',
+  camadas: '<svg viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg>',
+  tendencia: '<svg viewBox="0 0 24 24"><path d="M4 17l6-6 4 4 6-7"/><path d="M15 8h5v5"/></svg>'
+};
 
 // Campos numéricos de cada funcionário, na ordem em que viram colunas no Excel.
 // fmt: 'm' = dinheiro, 'q' = quantidade/meses (1 casa decimal)
@@ -597,16 +616,16 @@ const LEGENDA = [
   { g: 'Férias', c: 'Qtde. férias vencidas', d: 'Períodos de férias já completos e ainda não tirados.', n: 'Quantidade, não valor em R$. Fica em 0,0 pra quem não tem férias vencidas.' },
   { g: 'Férias', c: 'Férias vencidas', d: 'Valor em R$ das férias vencidas.', n: 'Entra no Total, mas não entra na base de FGTS nem de INSS empresa.' },
   { g: 'Férias', c: 'Meses férias prop.', d: 'Meses do período de férias em andamento.', n: 'Quantidade de meses, não valor em R$.' },
-  { g: 'Férias', c: 'Férias proporcionais', d: 'Valor em R$ dos meses de férias em andamento.', n: '(Sal. + médias ÷ 12 × Meses férias prop.) + 1/3 constitucional.' },
+  { g: 'Férias', c: 'Férias proporcionais', d: 'Valor em R$ dos meses de férias em andamento.', n: 'Cálculo: (Sal. + médias ÷ 12 × Meses férias prop.) + 1/3 constitucional.' },
   { g: '13º salário', c: 'Meses 13º', d: 'Meses trabalhados no ano, que geram direito ao 13º.', n: 'Quantidade de meses, não valor em R$.' },
-  { g: '13º salário', c: '13º salário', d: '13º salário proporcional.', n: 'Sal. + médias ÷ 12 × Meses 13º.' },
+  { g: '13º salário', c: '13º salário', d: 'Proporcional do 13º salário.', n: 'Cálculo: Sal. + médias ÷ 12 × Meses 13º.' },
   { g: '13º salário', c: 'Meses projeção aviso', d: 'Meses que o aviso prévio indenizado projeta no 13º.', n: 'Normalmente 1,0. Quantidade de meses, não valor em R$.' },
-  { g: '13º salário', c: '13º salário ind.', d: '13º indenizado, o reflexo do aviso prévio no 13º.', n: 'Sal. + médias ÷ 12 × Meses projeção aviso.' },
+  { g: '13º salário', c: '13º salário ind.', d: 'Indenizado do 13º, o reflexo do aviso prévio no 13º salário.', n: 'Cálculo: Sal. + médias ÷ 12 × Meses projeção aviso.' },
   { g: 'Aviso e saldo', c: 'Aviso', d: 'Aviso prévio indenizado (Lei 12.506).', n: 'Zero pra quem tem menos de 1 ano de casa. Com 1 ano ou mais: Sal. + médias ÷ 30 × (30 + 3 × anos completos de casa).' },
   { g: 'Aviso e saldo', c: 'Saldo salário', d: 'Dias trabalhados no mês do desligamento.', n: 'Salário base ÷ 30 × 1 dia (a data de referência é dia 01). Se vier zerado, a folha do mês já foi calculada: confira antes de consolidar.' },
-  { g: 'Encargos', c: 'FGTS', d: 'FGTS que incide sobre as verbas rescisórias.', n: '8% × (Férias proporcionais + 13º salário + 13º salário ind. + Aviso + Saldo salário).' },
+  { g: 'Encargos', c: 'FGTS', d: 'FGTS que incide sobre as verbas rescisórias.', n: 'Cálculo: 8% × (Férias proporcionais + 13º salário + 13º salário ind. + Aviso + Saldo salário).' },
   { g: 'Encargos', c: 'Multa FGTS', d: 'Multa de 40% do FGTS.', n: 'Calculada pelo UAU! sobre o FGTS acumulado do colaborador (não sobre a coluna FGTS acima), por isso costuma ser a maior parcela do Total nos mais antigos.' },
-  { g: 'Encargos', c: 'INSS empresa', d: 'INSS patronal, o encargo da empresa.', n: '20% × (mesma base do FGTS: Férias proporcionais + 13º + 13º ind. + Aviso + Saldo salário).' },
+  { g: 'Encargos', c: 'INSS empresa', d: 'INSS patronal, o encargo da empresa.', n: 'Cálculo: 20% × (mesma base do FGTS: Férias proporcionais + 13º + 13º ind. + Aviso + Saldo salário).' },
   { g: 'Total', c: 'Total', d: 'Custo total de desligar o colaborador hoje.', n: 'Férias vencidas + Férias proporcionais + 13º + 13º ind. + Aviso + Saldo salário + FGTS + Multa FGTS + INSS empresa. Salários e colunas de meses não entram. FGTS, multa e INSS já estão dentro: não some de novo.' },
   { g: 'Controle', c: 'Mês ref. rescisão', d: 'Data de desligamento simulada no UAU! (dia 01 do mês vigente).', n: 'Serve pra saber de qual mês é a foto, principalmente ao juntar vários meses.' },
   { g: 'Controle', c: 'Arquivo', d: 'Nome do PDF de origem da linha.', n: 'Serve pra rastrear de onde veio cada linha.' }
@@ -871,7 +890,7 @@ async function receberArquivos(files) {
         item.avisos = avaliarParametros(res);
         const obras = new Set(res.funcionarios.map(x => x.obraCod)).size;
         const pontos = item.problemas.length + item.avisos.length;
-        item.msg = `${res.funcionarios.length} funcionário(s), ${obras} obra(s)` + (pontos ? ` - ${pontos} ponto(s) de atenção` : ' - conferido com os totais do PDF');
+        item.msg = `Funcionários: ${res.funcionarios.length}, obras: ${obras}. ` + (pontos ? `Pontos de atenção: ${pontos}.` : 'Conferido com os totais do PDF.');
       }
     } catch (err) {
       item.status = 'erro';
@@ -931,10 +950,10 @@ function renderResultado() {
   const totalGeral = fs.reduce((a, f) => a + f.total, 0);
 
   $('kpi-row').innerHTML = [
-    { i: '👥', n: fs.length, l: 'Funcionários' },
-    { i: '🏢', n: empresas, l: 'Empresas' },
-    { i: '🏗️', n: obras, l: 'Obras' },
-    { i: '💰', n: 'R$ ' + fmtM(totalGeral), l: 'Total das verbas', destaque: true }
+    { i: ICONES.pessoas, n: fs.length, l: 'Funcionários' },
+    { i: ICONES.predio, n: empresas, l: 'Empresas' },
+    { i: ICONES.casa, n: obras, l: 'Obras' },
+    { i: ICONES.tendencia, n: 'R$ ' + fmtM(totalGeral), l: 'Total das verbas', destaque: true }
   ].map(k => `<div class="kpi${k.destaque ? ' destaque' : ''}"><div class="kpi-ico">${k.i}</div><div><div class="kpi-num">${k.n}</div><div class="kpi-label">${k.l}</div></div></div>`).join('');
 
   $('busca-previa').value = '';
@@ -964,7 +983,7 @@ function renderConferencia(fs) {
   if (!pontos) {
     html += `<div class="conf-resumo ok"><div class="ic">✓</div><div><strong>Tudo certo.</strong> A soma dos funcionários bate com os totais de cada obra e de cada empresa impressos no PDF, o Total de cada funcionário fecha com as verbas dele e o relatório foi emitido com os parâmetros recomendados.</div></div>`;
   } else {
-    html += `<div class="conf-resumo aviso"><div class="ic">!</div><div><strong>${pontos} ponto(s) de atenção${arqsComPontos ? ` em ${arqsComPontos} arquivo(s)` : ''}.</strong> Nada impede a exportação, mas vale conferir antes de usar os números. Se o PDF foi gerado com filtro ou páginas cortadas, é normal os totais não fecharem.</div></div>`;
+    html += `<div class="conf-resumo aviso"><div class="ic">!</div><div><strong>Pontos de atenção: ${pontos}${arqsComPontos ? ` (em ${arqsComPontos} arquivo(s))` : ''}.</strong> Nada impede a exportação, mas vale conferir antes de usar os números. Se o PDF foi gerado com filtro ou páginas cortadas, é normal os totais não fecharem.</div></div>`;
   }
 
   if (dup) {
@@ -980,7 +999,7 @@ function renderConferencia(fs) {
         totais.length ? '' : 'A soma dos funcionários bate com "Total obra" e "Total Empresa" impressos no relatório.', totais)
       + linhaConf(!porFunc.length, porFunc.length ? 'Total de funcionário que não fecha' : 'Total de cada funcionário fecha com as verbas dele',
         porFunc.length ? '' : 'Fér. venc. + fér. prop. + 13º + 13º ind. + aviso + saldo + FGTS + multa + INSS = Total.', porFunc)
-      + (av('data') ? linhaConf(false, av('data').titulo, av('data').det) : linhaConf(true, 'Data de referência da rescisão é dia 01', r.refRescisao))
+      + (av('data') ? linhaConf(false, av('data').titulo, av('data').det) : linhaConf(true, 'Data de referência da rescisão é dia 01', `Rescisão simulada em ${r.refRescisao}.`))
       + (av('medias') ? linhaConf(false, av('medias').titulo, av('medias').det) : linhaConf(true, 'Médias calculadas no mês anterior', `Rescisão em ${r.refRescisao}, médias em ${r.refMedias}`))
       + (av('saldo') ? linhaConf(false, av('saldo').titulo, av('saldo').det) : linhaConf(true, 'Saldo de salário preenchido pra todos', 'Nenhum colaborador com saldo zerado.'));
   };
@@ -988,10 +1007,10 @@ function renderConferencia(fs) {
   const mostrarTodos = oks.length === 1;
   const limpos = [];
   for (const a of oks) {
-    if (comPontos(a) || mostrarTodos) html += `<div class="conf-arq"><div class="conf-arq-cab">📄 ${esc(a.nome)}</div>${detalhar(a)}</div>`;
+    if (comPontos(a) || mostrarTodos) html += `<div class="conf-arq"><div class="conf-arq-cab">${esc(a.nome)}</div>${detalhar(a)}</div>`;
     else limpos.push(a.nome);
   }
-  if (limpos.length) html += `<div class="conf-ok-lista">✓ ${limpos.length} arquivo(s) sem nenhuma observação: ${limpos.map(esc).join(', ')}.</div>`;
+  if (limpos.length) html += `<div class="conf-ok-lista">Sem nenhuma observação (${limpos.length} arquivo(s)): ${limpos.map(esc).join(', ')}.</div>`;
   $('conferencia').innerHTML = html;
 }
 
@@ -1012,10 +1031,10 @@ function desenharPrevia() {
     <td class="fixa">${esc(f.nome)}</td><td class="cod">${esc(f.matricula)}</td><td>${esc(f.admissao)}</td><td>${esc(f.empresa)}</td><td>${esc(f.obra)}</td>
     ${CAMPOS.map(c => `<td class="num${c.k === 'total' ? ' total' : ''}">${c.fmt === 'm' ? fmtM(f[c.k]) : fmtQ(f[c.k])}</td>`).join('')}
   </tr>`).join('');
-  $('tabela-previa').innerHTML = `<thead><tr>${cols.map(c => `<th class="${[c.num ? 'num' : '', c.fixa ? 'fixa' : ''].join(' ').trim()}">${esc(c.h)}</th>`).join('')}</tr></thead><tbody>${linhas || `<tr><td colspan="${cols.length}" style="text-align:center;color:var(--g4);padding:24px">Nenhum funcionário encontrado.</td></tr>`}</tbody>`;
+  $('tabela-previa').innerHTML = `<thead><tr>${cols.map(c => `<th class="${[c.num ? 'num' : '', c.fixa ? 'fixa' : ''].join(' ').trim()}">${esc(c.h)}</th>`).join('')}</tr></thead><tbody>${linhas || `<tr><td colspan="${cols.length}" style="text-align:center;color:var(--faint);padding:24px">Nenhum funcionário encontrado.</td></tr>`}</tbody>`;
   $('previa-nota').textContent = filtrados.length > LIMITE_PREVIA
     ? `Mostrando os primeiros ${LIMITE_PREVIA} de ${filtrados.length} funcionários. O Excel exportado leva todos.`
-    : `${filtrados.length} funcionário(s)${q ? ' encontrado(s) na busca' : ''}. No Excel, Empresa e Obra vêm antes do Nome.`;
+    : `${q ? 'Encontrados na busca' : 'Total'}: ${filtrados.length} funcionário(s). No Excel, Empresa e Obra vêm antes do Nome.`;
 }
 $('busca-previa').addEventListener('input', desenharPrevia);
 
@@ -1055,7 +1074,7 @@ function renderPreviaAbas() {
   const abas = agruparParaAbas(fs, modoAbas(), $('chk-resumo').checked, $('chk-legenda').checked);
   $('abas-previa').innerHTML = `O Excel terá <strong>${abas.length} aba(s)</strong>: ` +
     abas.map(a => `<span class="aba-chip">${esc(a.nome)}${a.tipo === 'dados' ? ` <em>${a.linhas.length}</em>` : ''}</span>`).join('');
-  $('resumo-acao').innerHTML = `<strong>${fs.length} funcionário(s)</strong> em <strong>${abas.length} aba(s)</strong> no Excel`;
+  $('resumo-acao').innerHTML = `Pronto para exportar: <strong>${fs.length} funcionário(s)</strong> em <strong>${abas.length} aba(s)</strong> no Excel`;
 }
 
 document.querySelectorAll('input[name="modo-abas"]').forEach(r => r.addEventListener('change', () => {
@@ -1064,13 +1083,15 @@ document.querySelectorAll('input[name="modo-abas"]').forEach(r => r.addEventList
 }));
 $('chk-resumo').addEventListener('change', renderPreviaAbas);
 $('chk-legenda').addEventListener('change', renderPreviaAbas);
+document.querySelectorAll('[data-icone]').forEach(el => { el.innerHTML = ICONES[el.dataset.icone]; });
 $('legenda-tela1').innerHTML = htmlLegenda();
 $('legenda-tela2').innerHTML = htmlLegenda();
 
 // ============================================================
 // EXPORTAÇÃO EXCEL (ExcelJS)
 // ============================================================
-const CL = { navy: 'FF1A2744', pale: 'FFDCE8F8', g1: 'FFF4F6FA', g3: 'FFC5CEDD', branco: 'FFFFFFFF' };
+// paleta institucional Trinus (ARGB)
+const CL = { navy: 'FF000D5C', blue: 'FF1A3EB5', mid: 'FF1A6EE8', accent: 'FF0FE4F5', pale: 'FFE4EDFC', g1: 'FFF5F5F5', g2: 'FFE6E7EA', g3: 'FFCDCFD5', texto: 'FF191A1C', branco: 'FFFFFFFF', ok: 'FF0F9B6E', erro: 'FFC0392B' };
 const FMT = { m: '#,##0.00', q: '0.0' };
 
 function paraData(s) {
@@ -1084,7 +1105,7 @@ function codigoParaCelula(s) {
 
 const COLUNAS_DADOS = [
   { h: 'Cód. Empresa', w: 12, v: f => codigoParaCelula(f.empCod), fmt: '0', align: 'left' },
-  { h: 'Empresa',      w: 40, v: f => f.empresa },
+  { h: 'Empresa',      w: 48, v: f => f.empresa },
   { h: 'Cód. Obra',    w: 12, v: f => f.obraCod },
   { h: 'Obra',         w: 38, v: f => f.obra },
   { h: 'Matrícula',    w: 14, v: f => codigoParaCelula(f.matricula), fmt: '0', align: 'left' },
@@ -1095,63 +1116,116 @@ const COLUNAS_DADOS = [
   { h: 'Arquivo',      w: 36, v: f => f.arquivo }
 ];
 
-function montarAbaDados(wb, nome, linhas, idx) {
-  const ws = wb.addWorksheet(nome, { views: [{ state: 'frozen', xSplit: 6, ySplit: 1 }] });
+// ---- identidade Trinus no Excel: fonte, cores, faixa de título, filete de destaque, sem linhas de grade ----
+const FONTE = 'Plus Jakarta Sans';
+const fonte = (extra = {}) => ({ name: FONTE, size: 10, color: { argb: CL.texto }, ...extra });
+const solido = argb => ({ type: 'pattern', pattern: 'solid', fgColor: { argb } });
+// degradê institucional (Azul Conexão para Navy), inclinado como o de 120° das peças da marca
+const GRAD_INST = { type: 'gradient', gradient: 'angle', degree: 30, stops: [{ position: 0, color: { argb: CL.mid } }, { position: 1, color: { argb: CL.navy } }] };
+
+// Linhas 1 a 3: faixa de título em degradê mesclada na largura inteira da tabela e filete cinza claro embaixo
+function faixaMarca(ws, titulo, subtitulo, totalCols) {
+  ws.getRow(1).height = 24;
+  ws.getRow(2).height = 20;
+  ws.getRow(3).height = 4;
+  for (let c = 1; c <= totalCols; c++) ws.getCell(3, c).fill = solido(CL.g2);
+  ws.mergeCells(1, 1, 2, totalCols);
+  const t = ws.getCell(1, 1);
+  t.fill = GRAD_INST;
+  t.value = { richText: [
+    { text: titulo + '\n', font: { name: FONTE, size: 15, bold: true, color: { argb: CL.branco } } },
+    { text: subtitulo, font: { name: FONTE, size: 9, color: { argb: 'FFDCE6FA' } } }
+  ] };
+  t.alignment = { vertical: 'middle', wrapText: true, indent: 1 };
+}
+
+// Bordas finas em cinza claro (verticais e horizontais) das linhas de dados
+const BORDA_LEVE = { left: { style: 'thin', color: { argb: CL.g2 } }, right: { style: 'thin', color: { argb: CL.g2 } }, bottom: { style: 'thin', color: { argb: CL.g2 } } };
+const BORDA_TOTAL = { left: { style: 'thin', color: { argb: CL.blue } }, right: { style: 'thin', color: { argb: CL.blue } }, top: { style: 'medium', color: { argb: CL.g3 } } };
+
+// Cabeçalho de tabela: Navy, texto branco, separadores verticais sutis e base cinza claro
+function estiloCabecalho(cell, horizontal) {
+  cell.font = fonte({ bold: true, color: { argb: CL.branco } });
+  cell.fill = solido(CL.navy);
+  cell.border = { left: { style: 'thin', color: { argb: CL.blue } }, right: { style: 'thin', color: { argb: CL.blue } }, bottom: { style: 'medium', color: { argb: CL.g3 } } };
+  cell.alignment = { vertical: 'middle', horizontal: horizontal || 'left', wrapText: true };
+}
+
+function alinhamentoColuna(c) {
+  if (c.fmt === FMT.m || c.fmt === FMT.q) return 'right';
+  if (c.fmt === 'dd/mm/yyyy') return 'center';
+  return 'left';
+}
+
+const CABECALHO_DADOS = 4; // linha do cabeçalho da tabela nas abas de dados
+
+function montarAbaDados(wb, nome, linhas, idx, refs) {
+  const ws = wb.addWorksheet(nome, {
+    views: [{ state: 'frozen', xSplit: 6, ySplit: CABECALHO_DADOS, showGridLines: false, zoomScale: 90 }],
+    properties: { tabColor: { argb: CL.mid } },
+    pageSetup: { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0 }
+  });
+  const total = COLUNAS_DADOS.length;
+  faixaMarca(ws, 'Verbas rescisórias',
+    `${nome}  |  ${linhas.length} colaborador(es)  |  Simulação de rescisão do UAU!` + (refs.length ? `  |  Ref. ${refs.join(', ')}` : ''),
+    total);
+
   ws.addTable({
     name: 'Rescisoes' + idx,
-    ref: 'A1',
+    ref: 'A' + CABECALHO_DADOS,
     headerRow: true,
     totalsRow: false,
-    style: { theme: 'TableStyleMedium2', showRowStripes: true },
+    style: { theme: null, showRowStripes: false },
     columns: COLUNAS_DADOS.map(c => ({ name: c.h, filterButton: true })),
     rows: linhas.map(f => COLUNAS_DADOS.map(c => c.v(f)))
   });
+
   COLUNAS_DADOS.forEach((c, i) => {
-    const col = ws.getColumn(i + 1);
-    col.width = c.w;
-    if (c.fmt) col.numFmt = c.fmt;
-    if (c.align) col.alignment = { horizontal: c.align };
+    ws.getColumn(i + 1).width = c.w;
+    estiloCabecalho(ws.getCell(CABECALHO_DADOS, i + 1), alinhamentoColuna(c));
   });
-  // numFmt de coluna não vale pras células já criadas pela tabela; aplica célula a célula
-  for (let r = 2; r <= linhas.length + 1; r++) {
+  ws.getRow(CABECALHO_DADOS).height = 32;
+
+  const colTotal = COLUNAS_DADOS.findIndex(c => c.h === 'Total');
+  for (let k = 0; k < linhas.length; k++) {
+    const r = CABECALHO_DADOS + 1 + k;
+    const zebra = k % 2 === 1 ? CL.g1 : CL.branco;
     COLUNAS_DADOS.forEach((c, i) => {
       const cell = ws.getCell(r, i + 1);
+      const ehTotal = i === colTotal;
+      cell.font = fonte(ehTotal ? { bold: true, color: { argb: CL.navy } } : {});
+      cell.fill = solido(ehTotal ? CL.pale : zebra);
+      cell.border = BORDA_LEVE;
+      cell.alignment = { vertical: 'middle', horizontal: c.align || alinhamentoColuna(c) };
       if (c.fmt) cell.numFmt = c.fmt;
-      if (c.align) cell.alignment = { horizontal: c.align };
     });
+    ws.getRow(r).height = 18;
   }
-  ws.getRow(1).height = 30;
-  ws.getRow(1).alignment = { vertical: 'middle', wrapText: true };
 }
 
 function montarAbaResumo(wb, fs) {
-  const ws = wb.addWorksheet('Resumo', { views: [{ state: 'frozen', ySplit: 4 }] });
-  const cols = [
-    { h: 'Empresa', w: 38 }, { h: 'Obra', w: 38 }, { h: 'Funcionários', w: 13, fmt: '0' },
-    ...CAMPOS_TOTAL.map(k => ({ h: NOME_CAMPO[k], w: 15, k, fmt: FMT.m })),
-    { h: 'Confere com o PDF?', w: 20 }
-  ];
-  ws.mergeCells(1, 1, 1, cols.length);
-  const t = ws.getCell(1, 1);
-  t.value = 'Resumo por obra - Simulação de rescisão';
-  t.font = { bold: true, size: 14, color: { argb: CL.branco } };
-  t.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: CL.navy } };
-  t.alignment = { vertical: 'middle' };
-  ws.getRow(1).height = 26;
-  const refs = [...new Set(fs.map(f => f.refRescisao).filter(Boolean))];
-  ws.getCell(2, 1).value = refs.length ? 'Mês de referência da rescisão: ' + refs.join(', ') : '';
-  ws.getCell(2, 1).font = { italic: true, color: { argb: 'FF4A5568' } };
-
-  const hdr = ws.getRow(4);
-  cols.forEach((c, i) => {
-    const cell = hdr.getCell(i + 1);
-    cell.value = c.h;
-    cell.font = { bold: true, color: { argb: CL.navy } };
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: CL.pale } };
-    cell.alignment = { vertical: 'middle', horizontal: i < 2 ? 'left' : 'center', wrapText: true };
-    ws.getColumn(i + 1).width = c.w;
+  const ws = wb.addWorksheet('Resumo', {
+    views: [{ state: 'frozen', ySplit: 4, showGridLines: false, zoomScale: 90 }],
+    properties: { tabColor: { argb: CL.navy } },
+    pageSetup: { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0 }
   });
-  hdr.height = 30;
+  const cols = [
+    { h: 'Empresa', w: 60 }, { h: 'Obra', w: 46 }, { h: 'Funcionários', w: 14, fmt: '0' },
+    ...CAMPOS_TOTAL.map(k => ({ h: NOME_CAMPO[k], w: 15, k, fmt: FMT.m })),
+    { h: 'Confere com o PDF?', w: 22 }
+  ];
+  const refs = [...new Set(fs.map(f => f.refRescisao).filter(Boolean))];
+  faixaMarca(ws, 'Resumo por obra',
+    'Simulação de rescisão do UAU!' + (refs.length ? `  |  Mês de referência da rescisão: ${refs.join(', ')}` : ''),
+    cols.length);
+
+  cols.forEach((c, i) => {
+    ws.getColumn(i + 1).width = c.w;
+    const cell = ws.getCell(4, i + 1);
+    cell.value = c.h;
+    estiloCabecalho(cell, i < 2 ? 'left' : i === cols.length - 1 ? 'center' : 'right');
+  });
+  ws.getRow(4).height = 32;
 
   // cada (arquivo, empresa, obra) é uma linha; a conferência vem do arquivo de origem
   const grupos = new Map();
@@ -1162,7 +1236,25 @@ function montarAbaResumo(wb, fs) {
   }
   let r = 5;
   const totais = Object.fromEntries(CAMPOS_TOTAL.map(k => [k, 0]));
-  let totFunc = 0, todosOk = true;
+  let totFunc = 0, todosOk = true, k = 0;
+  const pintaLinha = (row, zebra, ehTotal) => {
+    for (let c = 1; c <= cols.length; c++) {
+      const cell = row.getCell(c);
+      const ehStatus = c === cols.length, ehNome = c <= 2;
+      if (!ehStatus) cell.font = fonte(ehTotal ? { bold: true, color: { argb: CL.branco } } : (c === cols.length - 1 ? { bold: true, color: { argb: CL.navy } } : {}));
+      cell.fill = solido(ehTotal ? CL.navy : (c === cols.length - 1 ? CL.pale : zebra));
+      cell.border = ehTotal ? BORDA_TOTAL : BORDA_LEVE;
+      cell.alignment = { vertical: 'middle', horizontal: ehNome ? 'left' : ehStatus ? 'center' : 'right' };
+      if (cols[c - 1].fmt) cell.numFmt = cols[c - 1].fmt;
+    }
+    row.height = 20;
+  };
+  const statusCell = (row, ok, ehTotal) => {
+    const cell = row.getCell(cols.length);
+    cell.value = ok ? 'Sim' : 'Diferença (ver ferramenta)';
+    cell.font = fonte({ bold: true, color: { argb: ok ? CL.ok : CL.erro } });
+    if (ehTotal) { cell.fill = solido(CL.branco); cell.border = BORDA_LEVE; }
+  };
   for (const g of grupos.values()) {
     const arq = state.arquivos.find(a => a.nome === g.arquivo);
     const ok = arq && !arq.problemas.some(p => p.startsWith(`Obra ${g.obraCod} (`) || p.startsWith(`Empresa ${g.empCod} (`));
@@ -1172,81 +1264,62 @@ function montarAbaResumo(wb, fs) {
     row.getCell(2).value = g.obra;
     row.getCell(3).value = g.fs.length;
     totFunc += g.fs.length;
-    CAMPOS_TOTAL.forEach((k, i) => {
-      const v = g.fs.reduce((a, f) => a + f[k], 0);
-      totais[k] += v;
+    CAMPOS_TOTAL.forEach((kk, i) => {
+      const v = g.fs.reduce((a, f) => a + f[kk], 0);
+      totais[kk] += v;
       row.getCell(4 + i).value = Math.round(v * 100) / 100;
     });
-    row.getCell(cols.length).value = ok ? 'Sim' : 'Diferença (ver ferramenta)';
-    row.getCell(cols.length).alignment = { horizontal: 'center' };
-    row.getCell(cols.length).font = { bold: true, color: { argb: ok ? 'FF0F9B6E' : 'FFC0392B' } };
+    pintaLinha(row, k++ % 2 === 1 ? CL.g1 : CL.branco, false);
+    statusCell(row, ok, false);
   }
   const rt = ws.getRow(r);
   rt.getCell(1).value = 'TOTAL GERAL';
   rt.getCell(3).value = totFunc;
-  CAMPOS_TOTAL.forEach((k, i) => { rt.getCell(4 + i).value = Math.round(totais[k] * 100) / 100; });
-  rt.getCell(cols.length).value = todosOk ? 'Sim' : 'Diferença (ver ferramenta)';
-  rt.getCell(cols.length).alignment = { horizontal: 'center' };
-  for (let c = 1; c <= cols.length; c++) {
-    const cell = rt.getCell(c);
-    cell.font = { bold: true, color: { argb: c === cols.length ? (todosOk ? 'FF0F9B6E' : 'FFC0392B') : CL.branco } };
-    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: c === cols.length ? CL.g1 : CL.navy } };
-  }
-  for (let rr = 5; rr <= r; rr++) {
-    cols.forEach((c, i) => { if (c.fmt) ws.getCell(rr, i + 1).numFmt = c.fmt; });
-    if (rr < r) for (let c = 1; c <= cols.length; c++) {
-      ws.getCell(rr, c).border = { bottom: { style: 'thin', color: { argb: CL.g3 } } };
-    }
-  }
+  CAMPOS_TOTAL.forEach((kk, i) => { rt.getCell(4 + i).value = Math.round(totais[kk] * 100) / 100; });
+  pintaLinha(rt, CL.navy, true);
+  statusCell(rt, todosOk, true);
 }
 
 function montarAbaLegenda(wb, nome) {
-  const ws = wb.addWorksheet(nome, { views: [{ showGridLines: false }] });
-  const larguras = [18, 26, 46, 78];
-  larguras.forEach((w, i) => { ws.getColumn(i + 1).width = w; });
-  const fill = argb => ({ type: 'pattern', pattern: 'solid', fgColor: { argb } });
-  const borda = { bottom: { style: 'thin', color: { argb: CL.g3 } } };
-
-  ws.mergeCells(1, 1, 1, 4);
-  const t = ws.getCell(1, 1);
-  t.value = 'Legenda das colunas - Verbas rescisórias (simulação de rescisão do UAU!)';
-  t.font = { bold: true, size: 14, color: { argb: CL.branco } };
-  t.fill = fill(CL.navy);
-  t.alignment = { vertical: 'middle' };
-  ws.getRow(1).height = 26;
-
-  const cab = ws.getRow(3);
-  ['Grupo', 'Coluna', 'O que é', 'Como é calculado / observação'].forEach((h, i) => {
-    const c = cab.getCell(i + 1);
-    c.value = h;
-    c.font = { bold: true, color: { argb: CL.navy } };
-    c.fill = fill(CL.pale);
-    c.alignment = { vertical: 'middle' };
+  const ws = wb.addWorksheet(nome, {
+    views: [{ showGridLines: false, zoomScale: 90 }],
+    properties: { tabColor: { argb: CL.accent } },
+    pageSetup: { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0 }
   });
-  cab.height = 22;
+  [18, 26, 46, 78].forEach((w, i) => { ws.getColumn(i + 1).width = w; });
+  faixaMarca(ws, 'Legenda das colunas', 'Verbas rescisórias  |  Simulação de rescisão do UAU!', 4);
 
-  const tons = { 'Identificação': 'FFF4F6FA', 'Salário': 'FFFFFFFF', 'Férias': 'FFF4F6FA', '13º salário': 'FFFFFFFF', 'Aviso e saldo': 'FFF4F6FA', 'Encargos': 'FFFFFFFF', 'Total': 'FFFCE4D6', 'Controle': 'FFF4F6FA' };
-  let r = 4, iniGrupo = 4, grupoAtual = null;
+  ['Grupo', 'Coluna', 'O que é', 'Como é calculado / observação'].forEach((h, i) => {
+    const c = ws.getCell(4, i + 1);
+    c.value = h;
+    estiloCabecalho(c, 'left');
+  });
+  ws.getRow(4).height = 26;
+
+  let r = 5, iniGrupo = 5, grupoAtual = null, alterna = false;
   const fechaGrupo = fim => {
     if (grupoAtual === null) return;
     if (fim > iniGrupo) ws.mergeCells(iniGrupo, 1, fim, 1);
     const c = ws.getCell(iniGrupo, 1);
     c.value = grupoAtual;
-    c.font = { bold: true, color: { argb: CL.navy } };
+    c.font = fonte({ bold: true, color: { argb: CL.navy } });
     c.alignment = { vertical: 'top', wrapText: true };
   };
   for (const l of LEGENDA) {
-    if (l.g !== grupoAtual) { fechaGrupo(r - 1); grupoAtual = l.g; iniGrupo = r; }
+    if (l.g !== grupoAtual) { fechaGrupo(r - 1); grupoAtual = l.g; iniGrupo = r; alterna = !alterna; }
+    const fundo = l.g === 'Total' ? CL.pale : alterna ? CL.g1 : CL.branco;
     const row = ws.getRow(r);
     row.getCell(2).value = l.c;
-    row.getCell(2).font = { bold: true, color: { argb: CL.navy } };
     row.getCell(3).value = l.d;
     row.getCell(4).value = l.n;
     for (let c = 1; c <= 4; c++) {
       const cell = row.getCell(c);
-      cell.fill = fill(tons[l.g] || CL.branco);
-      cell.border = borda;
-      if (c > 1) cell.alignment = { vertical: 'top', wrapText: true };
+      cell.fill = solido(fundo);
+      cell.border = BORDA_LEVE;
+      if (c > 1) {
+        cell.font = fonte(c === 2 ? { bold: true, color: { argb: CL.navy } } : {});
+        cell.alignment = { vertical: 'top', wrapText: true };
+      }
     }
     r++;
   }
@@ -1256,15 +1329,19 @@ function montarAbaLegenda(wb, nome) {
   ws.mergeCells(r, 1, r, 4);
   const dt = ws.getCell(r, 1);
   dt.value = 'Como usar sem errar';
-  dt.font = { bold: true, color: { argb: CL.navy } };
-  dt.fill = fill(CL.pale);
+  dt.font = fonte({ bold: true, color: { argb: CL.navy } });
+  dt.fill = solido(CL.pale);
+  dt.border = { bottom: { style: 'medium', color: { argb: CL.g3 } } };
+  dt.alignment = { vertical: 'middle', indent: 1 };
+  ws.getRow(r).height = 22;
   r++;
   for (const d of LEGENDA_DICAS) {
     ws.mergeCells(r, 1, r, 4);
     const c = ws.getCell(r, 1);
-    c.value = '• ' + d;
-    c.alignment = { wrapText: true, vertical: 'top' };
-    ws.getRow(r).height = 18;
+    c.value = '→  ' + d;
+    c.font = fonte();
+    c.alignment = { wrapText: true, vertical: 'middle', indent: 1 };
+    ws.getRow(r).height = 20;
     r++;
   }
 }
@@ -1288,16 +1365,16 @@ $('btn-exportar').addEventListener('click', async () => {
   try {
     const fs = todosFuncionarios();
     const abas = agruparParaAbas(fs, modoAbas(), $('chk-resumo').checked, $('chk-legenda').checked);
+    const refs = [...new Set(fs.map(f => f.refRescisao).filter(Boolean))];
     const wb = new ExcelJS.Workbook();
     wb.creator = 'Portal de Ferramentas';
     let idx = 1;
     for (const aba of abas) {
       if (aba.tipo === 'resumo') montarAbaResumo(wb, fs);
       else if (aba.tipo === 'legenda') montarAbaLegenda(wb, aba.nome);
-      else montarAbaDados(wb, aba.nome, aba.linhas, idx++);
+      else montarAbaDados(wb, aba.nome, aba.linhas, idx++, refs);
     }
     const buf = await wb.xlsx.writeBuffer();
-    const refs = [...new Set(fs.map(f => f.refRescisao).filter(Boolean))];
     const sufixo = refs.length === 1 ? refs[0].slice(3).replace('/', '-') : new Date().toISOString().slice(0, 10);
     const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const a = document.createElement('a');
