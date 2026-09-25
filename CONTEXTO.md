@@ -735,7 +735,7 @@ por funcionário, pra usar em outras planilhas. Tudo local no navegador (pdf.js
 - **PDFs de exemplo na ferramenta (2026-09-24)**: pasta `pdfs-exemplo/` ao lado do
   HTML, com 3 PDFs **100% fictícios** (Alfa, Beta, Gama) no layout do UAU!, gerados por
   script (dados inventados, totais fechando pelas regras confirmadas). O botão
-  "Carregar os 3 exemplos" faz `fetch` dessa pasta e injeta os arquivos no fluxo normal
+  cada exemplo tem "Ver PDF" (abre em nova aba, pra mostrar como o relatório sai do sistema) e "Baixar", e há "Baixar os 3 (ZIP)" (JSZip por CDN, monta o zip no navegador). "Carregar os 3 exemplos" faz `fetch` dessa pasta e injeta os arquivos no fluxo normal
   (só funciona por http; do disco cai num aviso e nos links de download). O Gama
   dispara 2 avisos de propósito (médias em 01/09 e saldo de salário zerado). Os PDFs
   **reais** (`PORTAL DE FERRAMENTAS/EXEMPLOS DE PDF/`) continuam fora do repositório
