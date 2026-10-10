@@ -42,8 +42,10 @@ ferramentas/
     ├── Chamada de Aporte Semanal/
     │   ├── CHAMADA DE APORTE SEMANAL.html      (ativa, card visível, gera PDF a partir do Excel)
     │   └── Modelo_Chamada_de_Aporte_Semanal.xlsx (modelo pra download, clone sanitizado do arquivo real - ver seção abaixo)
-    └── Conversor de Verbas Rescisórias/
-        └── CONVERSOR DE VERBAS RESCISORIAS.html (ativa, card visível, PDF do UAU! -> Excel tabulado)
+    ├── Conversor de Verbas Rescisórias/
+    │   └── CONVERSOR DE VERBAS RESCISORIAS.html (ativa, card visível, PDF do UAU! -> Excel tabulado)
+    └── Relatório Diário de Obra/
+        └── RELATORIO DIARIO DE OBRA.html       (ativa, card visível, predinho clicável -> PDF direto)
 ```
 
 ## Cards do portal (`index.html`) — o que está visível/oculto e por quê
@@ -53,7 +55,8 @@ ferramentas/
   Project), Gerador de Linha de Balanço, Programação Semanal (Prevision),
   Efetivo de Obra (seção **Outros**, nova em 2026-08-01), Chamada de Aporte
   Semanal (seção **Outros**, nova em 2026-08-10), Conversor de Verbas
-  Rescisórias (seção **Outros**, nova em 2026-09-24).
+  Rescisórias (seção **Outros**, nova em 2026-09-24), Relatório Diário de Obra
+  (seção **Outros**, nova em 2026-10-09).
 - **Ocultos** (`style="display:none"` no `<a class="tool-card">`):
   - Programação Semanal **HISTÓRICO** — versão anterior, mantida só como referência.
   - Análise Física do Projeto **v3** — obsoleta, substituída pela v4 (que tem
@@ -745,6 +748,40 @@ por funcionário, pra usar em outras planilhas. Tudo local no navegador (pdf.js
   conferência por arquivo (arquivos sem observação viram uma linha só quando há
   mais de um), prévia com busca e coluna Nome fixa, barra de ação fixa embaixo.
   Passos 2 e 3 do stepper vivem na mesma tela (`irParaTela()`).
+
+## Relatório Diário de Obra (Outros)
+
+Arquivo: `Outros/Relatório Diário de Obra/RELATORIO DIARIO DE OBRA.html`. O engenheiro
+lança, num predinho clicável, o que roda em cada frente de serviço e pavimento no
+período e o que está previsto para o próximo, e a ferramenta gera o PDF do relatório
+para o gestor que não está na obra. Sem Excel de entrada: tudo é preenchido na tela.
+Os dados do exemplo (obra, empreiteiros, fotos) são **fictícios**, repositório público.
+
+- **Predinho**: uma torre, pavimentos nas linhas (lista editável, na ordem de cima para
+  baixo) e as frentes nas colunas. Clicar na caixinha abre uma janela larga: situação,
+  empreiteiro com a quantidade ao lado e a opção MOP (mão de obra própria) com função e
+  quantidade. A caixinha mostra uma pílula colorida com a legenda do empreiteiro (até 5
+  letras) e a quantidade.
+- **Situações configuráveis**: nome, cor e "Conta no efetivo" (padrão: Executando hoje,
+  cinza, conta; Previsto para amanhã, azul claro, não conta). A ordem importa: "Avançar
+  período" sobe cada caixinha uma situação e descarta as da primeira.
+- **Efetivo**: soma só as caixinhas das situações marcadas. Cada empreiteiro conta uma vez,
+  mesmo em várias frentes (o quadro por frente avisa "Divide com ..."). A quantidade de
+  empreiteiro é uma por dia; a de MOP é por caixinha, então a mesma equipe em dois
+  pavimentos soma duas vezes (pendente: decidir se passa a ser por frente).
+- **Configuração por seções** (menu lateral): Cabeçalho (obra, título, logo, emitente),
+  Situações, Empreiteiros, Mão de obra própria, Frentes, Torre (nome de cada pavimento) e
+  Dados (salvar, backup).
+- **Salvamento**: `localStorage` do navegador (chaves `rdo5-cfg` e `rdo5-estado`), com
+  botão Salvar e indicador na barra. Por ser por navegador, cada pessoa tem a sua
+  configuração; levar para outra máquina é pelo backup JSON (as fotos não entram).
+  Lê e converte a v4 (`rdo4-*`, pavimentos numéricos).
+- **PDF direto, sem a caixa de impressão**: html2canvas 1.4.1 + jsPDF 2.5.1 (cdnjs)
+  desenham cada folha do relatório (A4 paisagem: torre, efetivo, fotos) e o navegador baixa
+  o arquivo. É **imagem das páginas** (texto não selecionável), diferente do pdfmake da
+  Chamada de Aporte. Se as bibliotecas não carregarem, cai na impressão do navegador.
+- Testado em Edge headless (cliques simulados, PDF gerado e conferido por imagem). Não foi
+  testado com mouse numa janela aberta nem no portal publicado.
 
 ## Como testar localmente
 
