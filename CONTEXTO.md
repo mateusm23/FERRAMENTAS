@@ -820,3 +820,4 @@ nada sai do navegador.
   Mudou o layout da base: gerar de novo as duas bases e conferir se o painel ainda lê.
 - Regras de texto como no resto do portal: sem travessão e iniciais maiúsculas.
 - Nomenclatura: "Pacote de atividade" substitui "frente de serviço" em todos os textos (2026-10-13).
+- **Procedimento de extração** (aba e tela avulsa do painel, do material do time de prazo, slides 09, 10, 11, 18, 19 e 20 de Gerenciadora, Escala e Análise): no repositório público vai **só o passo a passo em texto**. Os prints originais mostram nome de obra e valores de clientes, então ficam só na versão interna (pasta de trabalho, `EXT_IMGS=1` no `montar-ferramenta.js`). Para publicar prints, primeiro trocar por telas de uma obra fictícia.
