@@ -44,8 +44,13 @@ ferramentas/
     │   └── Modelo_Chamada_de_Aporte_Semanal.xlsx (modelo pra download, clone sanitizado do arquivo real - ver seção abaixo)
     ├── Conversor de Verbas Rescisórias/
     │   └── CONVERSOR DE VERBAS RESCISORIAS.html (ativa, card visível, PDF do UAU! -> Excel tabulado)
-    └── Relatório Diário de Obra/
-        └── RELATORIO DIARIO DE OBRA.html       (ativa, card visível, predinho clicável -> PDF direto)
+    ├── Relatório Diário de Obra/
+    │   └── RELATORIO DIARIO DE OBRA.html       (ativa, card visível, predinho clicável -> PDF direto)
+    └── Planejamento Trimestral/
+        ├── PLANEJAMENTO TRIMESTRAL.html        (ativa, card visível; página com as 4 opções abaixo)
+        ├── Treinamento/APRESENTACAO PLANEJAMENTO TRIMESTRAL.html   (deck em telas)
+        ├── Base de Dados/BASE DE DADOS - EXEMPLO.xlsx e BASE DE DADOS - EM BRANCO.xlsx
+        └── Painel/PAINEL PLANEJAMENTO TRIMESTRAL.html               (arrasta a base .xlsx e monta o painel)
 ```
 
 ## Cards do portal (`index.html`) — o que está visível/oculto e por quê
@@ -797,3 +802,20 @@ os arquivos de código relevantes mudaram.
 Propagação normalmente leva até ~2 min; smoke test com bypass de cache
 (`curl` com query string `?cb=<timestamp>` + checar se o marcador esperado
 está presente no HTML servido) confirma no ar sem depender de "parece certo".
+
+
+## Planejamento Trimestral (Outros)
+
+Uma ferramenta só no portal (card na seção **Outros**). Ao entrar, `Outros/Planejamento Trimestral/PLANEJAMENTO TRIMESTRAL.html`
+mostra as 4 opções: Treinamento (apresentação), Base de dados de exemplo, Base de dados em branco e Painel.
+Os HTML são standalone (leitura do .xlsx com SheetJS inline, sem CDN). O painel lê a base V2 pelas abas
+Frentes, Restrições, Previsibilidade, Planos de ação, Cronograma e a data de referência (aba Listas, célula F2);
+nada sai do navegador.
+
+- **Dados públicos**: o repositório é público. A base de exemplo foi gerada com `MODO=exemplo`, que **altera** a
+  curva do cronograma e as contagens de atividades da obra de referência. Restrições, equipes e planos de ação
+  são fictícios. As telas do treinamento foram capturadas dessa base saneada.
+- **Origem do código**: geradores fora deste repositório, na pasta de trabalho do planejamento trimestral
+  (`09. BASE DE DADOS V2/gerador` com `MODO=exemplo|branco`, `10. FERRAMENTA V2`, `11. APRESENTACAO V2`).
+  Mudou o layout da base: gerar de novo as duas bases e conferir se o painel ainda lê.
+- Regras de texto como no resto do portal: sem travessão e iniciais maiúsculas.
