@@ -279,8 +279,8 @@ table.g tr.det td:first-child{padding-left:28px;font-weight:600;color:var(--navy
   <!-- GANTT -->
   <div class="pg" id="p-gantt">
     <div class="panel">
-      <h2>Frentes de serviço do trimestre</h2>
-      <p class="sub">As frentes monitoradas neste trimestre, definidas pelo engenheiro, e como se posicionam nas semanas. Em cinza, a linha de base. Em azul, o reprogramado.</p>
+      <h2>Pacotes de atividade do trimestre</h2>
+      <p class="sub">Os pacotes de atividade monitorados neste trimestre, definidos pelo engenheiro, e como se posicionam nas semanas. Em cinza, a linha de base. Em azul, o reprogramado.</p>
       <div class="gtw"><table class="gt" id="gantt"></table></div>
     </div>
   </div>
@@ -289,7 +289,7 @@ table.g tr.det td:first-child{padding-left:28px;font-weight:600;color:var(--navy
   <div class="pg" id="p-restr">
     <div class="panel">
       <h2>Restrições do trimestre</h2>
-      <p class="sub">Lista da 1ª reunião do mês, na ordem em que as frentes começam. Clique no título de uma coluna para ordenar, filtre pelo que interessa e registre os encaminhamentos da reunião na coluna Observação.</p>
+      <p class="sub">Lista da 1ª reunião do mês, na ordem em que os pacotes de atividade começam. Clique no título de uma coluna para ordenar, filtre pelo que interessa e registre os encaminhamentos da reunião na coluna Observação.</p>
       <div class="cards" id="rcards"></div>
     </div>
     <div class="panel">
@@ -339,9 +339,9 @@ table.g tr.det td:first-child{padding-left:28px;font-weight:600;color:var(--navy
       <div class="cl4">
         <div><b><i style="background:#9AA1B2"></i>Produtividade esperada</b><span>A quantidade que o engenheiro previu para a semana dividida pelas pessoas previstas para a mesma semana.</span></div>
         <div><b><i style="background:#1A6EE8"></i>Produtividade real</b><span>A quantidade executada na semana dividida pelas pessoas que de fato atuaram.</span></div>
-        <div><b><i style="background:#F2A81D"></i>Índice da semana</b><span>A produtividade real dividida pela esperada da própria semana. A partir de 95% a frente foi boa, de 85% a 95% regular e abaixo de 85% ruim.</span></div>
+        <div><b><i style="background:#F2A81D"></i>Índice da semana</b><span>A produtividade real dividida pela esperada da própria semana. A partir de 95% o pacote foi bom, de 85% a 95% regular e abaixo de 85% ruim.</span></div>
       </div>
-      <p class="nota">O engenheiro prevê as próximas semanas e, no fim de cada semana, lança o que foi executado e a equipe que atuou. Clique em uma frente para ver onde o trabalho aconteceu.</p>
+      <p class="nota">O engenheiro prevê as próximas semanas e, no fim de cada semana, lança o que foi executado e a equipe que atuou. Clique em um pacote de atividade para ver onde o trabalho aconteceu.</p>
     </div>
     <div class="panel">
       <div class="bar-top"><div><h2>Como foi a semana</h2><p class="sub" style="margin:0" id="psub"></p></div><label>Semana <select id="pwk"></select></label></div>
@@ -349,17 +349,17 @@ table.g tr.det td:first-child{padding-left:28px;font-weight:600;color:var(--navy
       <div class="cards" id="pcards" style="grid-template-columns:repeat(3,1fr)"></div>
     </div>
     <div class="panel">
-      <h2 id="ptit">Produtividade por frente</h2><p class="sub" id="pdesc"></p>
+      <h2 id="ptit">Produtividade por pacote de atividade</h2><p class="sub" id="pdesc"></p>
       <div class="tw"><table class="g" id="ptab"></table></div>
     </div>
     <div class="panel">
-      <h2>O mês em 100%</h2><p class="sub">Quanto do previsto do mês cada frente já executou, e o ritmo que falta para fechar o mês. A marca laranja é o previsto acumulado até a semana medida.</p>
+      <h2>O mês em 100%</h2><p class="sub">Quanto do previsto do mês cada pacote de atividade já executou, e o ritmo que falta para fechar o mês. A marca laranja é o previsto acumulado até a semana medida.</p>
       <div id="pmes"></div>
     </div>
     <div class="panel">
       <div class="two" style="margin-top:0">
-        <div><h2>Próximas semanas: o que o engenheiro prevê</h2><p class="sub">Quantidade e equipe previstas por frente, com a premissa de cada uma.</p><div class="tw"><table class="g" id="pnext"></table></div></div>
-        <div><h2>Equipe: pessoas por semana</h2><p class="sub">Soma de todas as frentes. Passe o mouse para ver os valores.</p><div id="pch"></div>
+        <div><h2>Próximas semanas: o que o engenheiro prevê</h2><p class="sub">Quantidade e equipe previstas por pacote de atividade, com a premissa de cada um.</p><div class="tw"><table class="g" id="pnext"></table></div></div>
+        <div><h2>Equipe: pessoas por semana</h2><p class="sub">Soma de todos os pacotes de atividade. Passe o mouse para ver os valores.</p><div id="pch"></div>
           <div class="leg2"><span><i style="background:#9AA1B2"></i>Previstas</span><span><i style="background:#1A6EE8"></i>Reais</span></div></div>
       </div>
     </div>
@@ -437,7 +437,8 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
     return null;
   };
   function parseBase(wb, fname) {
-    if (!wb.Sheets['Frentes'] && !wb.Sheets['Restrições']) throw new Error('Este arquivo não parece ser a base de dados V2: faltam as abas Frentes e Restrições.');
+    var SF = wb.Sheets['Pacotes de atividade'] ? 'Pacotes de atividade' : 'Frentes';
+    if (!wb.Sheets[SF] && !wb.Sheets['Restrições']) throw new Error('Este arquivo não parece ser a base de dados V2: faltam as abas Pacotes de atividade e Restrições.');
     var W = [], D = { warn: W, counts: {}, file: fname };
     var sheet = function (n) { var ws = wb.Sheets[n]; if (!ws) { W.push('A aba "' + n + '" não foi encontrada no arquivo.'); return []; } return XL.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null }).slice(4); };
     var cellV = function (n, a) { var ws = wb.Sheets[n]; return ws && ws[a] ? ws[a].v : null; };
@@ -466,22 +467,22 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
 
     // frentes
     D.frentes = []; var nF = 0;
-    sheet('Frentes').forEach(function (r, i) {
+    sheet(SF).forEach(function (r, i) {
       var nome = txt(r[0]); if (!nome) return; nF++;
       var f = { nome: nome, un: txt(r[1]), bi: pdate(r[2]), bf: pdate(r[3]), ri: pdate(r[4]), rf: pdate(r[5]), locais: txt(r[6]), rt: 0, rr: 0 };
-      if (f.ri == null || f.rf == null) W.push('Frente "' + nome + '": faltam as datas do reprogramado (início ou término).');
-      if (f.bi == null || f.bf == null) W.push('Frente "' + nome + '": faltam as datas da linha de base (início ou término).');
-      if (!f.un) W.push('Frente "' + nome + '": falta a unidade de medição.');
+      if (f.ri == null || f.rf == null) W.push('Pacote de atividade "' + nome + '": faltam as datas do reprogramado (início ou término).');
+      if (f.bi == null || f.bf == null) W.push('Pacote de atividade "' + nome + '": faltam as datas da linha de base (início ou término).');
+      if (!f.un) W.push('Pacote de atividade "' + nome + '": falta a unidade de medição.');
       D.frentes.push(f);
     });
-    D.counts['Frentes'] = nF;
+    D.counts['Pacotes de atividade'] = nF;
     var fIdx = {}; D.frentes.forEach(function (f, i) { fIdx[f.nome] = i; });
 
     // restrições
     D.rows = []; var seen = {};
     sheet('Restrições').forEach(function (r, i) {
       var fr = txt(r[0]); if (!fr) return;
-      if (fIdx[fr] == null) { if (!seen[fr]) W.push('Restrição com frente "' + fr + '" que não existe na aba Frentes (ela aparece na lista, mas não nas contagens do Gantt).'); seen[fr] = 1; }
+      if (fIdx[fr] == null) { if (!seen[fr]) W.push('Restrição com pacote de atividade "' + fr + '" que não existe na aba Pacotes de atividade (ela aparece na lista, mas não nas contagens do Gantt).'); seen[fr] = 1; }
       var lim = pdate(r[5]); if (lim == null) W.push('Restrição da linha ' + (i + 5) + ' ("' + txt(r[3]).slice(0, 40) + '") sem prazo limite.');
       var f = D.frentes[fIdx[fr]], ini = pdate(r[2]); if (ini == null) ini = f ? f.ri : null;
       D.rows.push({ id: D.rows.length, fi: fIdx[fr] == null ? 999 : fIdx[fr], frente: fr, tipo: txt(r[1]), ini: ini, desc: txt(r[3]), resp: txt(r[4]), lim: lim == null ? D.ref : lim, res: pdate(r[6]), ic: txt(r[7]) || 'Baixo', ip: txt(r[8]) || 'Baixo', obs0: txt(r[9]) });
@@ -493,7 +494,7 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
     D.prev = [];
     sheet('Previsibilidade').forEach(function (r) {
       var d = pdate(r[0]), fr = txt(r[1]); if (d == null || !fr) return;
-      if (fIdx[fr] == null && !seen['P' + fr]) { W.push('Previsibilidade com frente "' + fr + '" que não existe na aba Frentes.'); seen['P' + fr] = 1; }
+      if (fIdx[fr] == null && !seen['P' + fr]) { W.push('Previsibilidade com pacote de atividade "' + fr + '" que não existe na aba Pacotes de atividade.'); seen['P' + fr] = 1; }
       D.prev.push({ mon: mondayOf(d), frente: fr, local: txt(r[2]), qp: num(r[4]), ep: num(r[5]), qe: num(r[6]), ee: num(r[7]), obs: txt(r[8]) });
     });
     D.counts['Previsibilidade'] = D.prev.length;
@@ -502,7 +503,18 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
     D.acoes = [];
     sheet('Planos de ação').forEach(function (r) { var a = txt(r[0]); if (!a) return; D.acoes.push({ a: a, f: txt(r[1]), r: txt(r[2]), p: pdate(r[3]), st: txt(r[4]) || 'Em andamento', o: txt(r[5]) }); });
     D.counts['Planos de ação'] = D.acoes.length;
-    D.counts['Cronograma'] = D.months.length;
+    D.counts['Cronograma'] = ['DATA DO CRONOGRAMA', 'TÉRMINO DA OBRA NA LINHA DE BASE', 'TÉRMINO DA OBRA NO REPROGRAMADO', 'ATIVIDADES PREVISTAS ATÉ HOJE (BASE)', 'ATIVIDADES ATRASADAS CONTRA A BASE', 'ATIVIDADES PREVISTAS ATÉ HOJE (REPROG.)', 'ATIVIDADES ATRASADAS CONTRA O REPROG.'].filter(function (k) { return pv(k) != null && pv(k) !== ''; }).length;
+    // avanço semanal: percentual acumulado ao fim de cada semana, digitado pelo engenheiro
+    D.weekly = [];
+    var swr = wb.Sheets['Avanço semanal'] ? XL.utils.sheet_to_json(wb.Sheets['Avanço semanal'], { header: 1, raw: true, defval: null }).slice(4) : null;
+    if (swr) {
+      var mxv = 0; swr.forEach(function (r) { [1, 2, 3].forEach(function (k) { if (num(r[k]) != null && num(r[k]) > mxv) mxv = num(r[k]); }); });
+      var sc = mxv > 1.5 ? 1 : 100;
+      swr.forEach(function (r) { var d = pdate(r[0]); if (d == null) return; var b = num(r[1]), p = num(r[2]), re = num(r[3]); if (b == null && p == null && re == null) return;
+        D.weekly.push({ mon: mondayOf(d), base: b == null ? null : b * sc, rep: p == null ? null : p * sc, real: re == null ? null : re * sc }); });
+      D.weekly.sort(function (a, b) { return a.mon - b.mon; });
+    } else if (!D.months.length) W.push('A aba "Avanço semanal" não foi encontrada no arquivo.');
+    D.counts['Avanço semanal'] = D.weekly.length;
 
     // calendário do trimestre
     var rd = new Date(D.ref), y = rd.getUTCFullYear(), q0 = Math.floor(rd.getUTCMonth() / 3) * 3;
@@ -529,7 +541,7 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
     var isMS = {}, k = 0; D.cal.groups.forEach(function (m) { isMS[k] = true; k += m.n; });
     var h = '<colgroup><col style="width:196px"><col style="width:50px"><col style="width:54px"><col style="width:64px"><col style="width:64px">';
     for (var w = 0; w < NW; w++) h += '<col>'; h += '<col style="width:78px"><col style="width:78px"></colgroup>';
-    h += '<thead><tr><th rowspan="2" style="text-align:left;padding-left:10px">Frente de serviço</th><th rowspan="2">Unidade</th><th colspan="3" class="rh">Restrições</th>';
+    h += '<thead><tr><th rowspan="2" style="text-align:left;padding-left:10px">Pacote de atividade</th><th rowspan="2">Unidade</th><th colspan="3" class="rh">Restrições</th>';
     D.cal.groups.forEach(function (m) { h += '<th colspan="' + m.n + '" class="ms">' + m.label + '</th>'; });
     var ib = '<small class="bl"><span style="color:#C9CEDA">base</span> | <span style="color:#9CC3FF">reprog.</span></small>';
     h += '<th rowspan="2" class="ms">Início' + ib + '</th><th rowspan="2">Término' + ib + '</th></tr><tr><th class="rh">Totais</th><th class="rh">Removidas</th><th class="rh">Pendentes</th>';
@@ -587,7 +599,7 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
         '<div class="lb">Situação</div><div class="chips">' + chip('Vencida', f.sit.ven, 's:ven') + chip('No prazo', f.sit.prz, 's:prz') + chip('Resolvida', f.sit.res, 's:res') + '</div>' +
         '<div class="lb">Impacto no custo</div><div class="chips">' + NIV.map(function (x) { return chip(x, f.ic[x], 'c:' + x); }).join('') + '</div>' +
         '<div class="lb">Impacto no prazo</div><div class="chips">' + NIV.map(function (x) { return chip(x, f.ip[x], 'p:' + x); }).join('') + '</div>' +
-        '<div class="lb">Frente e responsável</div><div class="chips"><select id="sfr">' + opt(fr, f.frente, 'Todas as frentes') + '</select><select id="srp">' + opt(rp, f.resp, 'Todos os responsáveis') + '</select><input type="text" id="sq" placeholder="Buscar na descrição ou na observação" value="' + esc(f.q) + '"><button class="chip" data-k="reset">Limpar filtros</button></div>';
+        '<div class="lb">Pacote e responsável</div><div class="chips"><select id="sfr">' + opt(fr, f.frente, 'Todos os pacotes de atividade') + '</select><select id="srp">' + opt(rp, f.resp, 'Todos os responsáveis') + '</select><input type="text" id="sq" placeholder="Buscar na descrição ou na observação" value="' + esc(f.q) + '"><button class="chip" data-k="reset">Limpar filtros</button></div>';
       $('rfil').classList.toggle('hide', !ST.open); $('bFil').textContent = ST.open ? 'Ocultar filtros' : 'Mostrar filtros';
       [].forEach.call($('rfil').querySelectorAll('.chip'), function (b) { b.onclick = function () {
         var k = b.dataset.k;
@@ -598,7 +610,7 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
       $('srp').onchange = function (e) { ST.f.resp = e.target.value; renderTab(); };
       $('sq').oninput = function (e) { ST.f.q = e.target.value; renderTab(); };
     }
-    var COLS = [['ini', 'Início da atividade'], ['frente', 'Frente'], ['tipo', 'Tipo'], ['desc', 'Descrição'], ['resp', 'Responsável'], ['lim', 'Prazo limite'], ['sit', 'Situação'], ['ic', 'Impacto custo'], ['ip', 'Impacto prazo'], ['obs', 'Observação']];
+    var COLS = [['ini', 'Início da atividade'], ['frente', 'Pacote de atividade'], ['tipo', 'Tipo'], ['desc', 'Descrição'], ['resp', 'Responsável'], ['lim', 'Prazo limite'], ['sit', 'Situação'], ['ic', 'Impacto custo'], ['ip', 'Impacto prazo'], ['obs', 'Observação']];
     var sitOrd = { ven: 0, prz: 1, res: 2 };
     var keyOf = function (r, c) { return c === 'ini' ? (r.ini == null ? 0 : r.ini) : c === 'frente' ? r.fi : c === 'lim' ? r.lim : c === 'sit' ? sitOrd[r.sit] : c === 'ic' ? -NV[r.ic] : c === 'ip' ? -NV[r.ip] : String(r[c] || '').toLowerCase(); };
     var sitTag = function (r) { if (r.sit === 'res') return '<span class="st s-g">Resolvida em ' + dm(r.res) + '</span>'; var d = Math.round((r.lim - TD) / DAYMS); if (r.sit === 'ven') return '<span class="st s-r">Vencida há ' + plural(-d, 'dia', 'dias') + '</span>'; return '<span class="st s-b">' + (d === 0 ? 'Vence hoje' : 'Vence em ' + plural(d, 'dia', 'dias')) + '</span>'; };
@@ -626,7 +638,7 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
     $('bDesc').onclick = function () { if (!changed()) return; ROWS.forEach(function (r) { r.obs = r.obs0; }); save(); renderTab(); };
     $('bFil').onclick = function () { ST.open = !ST.open; renderFil(); };
     function buildWorkbook() {
-      var head = ['FRENTE', 'TIPO DE RESTRIÇÃO', 'INÍCIO DA ATIVIDADE', 'DESCRIÇÃO DA RESTRIÇÃO', 'RESPONSÁVEL', 'PRAZO LIMITE DA RESTRIÇÃO', 'PRAZO RESOLVIDO', 'IMPACTO NO CUSTO', 'IMPACTO NO PRAZO', 'OBSERVAÇÃO'];
+      var head = ['PACOTE DE ATIVIDADE', 'TIPO DE RESTRIÇÃO', 'INÍCIO DA ATIVIDADE', 'DESCRIÇÃO DA RESTRIÇÃO', 'RESPONSÁVEL', 'PRAZO LIMITE DA RESTRIÇÃO', 'PRAZO RESOLVIDO', 'IMPACTO NO CUSTO', 'IMPACTO NO PRAZO', 'OBSERVAÇÃO'];
       var aoa = [head]; ROWS.slice().sort(function (a, b) { return D.rows.indexOf(a) - D.rows.indexOf(b); }).forEach(function (r) { aoa.push([r.frente, r.tipo, r.ini == null ? '' : msSerial(r.ini), r.desc, r.resp, msSerial(r.lim), r.res == null ? '' : msSerial(r.res), r.ic, r.ip, r.obs]); });
       var ws = XL.utils.aoa_to_sheet(aoa);
       for (var i = 1; i < aoa.length; i++) ['C', 'F', 'G'].forEach(function (c) { var cell = ws[c + (i + 1)]; if (cell && cell.t === 'n') cell.z = 'dd/mm/yyyy'; });
@@ -640,21 +652,31 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
 
   /* ---------- previsto x realizado ---------- */
   function buildGlobal() {
-    var months = D.months; if (!months.length) throw new Error('A aba Cronograma não tem a série mensal (a partir da linha 14).');
-    var U = function (k, add) { var p = k.split('-'); return Date.UTC(+p[0], +p[1] - 1 + (add || 0), 1); };
     var mEnd = function (k) { var p = k.split('-'); return Date.UTC(+p[0], +p[1], 0); };
     var NOW = D.nowC, nd = new Date(NOW), curK = mkey(nd.getUTCFullYear(), nd.getUTCMonth());
-    var curM = months.filter(function (m) { return m.k === curK; })[0];
-    var LASTREAL = curM && curM.real != null ? curM.real : null;
-    if (LASTREAL == null) { var lr = months.filter(function (m) { return m.real != null && m.k <= curK; }); if (!lr.length) throw new Error('Não encontrei o físico-financeiro real na aba Cronograma.'); LASTREAL = lr[lr.length - 1].real; }
-    var prevEnd = Date.UTC(nd.getUTCFullYear(), nd.getUTCMonth(), 0);
-    var pts = { base: [], rep: [], real: [] };
-    months.forEach(function (m) { if (m.base != null) pts.base.push([mEnd(m.k), m.base]); if (m.rep != null) pts.rep.push([mEnd(m.k), m.rep]); if (m.real != null && mEnd(m.k) <= prevEnd) pts.real.push([mEnd(m.k), m.real]); });
-    var first = mEnd(months[0].k) - 31 * DAYMS; first = Date.UTC(new Date(first).getUTCFullYear(), new Date(first).getUTCMonth() + 1, 0);
-    ['base', 'rep', 'real'].forEach(function (s) { pts[s].unshift([first, 0]); });
-    function interp(arr, d) { if (d <= arr[0][0]) return arr[0][1]; for (var i = 1; i < arr.length; i++) if (d <= arr[i][0]) { var a = arr[i - 1], b = arr[i]; return a[1] + (b[1] - a[1]) * (d - a[0]) / (b[0] - a[0]); } return arr[arr.length - 1][1]; }
-    var cBase = function (d) { return interp(pts.base, d); }, cRep = function (d) { return interp(pts.rep, d); };
-    var cReal = function (d) { if (d >= NOW) return LASTREAL; if (d > prevEnd) { var s0 = interp(pts.real, prevEnd); return s0 + (LASTREAL - s0) * (d - prevEnd) / (NOW - prevEnd); } return interp(pts.real, d); };
+    var pts = { base: [], rep: [], real: [] }, LASTREAL;
+    if (D.weekly.length) {
+      var Wk = D.weekly, z = Wk[0].mon - DAYMS;
+      pts.base.push([z, 0]); pts.rep.push([z, 0]); pts.real.push([z, 0]);
+      Wk.forEach(function (w) { var se = w.mon + 6 * DAYMS; if (w.base != null) pts.base.push([se, w.base]); if (w.rep != null) pts.rep.push([se, w.rep]); if (w.real != null && w.mon <= NOW) pts.real.push([Math.min(se, NOW), w.real]); });
+      if (pts.real.length < 2) throw new Error('A aba Avanço semanal não tem o percentual realizado.');
+      LASTREAL = pts.real[pts.real.length - 1][1];
+      if (pts.real[pts.real.length - 1][0] < NOW) pts.real.push([NOW, LASTREAL]);
+    } else {
+      var months = D.months; if (!months.length) throw new Error('Preencha a aba Avanço semanal com o percentual acumulado de cada semana.');
+      var curM = months.filter(function (m) { return m.k === curK; })[0];
+      LASTREAL = curM && curM.real != null ? curM.real : null;
+      if (LASTREAL == null) { var lr = months.filter(function (m) { return m.real != null && m.k <= curK; }); if (!lr.length) throw new Error('Não encontrei o físico-financeiro real.'); LASTREAL = lr[lr.length - 1].real; }
+      var prevEnd = Date.UTC(nd.getUTCFullYear(), nd.getUTCMonth(), 0), fm = new Date(mEnd(months[0].k) - 31 * DAYMS);
+      months.forEach(function (m) { if (m.base != null) pts.base.push([mEnd(m.k), m.base]); if (m.rep != null) pts.rep.push([mEnd(m.k), m.rep]); if (m.real != null && mEnd(m.k) <= prevEnd) pts.real.push([mEnd(m.k), m.real]); });
+      var first = Date.UTC(fm.getUTCFullYear(), fm.getUTCMonth() + 1, 0);
+      ['base', 'rep', 'real'].forEach(function (s) { pts[s].unshift([first, 0]); });
+      pts.real.push([NOW, LASTREAL]);
+    }
+    if (pts.base.length < 2 || pts.rep.length < 2) throw new Error('A aba Avanço semanal precisa ter a linha de base e o planejado (reprogramado).');
+    var XEND = Math.max(pts.base[pts.base.length - 1][0], pts.rep[pts.rep.length - 1][0]), STEP = D.weekly.length ? 6 * DAYMS : 31 * DAYMS;
+    function interp(arr, d) { if (d <= arr[0][0]) return arr[0][1]; for (var i = 1; i < arr.length; i++) if (d <= arr[i][0]) { var a = arr[i - 1], b = arr[i]; return b[0] === a[0] ? b[1] : a[1] + (b[1] - a[1]) * (d - a[0]) / (b[0] - a[0]); } return arr[arr.length - 1][1]; }
+    var cBase = function (d) { return interp(pts.base, d); }, cRep = function (d) { return interp(pts.rep, d); }, cReal = function (d) { return interp(pts.real, d); };
     var f2 = function (v) { return fmt(v, 2); }, f1 = function (v) { return fmt(v, 1); };
     var LBL2 = { g: 'No ritmo', y: 'Atenção', r: 'Atrasado' };
 
@@ -675,7 +697,7 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
     $('gtab').innerHTML = '<thead><tr><th style="text-align:left">Indicador</th><th>Real</th><th>Contra o reprogramado</th><th>Contra a linha de base</th></tr></thead><tbody>' + rows + '</tbody>';
 
     (function () {
-      var W = 560, Ht = 280, pl = 42, pb = 30, pt2 = 14, X0 = first, X1 = mEnd(months[months.length - 1].k);
+      var W = 560, Ht = 280, pl = 42, pb = 30, pt2 = 14, X0 = pts.base[0][0], X1 = XEND;
       var xs = function (d) { return pl + (d - X0) / (X1 - X0) * (W - pl - 10); }, ys = function (v) { return Ht - pb - v / 100 * (Ht - pb - pt2); };
       var line = function (arr, col, dash, w) { var p = []; arr.forEach(function (a) { p.push(xs(a[0]).toFixed(1) + ',' + ys(a[1]).toFixed(1)); }); return '<polyline fill="none" stroke="' + col + '" stroke-width="' + w + '"' + (dash ? ' stroke-dasharray="' + dash + '"' : '') + ' points="' + p.join(' ') + '"/>'; };
       var sv = '<h2 style="font-size:14px;color:var(--navy);margin:0 0 4px">Curva S: físico-financeiro acumulado</h2><svg viewBox="0 0 ' + W + ' ' + Ht + '" width="100%" id="csvg">';
@@ -687,14 +709,13 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
       sv += '<line id="cx" x1="0" x2="0" y1="' + pt2 + '" y2="' + (Ht - pb) + '" stroke="#1A3EB5" stroke-width="1.5" style="display:none"/><circle id="cd" r="4" fill="#1A3EB5" style="display:none"/><rect id="chit" x="' + pl + '" y="' + pt2 + '" width="' + (W - pl - 10) + '" height="' + (Ht - pb - pt2) + '" fill="transparent"/></svg>';
       sv += '<div class="leg2"><span><i style="height:0;border-top:3px dashed #8B8E97;background:none;width:18px"></i>Linha de base</span><span><i style="height:0;border-top:3px dashed #F2A81D;background:none;width:18px"></i>Reprogramado</span><span><i style="height:0;border-top:3px solid #1A6EE8;background:none;width:18px"></i>Real</span></div>';
       $('curva').innerHTML = sv;
-      var svg = $('csvg'), ms = months.map(function (m) { return { k: m.k, d: mEnd(m.k), base: m.base, rep: m.rep, real: m.real }; });
+      var svg = $('csvg'), src = pts.rep.length > 2 ? pts.rep : pts.base, ms = src.slice(1).map(function (p) { return p[0]; });
       $('chit').onmousemove = function (e) {
         var r = svg.getBoundingClientRect(), vx = (e.clientX - r.left) / r.width * W, d = X0 + (vx - pl) / (W - pl - 10) * (X1 - X0), best = ms[0];
-        ms.forEach(function (m) { if (Math.abs(m.d - d) < Math.abs(best.d - d)) best = m; });
-        var temReal = best.k <= curK && (best.real != null || best.k === curK), real = best.k === curK ? LASTREAL : best.real, yv = ys(temReal ? real : (best.rep == null ? 0 : best.rep));
-        $('cx').setAttribute('x1', xs(best.d)); $('cx').setAttribute('x2', xs(best.d)); $('cx').style.display = ''; $('cd').setAttribute('cx', xs(best.d)); $('cd').setAttribute('cy', yv); $('cd').style.display = '';
-        var p = best.k.split('-'), titulo = NM[+p[1] - 1] + '/' + p[0].slice(2);
-        tipShow('<b class="t">' + titulo + (best.k === curK ? ' (mês atual)' : (temReal ? '' : ' (previsto)')) + '</b>' + trow('#9AA1B2', 'Linha de base', best.base == null ? '-' : f2(best.base) + '%') + trow('#F2A81D', 'Reprogramado', best.rep == null ? '-' : f2(best.rep) + '%') + (temReal ? trow('#1A6EE8', 'Realizado', f2(real) + '%') + '<div class="sep"></div>' + trow('#fff', 'Contra o reprogramado', best.rep == null ? '-' : sgn(real - best.rep, 2) + ' pp') + trow('#fff', 'Contra a base', best.base == null ? '-' : sgn(real - best.base, 2) + ' pp') : ''), e);
+        ms.forEach(function (m) { if (Math.abs(m - d) < Math.abs(best - d)) best = m; });
+        var temReal = best - STEP < NOW, d0 = temReal ? Math.min(best, NOW) : best, bv = cBase(d0), rv = cRep(d0), real = temReal ? cReal(d0) : null, yv = ys(temReal ? real : rv);
+        $('cx').setAttribute('x1', xs(d0)); $('cx').setAttribute('x2', xs(d0)); $('cx').style.display = ''; $('cd').setAttribute('cx', xs(d0)); $('cd').setAttribute('cy', yv); $('cd').style.display = '';
+        tipShow('<b class="t">' + (temReal ? (d0 === NOW ? 'Hoje, ' : 'Até ') + dmyy(d0) : 'Até ' + dmyy(d0) + ' (previsto)') + '</b>' + trow('#9AA1B2', 'Linha de base', f2(bv) + '%') + trow('#F2A81D', 'Reprogramado', f2(rv) + '%') + (temReal ? trow('#1A6EE8', 'Realizado', f2(real) + '%') + '<div class="sep"></div>' + trow('#fff', 'Contra o reprogramado', sgn(real - rv, 2) + ' pp') + trow('#fff', 'Contra a base', sgn(real - bv, 2) + ' pp') : ''), e);
       };
       $('chit').onmouseleave = function () { $('cx').style.display = 'none'; $('cd').style.display = 'none'; tipHide(); };
     })();
@@ -828,18 +849,18 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
       if (!F.length) { $('pver').innerHTML = '<div class="vered s-n"><small>Resultado da semana ' + SEM[PW].lab + '</small><strong>Semana ainda sem medição</strong><span>Esta semana só tem a previsão do engenheiro. Escolha uma semana medida para ver o resultado.</span></div>'; $('pcards').innerHTML = ''; return; }
       var g = F.filter(function (x) { return x.cor === 'g'; }).length, y = F.filter(function (x) { return x.cor === 'y'; }).length, r = F.filter(function (x) { return x.cor === 'r'; });
       var n = F.length, c = g / n >= 0.7 ? 'g' : r.length / n >= 0.5 ? 'r' : 'y', nome = { g: 'Semana boa', y: 'Semana regular', r: 'Semana ruim' }[c];
-      $('pver').innerHTML = '<div class="vered s-' + c + '"><small>Resultado da semana ' + SEM[PW].lab + '</small><strong>' + nome + '</strong><span>' + g + ' frentes boas, ' + y + ' regular e ' + r.length + ' ruins, de ' + n + ' medidas.' + (r.length ? ' Frentes ruins: ' + r.map(function (x) { return '<b>' + esc(x.f.nome) + '</b> (' + fmt(x.idx, 0) + '%)'; }).join('; ') + '.' : '') + '</span></div>';
+      $('pver').innerHTML = '<div class="vered s-' + c + '"><small>Resultado da semana ' + SEM[PW].lab + '</small><strong>' + nome + '</strong><span>' + g + ' pacotes bons, ' + y + ' regular e ' + r.length + ' ruins, de ' + n + ' medidas.' + (r.length ? ' Pacotes ruins: ' + r.map(function (x) { return '<b>' + esc(x.f.nome) + '</b> (' + fmt(x.idx, 0) + '%)'; }).join('; ') + '.' : '') + '</span></div>';
       var sp = 0, sr = 0, vm = 0, bx = 0; F.forEach(function (x) { sp += x.s.e; sr += x.s.eReal || 0; vm += x.vol; if (x.vol < 90) bx++; });
       $('pcards').innerHTML = '<div class="card"><small>Equipe na semana</small><strong>' + sr + '</strong><span>pessoas reais, ' + sp + ' previstas (' + sgn(sr - sp, 0) + ')</span></div>' +
-        '<div class="card"><small>Volume executado</small><strong>' + fmt(vm / F.length, 0) + '%</strong><span>do previsto da semana, na média das frentes</span></div>' +
-        '<div class="card"><small>Frentes com volume abaixo de 90%</small><strong>' + bx + ' de ' + F.length + '</strong><span>do que foi previsto para a semana</span></div>';
+        '<div class="card"><small>Volume executado</small><strong>' + fmt(vm / F.length, 0) + '%</strong><span>do previsto da semana, na média dos pacotes</span></div>' +
+        '<div class="card"><small>Pacotes com volume abaixo de 90%</small><strong>' + bx + ' de ' + F.length + '</strong><span>do que foi previsto para a semana</span></div>';
     }
     function tab() {
       var med = SEM[PW].med, h;
       if (med) {
         var F = calc(PW);
-        $('ptit').textContent = 'Produtividade por frente: ' + SEM[PW].lab; $('pdesc').textContent = 'Cada frente é comparada com a previsão do engenheiro para a própria semana. Clique em uma frente para ver onde o trabalho aconteceu e a equipe de cada local.';
-        h = '<thead><tr><th style="text-align:left">Frente</th><th>Un.</th><th>Qtd. prevista</th><th>Qtd. executada</th><th>% do previsto</th><th>Equipe prevista</th><th>Equipe real</th><th>Produtividade esperada</th><th>Produtividade real</th><th>Índice da semana</th></tr></thead><tbody>';
+        $('ptit').textContent = 'Produtividade por pacote de atividade: ' + SEM[PW].lab; $('pdesc').textContent = 'Cada pacote é comparado com a previsão do engenheiro para a própria semana. Clique em um pacote para ver onde o trabalho aconteceu e a equipe de cada local.';
+        h = '<thead><tr><th style="text-align:left">Pacote de atividade</th><th>Un.</th><th>Qtd. prevista</th><th>Qtd. executada</th><th>% do previsto</th><th>Equipe prevista</th><th>Equipe real</th><th>Produtividade esperada</th><th>Produtividade real</th><th>Índice da semana</th></tr></thead><tbody>';
         F.forEach(function (x, i) {
           var f = x.f, s = x.s, op = OPEN[f.nome];
           h += '<tr class="fr" data-n="' + esc(f.nome) + '"><td><span class="chv">' + (op ? '&#9662;' : '&#9656;') + '</span>' + esc(f.nome) + '</td><td>' + esc(f.un) + '</td><td class="pp">' + fq(s.q) + '</td><td class="pp">' + fq(s.exec) + '</td><td class="pp">' + fmt(x.vol, 0) + '%</td><td class="pp">' + s.e + '</td><td class="pp">' + (s.eReal || 0) + '</td><td class="pp">' + fq(x.pe, 1) + '</td><td class="pp">' + fq(x.pr, 1) + '</td><td class="s-' + x.cor + '"><span class="pc">' + fmt(x.idx, 0) + '%</span><small>' + LBLI[x.cor] + '</small></td></tr>';
@@ -847,8 +868,8 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
             h += '<tr class="det"><td class="l">' + esc(l.label) + (l.atividade ? '<small>' + esc(l.atividade) + '</small>' : '') + '</td><td>' + esc(f.un) + '</td><td class="pp">' + fq(l.qPrev) + '</td><td class="pp">' + fq(l.qExec) + '</td><td class="pp">' + (l.qPrev ? fmt(l.qExec / l.qPrev * 100, 0) + '%' : '-') + '</td><td class="pp">' + l.ePrev + '</td><td class="pp">' + l.eReal + '</td><td class="pp">' + (pe2 == null ? '-' : fq(pe2, 1)) + '</td><td class="pp">' + (p2 == null ? '-' : fq(p2, 1)) + '</td><td class="' + (c2 ? 's-' + c2 : '') + '">' + (i2 == null ? '-' : '<span class="pc">' + fmt(i2, 0) + '%</span>') + '</td></tr>'; });
         });
       } else {
-        $('ptit').textContent = 'Previsão por frente: ' + SEM[PW].lab; $('pdesc').textContent = 'Semana ainda por acontecer: só a previsão do engenheiro. A quantidade executada e a equipe real entram no fim da semana.';
-        h = '<thead><tr><th style="text-align:left">Frente</th><th>Un.</th><th>Qtd. prevista</th><th>Equipe prevista</th><th>Produtividade esperada</th><th>Qtd. executada</th><th>Equipe real</th><th>Índice da semana</th></tr></thead><tbody>';
+        $('ptit').textContent = 'Previsão por pacote de atividade: ' + SEM[PW].lab; $('pdesc').textContent = 'Semana ainda por acontecer: só a previsão do engenheiro. A quantidade executada e a equipe real entram no fim da semana.';
+        h = '<thead><tr><th style="text-align:left">Pacote de atividade</th><th>Un.</th><th>Qtd. prevista</th><th>Equipe prevista</th><th>Produtividade esperada</th><th>Qtd. executada</th><th>Equipe real</th><th>Índice da semana</th></tr></thead><tbody>';
         PD.forEach(function (f) { var s = f.sem[PW]; if (!s.has) return; h += '<tr><td>' + esc(f.nome) + '</td><td>' + esc(f.un) + '</td><td class="pp">' + (s.q ? fq(s.q) : '-') + '</td><td class="pp">' + (s.e || '-') + '</td><td class="pp">' + (s.e ? fq(s.q / s.e, 1) : '-') + '</td><td class="pp">-</td><td class="pp">-</td><td>-</td></tr>'; });
       }
       $('ptab').innerHTML = h + '</tbody>';
@@ -866,7 +887,7 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
     }
     function prox() {
       var fut = []; SEM.forEach(function (s, i) { if (i > MW) fut.push(i); }); fut = fut.slice(0, 4);
-      var h = '<thead><tr><th style="text-align:left">Frente</th>' + fut.map(function (i) { return '<th>' + SEM[i].lab + '</th>'; }).join('') + '<th style="text-align:left">Premissa do engenheiro</th></tr></thead><tbody>', tot = fut.map(function () { return 0; });
+      var h = '<thead><tr><th style="text-align:left">Pacote de atividade</th>' + fut.map(function (i) { return '<th>' + SEM[i].lab + '</th>'; }).join('') + '<th style="text-align:left">Premissa do engenheiro</th></tr></thead><tbody>', tot = fut.map(function () { return 0; });
       if (!fut.length) h += '<tr><td colspan="3"><div class="empty">Nenhuma semana futura prevista na base.</div></td></tr>';
       else {
         PD.forEach(function (f) { h += '<tr><td>' + esc(f.nome) + '<small style="color:var(--muted);font-weight:500;display:block">' + esc(f.un) + '</small></td>';
@@ -890,7 +911,7 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
       $('pch').innerHTML = sv + '</svg>';
       [].forEach.call($('pch').querySelectorAll('g.grp'), function (g) { g.onmousemove = function (e) { tipShow(g.getAttribute('data-tip'), e); }; g.onmouseleave = tipHide; });
     }
-    $('psub').textContent = MW >= 0 ? 'Semana medida e fechada em ' + dm(SEM[MW].mon + 4 * DAYMS) + '. Cada frente é comparada com o que o engenheiro previu para a própria semana.' : 'Ainda não há semana medida na base. Só a previsão do engenheiro.';
+    $('psub').textContent = MW >= 0 ? 'Semana medida e fechada em ' + dm(SEM[MW].mon + 4 * DAYMS) + '. Cada pacote é comparado com o que o engenheiro previu para a própria semana.' : 'Ainda não há semana medida na base. Só a previsão do engenheiro.';
     $('pwk').onchange = function (e) { PW = +e.target.value; veredito(); tab(); };
     veredito(); tab(); mes(); prox();
     if (location.hash.indexOf('abre') >= 0 && PD.length) { OPEN[PD[0].nome] = true; tab(); }
@@ -903,14 +924,14 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
     var nC = AC.filter(function (x) { return x.sit === 'g'; }).length, nA = AC.filter(function (x) { return x.sit === 'r'; }).length;
     $('acards').innerHTML = '<div class="card"><small>Planos de ação</small><strong>' + AC.length + '</strong><span>cadastrados</span></div><div class="card s-b"><small>Em andamento no prazo</small><strong style="color:var(--secondary)">' + (AC.length - nC - nA) + '</strong><span>prazo ainda não venceu</span></div><div class="card s-r"><small>Atrasados</small><strong>' + nA + '</strong><span>prazo vencido, não concluídos</span></div><div class="card s-g"><small>Concluídos</small><strong>' + nC + '</strong><span>' + Math.round(nC / AC.length * 100) + '% do total</span></div>';
     AC.sort(function (a, b) { var o = { r: 0, b: 1, g: 2 }; return o[a.sit] - o[b.sit] || (a.p || 0) - (b.p || 0); });
-    $('atab').innerHTML = '<thead><tr><th style="text-align:left">Ação</th><th>Frente</th><th>Responsável</th><th>Prazo</th><th>Situação</th><th>Observação</th></tr></thead><tbody>' + AC.map(function (x) { return '<tr class="' + (x.sit === 'r' ? 'venc' : '') + '"><td>' + esc(x.a) + '</td><td class="l">' + esc(x.f) + '</td><td class="l">' + esc(x.r) + '</td><td>' + (x.p == null ? '-' : dmy(x.p)) + '</td><td class="s-' + x.sit + '"><span class="pc">' + (x.sit === 'r' ? 'Atrasada' : x.sit === 'g' ? 'Concluída' : 'Em andamento') + '</span></td><td class="l">' + esc(x.o) + '</td></tr>'; }).join('') + '</tbody>';
+    $('atab').innerHTML = '<thead><tr><th style="text-align:left">Ação</th><th>Pacote de atividade</th><th>Responsável</th><th>Prazo</th><th>Situação</th><th>Observação</th></tr></thead><tbody>' + AC.map(function (x) { return '<tr class="' + (x.sit === 'r' ? 'venc' : '') + '"><td>' + esc(x.a) + '</td><td class="l">' + esc(x.f) + '</td><td class="l">' + esc(x.r) + '</td><td>' + (x.p == null ? '-' : dmy(x.p)) + '</td><td class="s-' + x.sit + '"><span class="pc">' + (x.sit === 'r' ? 'Atrasada' : x.sit === 'g' ? 'Concluída' : 'Em andamento') + '</span></td><td class="l">' + esc(x.o) + '</td></tr>'; }).join('') + '</tbody>';
   }
 
   /* ---------- leitura da base ---------- */
   function buildLeitura() {
     $('lsub').textContent = 'Arquivo: ' + D.file + '. Confira se o que foi lido bate com o que o engenheiro preencheu.';
     var h = '<thead><tr><th style="text-align:left">Aba</th><th>Linhas lidas</th></tr></thead><tbody>';
-    ['Frentes', 'Restrições', 'Previsibilidade', 'Planos de ação', 'Cronograma'].forEach(function (n) { h += '<tr><td>' + n + '</td><td class="pp">' + (D.counts[n] == null ? 0 : D.counts[n]) + (n === 'Cronograma' ? ' meses' : '') + '</td></tr>'; });
+    ['Pacotes de atividade', 'Restrições', 'Previsibilidade', 'Avanço semanal', 'Planos de ação', 'Cronograma'].forEach(function (n) { h += '<tr><td>' + n + '</td><td class="pp">' + (D.counts[n] == null ? 0 : D.counts[n]) + (n === 'Avanço semanal' ? ' semanas' : n === 'Cronograma' ? ' de 7 parâmetros' : '') + '</td></tr>'; });
     h += '<tr><td>Data de referência</td><td class="pp">' + dmy(D.ref) + '</td></tr><tr><td>Data do cronograma</td><td class="pp">' + dmy(D.nowC) + '</td></tr></tbody>';
     $('ltab').innerHTML = h;
     $('lavisos').innerHTML = D.warn.length ? D.warn.map(function (w) { return '<div class="warn">' + esc(w) + '</div>'; }).join('') : '<div class="okbox">Nenhum problema encontrado na leitura.</div>';
@@ -922,11 +943,11 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
     $('bsub').textContent = (OBRA ? OBRA + ' | ' : '') + q + 'º trimestre de ' + D.cal.y;
     $('bref').innerHTML = 'Data de referência<br><b>' + ref + '</b> | Semana ' + sem;
     $('cmeta').innerHTML = '<div><small>Obra</small><b>' + esc(OBRA || 'Não informada') + '</b></div><div><small>Período</small><b>' + q + 'º trimestre de ' + D.cal.y + ', ' + NM[mI] + ' a ' + NM[mI + 2] + '</b></div><div><small>Data de referência</small><b>' + ref + ', semana ' + sem + '</b></div><div><small>Base de dados</small><b>' + esc(D.file) + '</b></div>';
-    var TABS = [['capa', 'Capa e pauta'], ['gantt', 'Frentes do trimestre'], ['restr', 'Restrições'], ['global', 'Previsto x realizado'], ['prev', 'Previsibilidade'], ['acoes', 'Planos de ação'], ['leitura', 'Leitura da base']];
+    var TABS = [['capa', 'Capa e pauta'], ['gantt', 'Pacotes de atividade'], ['restr', 'Restrições'], ['global', 'Previsto x realizado'], ['prev', 'Previsibilidade'], ['acoes', 'Planos de ação'], ['leitura', 'Leitura da base']];
     $('main').innerHTML = TABS.map(function (t, i) { return '<div class="mt' + (i ? '' : ' on') + '" data-p="' + t[0] + '">' + t[1] + '</div>'; }).join('');
     [].forEach.call(document.querySelectorAll('.pg'), function (p) { p.classList.remove('on'); }); $('p-capa').classList.add('on');
     [].forEach.call(document.querySelectorAll('.mt'), function (t) { t.onclick = function () { [].forEach.call(document.querySelectorAll('.mt,.pg'), function (e) { e.classList.remove('on'); }); t.classList.add('on'); $('p-' + t.dataset.p).classList.add('on'); }; });
-    var P = [['gantt', 'Frentes do trimestre', 'Quais frentes serão trabalhadas e como se posicionam nas semanas', '3 min'], ['restr', 'Restrições', 'O que impede as frentes, o que foi removido e o que vence', '10 min'], ['global', 'Previsto x realizado', 'A obra contra o plano reprogramado e contra a linha de base', '5 min'], ['prev', 'Previsibilidade', 'Equipe e produtividade previstas e reais, por frente', '7 min'], ['acoes', 'Planos de ação', 'O que a obra está fazendo para recuperar', '5 min'], ['leitura', 'Leitura da base', 'O que foi lido do arquivo e o que precisa de conferência', 'Apoio']];
+    var P = [['gantt', 'Pacotes de atividade', 'Quais pacotes serão trabalhados e como se posicionam nas semanas', '3 min'], ['restr', 'Restrições', 'O que impede os pacotes, o que foi removido e o que vence', '10 min'], ['global', 'Previsto x realizado', 'A obra contra o plano reprogramado e contra a linha de base', '5 min'], ['prev', 'Previsibilidade', 'Equipe e produtividade previstas e reais, por pacote de atividade', '7 min'], ['acoes', 'Planos de ação', 'O que a obra está fazendo para recuperar', '5 min'], ['leitura', 'Leitura da base', 'O que foi lido do arquivo e o que precisa de conferência', 'Apoio']];
     $('pauta').innerHTML = P.map(function (p, i) { return '<li data-go="' + p[0] + '"><span class="nn">' + (i + 1) + '</span><div><b>' + p[1] + '</b><span>' + p[2] + '</span></div><div class="tm">' + p[3] + '</div></li>'; }).join('');
     [].forEach.call($('pauta').querySelectorAll('li'), function (li) { li.onclick = function () { document.querySelector('.mt[data-p=' + li.dataset.go + ']').click(); window.scrollTo(0, 0); }; });
     [].forEach.call(document.querySelectorAll('.rep-head'), function (e) { e.parentNode.removeChild(e); });
@@ -951,7 +972,7 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
       var wb = XL.read(buf, { type: 'array' });
       OBRA = ($('obra').value || '').trim();
       D = parseBase(wb, name);
-      if (!D.frentes.length) throw new Error('Não encontrei nenhuma frente na aba Frentes. Confira se este é o arquivo da base de dados V2.');
+      if (!D.frentes.length) throw new Error('Não encontrei nenhum pacote de atividade na aba Pacotes de atividade. Confira se este é o arquivo da base de dados V2.');
       $('erro').style.display = 'none'; $('up').style.display = 'none'; $('app').style.display = 'block';
       build(); window.scrollTo(0, 0);
     } catch (e) { showErr('<b>Não consegui ler este arquivo.</b><br>' + esc(e.message || e)); if (window.console) console.error(e); }

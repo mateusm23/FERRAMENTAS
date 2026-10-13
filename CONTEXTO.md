@@ -809,7 +809,7 @@ está presente no HTML servido) confirma no ar sem depender de "parece certo".
 Uma ferramenta só no portal (card na seção **Outros**). Ao entrar, `Outros/Planejamento Trimestral/PLANEJAMENTO TRIMESTRAL.html`
 mostra as 4 opções: Treinamento (apresentação), Base de dados de exemplo, Base de dados em branco e Painel.
 Os HTML são standalone (leitura do .xlsx com SheetJS inline, sem CDN). O painel lê a base V2 pelas abas
-Frentes, Restrições, Previsibilidade, Planos de ação, Cronograma e a data de referência (aba Listas, célula F2);
+Pacotes de atividade (antes chamada Frentes, ainda aceita), Restrições, Previsibilidade, Avanço semanal (percentual físico-financeiro acumulado por semana: base, planejado e realizado, digitado pelo engenheiro), Planos de ação, Cronograma (parâmetros) e a data de referência (aba Listas, célula F2);
 nada sai do navegador.
 
 - **Dados públicos**: o repositório é público. A base de exemplo foi gerada com `MODO=exemplo`, que **altera** a
@@ -819,3 +819,4 @@ nada sai do navegador.
   (`09. BASE DE DADOS V2/gerador` com `MODO=exemplo|branco`, `10. FERRAMENTA V2`, `11. APRESENTACAO V2`).
   Mudou o layout da base: gerar de novo as duas bases e conferir se o painel ainda lê.
 - Regras de texto como no resto do portal: sem travessão e iniciais maiúsculas.
+- Nomenclatura: "Pacote de atividade" substitui "frente de serviço" em todos os textos (2026-10-13).
