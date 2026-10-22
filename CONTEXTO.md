@@ -821,3 +821,19 @@ nada sai do navegador.
 - Regras de texto como no resto do portal: sem travessão e iniciais maiúsculas.
 - Nomenclatura: "Pacote de atividade" substitui "frente de serviço" em todos os textos (2026-10-13).
 - **Procedimento de extração** (aba e tela avulsa do painel, do material do time de prazo, slides 09, 10, 11, 18, 19 e 20 de Gerenciadora, Escala e Análise): no repositório público vai **só o passo a passo em texto**. Os prints originais mostram nome de obra e valores de clientes, então ficam só na versão interna (pasta de trabalho, `EXT_IMGS=1` no `montar-ferramenta.js`). Para publicar prints, primeiro trocar por telas de uma obra fictícia.
+
+## Análise de Emissão de NF (Outros), 2026-10-22
+
+Arquivo: `Outros/Análise de Emissão de NF/ANALISE DE EMISSAO DE NF.html`. Lê o relatório com as abas
+**1067** (CAPs, uma linha por parcela) e **260** (registro financeiro por insumo), reconhecidas pelos
+nomes das colunas, não pelo nome da aba.
+
+- Usuário marca os CAPs elegíveis e informa o período de **Emissão** (inclusive as duas datas).
+- Situação de cada parcela: chave empresa+obra+`Num_Proc`+`NumParc_Proc` contra `Proc/Parc` da 260.
+  Com `APagar` > 0 fica A PAGAR, com `Pago` > 0 fica PAGO, sem registro (ou só projetado) fica EMISSÃO.
+- Soma por NF (fornecedor+`DocFiscal_Proc`). Vencimentos concatenados na mesma célula. NF com situações
+  diferentes gera uma linha por situação, com item, emissão, NF e fornecedor mesclados (rowspan).
+- A tabela copiada espelha o memorando (10 colunas, fornecedor em D:F) e inclui o cabeçalho, para colar a partir de A8.
+  A coluna G (TIPO PAGAMENTO, antes PIX ou BOLETO) sai vazia; o status vai na coluna J.
+- Valor: `ValorParc` por padrão, com opção de `TotalValorLiq` (diferem em parte das parcelas).
+- O `REL..xlsx` real nunca vai para o repositório (público).
