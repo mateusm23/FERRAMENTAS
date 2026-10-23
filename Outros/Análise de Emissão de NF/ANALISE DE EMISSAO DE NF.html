@@ -166,6 +166,10 @@ table.memo td.st { text-align: center; font-weight: 700; }
 .st-pago { color: var(--ok); }
 .st-apagar { color: var(--warn); }
 .st-emissao { color: var(--secondary); }
+.st-misto { color: var(--navy); }
+.agrup { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--border); }
+.agrup .opcoes { flex-direction: column; gap: 10px; }
+.agrup small { display: block; color: var(--faint); font-size: 11.5px; margin-left: 22px; margin-top: -6px; }
 
 .rodape { text-align: center; font-size: 11.5px; color: var(--faint); padding: 16px; }
 .toast {
@@ -245,7 +249,18 @@ table.memo td.st { text-align: center; font-weight: 700; }
     </div>
 
     <div class="card">
-      <div class="card-titulo"><div class="card-num">3</div><h2>Período de emissão e valor</h2></div>
+      <div class="card-titulo"><div class="card-num">3</div><h2>Fornecedores</h2></div>
+      <p class="card-hint">Aparecem os fornecedores dos CAPs marcados, dentro do período de emissão. Desmarque os que não entram no memorando.</p>
+      <div class="cap-tools">
+        <input type="text" class="busca" id="forn-busca" placeholder="Buscar fornecedor">
+        <button class="btn pequeno" id="forn-todos">Marcar todos</button>
+        <button class="btn pequeno" id="forn-nenhum">Limpar</button>
+      </div>
+      <div class="cap-lista" id="forn-lista"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-titulo"><div class="card-num">4</div><h2>Período, valor e agrupamento</h2></div>
       <p class="card-hint">Entram as parcelas cuja data de emissão está dentro do período (inclusive as duas datas).</p>
       <div class="campos">
         <div class="campo"><label for="dt-ini">Emissão de</label><input type="date" id="dt-ini"></div>
@@ -256,6 +271,15 @@ table.memo td.st { text-align: center; font-weight: 700; }
             <label><input type="radio" name="valor" value="ValorParc" checked> Valor da parcela</label>
             <label><input type="radio" name="valor" value="TotalValorLiq"> Valor líquido</label>
           </div>
+        </div>
+      </div>
+      <div class="agrup">
+        <div class="campo"><label>Agrupamento das linhas</label></div>
+        <div class="opcoes">
+          <label><input type="checkbox" id="juntar-status"> Não separar PAGO e A PAGAR</label>
+          <small>Soma as parcelas pagas e a pagar da mesma NF numa única linha, com a situação "PAGO / A PAGAR". EMISSÃO continua separada.</small>
+          <label><input type="checkbox" id="juntar-venc" checked> Não separar por data de vencimento</label>
+          <small>Marcado: os vencimentos da NF ficam todos na mesma célula. Desmarcado: uma linha para cada data de vencimento.</small>
         </div>
       </div>
       <div class="previa" id="previa"></div>
@@ -274,7 +298,7 @@ table.memo td.st { text-align: center; font-weight: 700; }
     <div id="avisos-3"></div>
 
     <div class="card">
-      <div class="card-titulo"><div class="card-num">4</div><h2>Tabela do memorando</h2></div>
+      <div class="card-titulo"><div class="card-num">5</div><h2>Tabela do memorando</h2></div>
       <p class="card-hint">Clique em "Copiar tabela" e cole no memorando a partir da célula A8, onde começa o cabeçalho. Para manter o formato do seu modelo, cole com Ctrl+Alt+V e escolha "Manter formatação de destino".</p>
       <div class="barra-acoes" style="margin:0 0 14px">
         <button class="btn primario" id="btn-copiar">Copiar tabela</button>
@@ -301,7 +325,8 @@ table.memo td.st { text-align: center; font-weight: 700; }
 /* ============================================================
    Núcleo: leitura, classificação e agrupamento (funções puras)
    ============================================================ */
-var RANK = { 'PAGO': 0, 'A PAGAR': 1, 'EMISSÃO': 2 };
+var RANK = { 'PAGO': 0, 'PAGO / A PAGAR': 0.5, 'A PAGAR': 1, 'EMISSÃO': 2 };
+var ROTULO_JUNTO = 'PAGO / A PAGAR';
 var TOLERANCIA = 0.005;
 
 function normH(s) {
@@ -411,15 +436,28 @@ function resumoCaps(regs) {
   return Object.keys(m).sort().map(function (k) { return m[k]; });
 }
 
-function filtrar(regs, caps, ini, fim) {
+function chaveForn(r) { return r.codForn || r.fornecedor; }
+
+function filtrar(regs, caps, ini, fim, fornOff) {
   return regs.filter(function (r) {
-    return caps[r.cap] && r.emissao != null && r.emissao >= ini && r.emissao <= fim;
+    return caps[r.cap] && r.emissao != null && r.emissao >= ini && r.emissao <= fim && !(fornOff && fornOff[chaveForn(r)]);
   });
 }
 
-/* Monta as NFs, com um grupo por situação */
-function montarNFs(regs, idx, campoValor) {
-  var nfs = {};
+function resumoForn(regs) {
+  var m = {};
+  regs.forEach(function (r) {
+    var k = chaveForn(r);
+    var o = m[k] || (m[k] = { chave: k, nome: r.fornecedor || k, qtd: 0, valor: 0 });
+    o.qtd++; o.valor += r.valorParc;
+  });
+  return Object.keys(m).map(function (k) { return m[k]; }).sort(function (a, b) { return a.nome.localeCompare(b.nome); });
+}
+
+/* Monta as NFs. opc: { campo, juntarStatus, juntarVenc } */
+function montarNFs(regs, idx, opc) {
+  opc = opc || {};
+  var nfs = {}, reais = { 'PAGO': 0, 'A PAGAR': 0, 'EMISSÃO': 0, total: 0 };
   var semNF = 0, naoAchou = 0;
   regs.forEach(function (r) {
     if (!r.nf) semNF++;
@@ -428,8 +466,12 @@ function montarNFs(regs, idx, campoValor) {
     nf.emissoes.push(r.emissao);
     var st = statusParcela(r, idx);
     if (!st.achou) naoAchou++;
-    var gr = nf.grupos[st.status] || (nf.grupos[st.status] = { status: st.status, venc: [], valor: 0, parcelas: 0 });
-    gr.valor += campoValor === 'TotalValorLiq' ? r.valorLiq : r.valorParc;
+    var valor = opc.campo === 'TotalValorLiq' ? r.valorLiq : r.valorParc;
+    reais[st.status] += valor; reais.total += valor;
+    var rot = (opc.juntarStatus && st.status !== 'EMISSÃO') ? ROTULO_JUNTO : st.status;
+    var gk = rot + (opc.juntarVenc ? '' : '|' + r.venc);
+    var gr = nf.grupos[gk] || (nf.grupos[gk] = { status: rot, venc: [], valor: 0, parcelas: 0 });
+    gr.valor += valor;
     gr.parcelas++;
     if (r.venc != null && gr.venc.indexOf(r.venc) < 0) gr.venc.push(r.venc);
   });
@@ -437,13 +479,14 @@ function montarNFs(regs, idx, campoValor) {
     var n = nfs[k];
     n.emissao = Math.min.apply(null, n.emissoes);
     n.emissaoDivergente = n.emissoes.some(function (e) { return e !== n.emissao; });
-    n.grupos = Object.keys(n.grupos).map(function (s) {
-      var gr = n.grupos[s];
+    n.grupos = Object.keys(n.grupos).map(function (gk) {
+      var gr = n.grupos[gk];
       gr.venc.sort(function (a, b) { return a - b; });
+      gr.primeiroVenc = gr.venc.length ? gr.venc[0] : 1e9;
       return gr;
-    }).sort(function (a, b) { return RANK[a.status] - RANK[b.status]; });
+    }).sort(function (a, b) { return (RANK[a.status] - RANK[b.status]) || (a.primeiroVenc - b.primeiroVenc); });
     n.rank = RANK[n.grupos[0].status];
-    n.primeiroVenc = Math.min.apply(null, n.grupos.map(function (gr) { return gr.venc.length ? gr.venc[0] : 1e9; }));
+    n.primeiroVenc = Math.min.apply(null, n.grupos.map(function (gr) { return gr.primeiroVenc; }));
     return n;
   });
   lista.sort(function (a, b) {
@@ -451,19 +494,15 @@ function montarNFs(regs, idx, campoValor) {
       (parseFloat(a.nf) - parseFloat(b.nf) || String(a.nf).localeCompare(String(b.nf)));
   });
   lista.forEach(function (n, i) { n.item = i + 1; });
-  return { nfs: lista, semNF: semNF, naoAchou: naoAchou };
-}
-
-function totaisPorStatus(nfs) {
-  var t = { 'PAGO': 0, 'A PAGAR': 0, 'EMISSÃO': 0, total: 0, linhas: 0 };
-  nfs.forEach(function (n) { n.grupos.forEach(function (g) { t[g.status] += g.valor; t.total += g.valor; t.linhas++; }); });
-  return t;
+  var linhas = 0;
+  lista.forEach(function (n) { linhas += n.grupos.length; });
+  return { nfs: lista, semNF: semNF, naoAchou: naoAchou, reais: reais, linhas: linhas };
 }
 
 /* ============================================================
    Interface
    ============================================================ */
-var state = { b1067: null, b260: null, regs: [], idx: null, caps: {}, ini: null, fim: null, resultado: null };
+var state = { b1067: null, b260: null, regs: [], idx: null, caps: {}, fornOff: {}, ini: null, fim: null, resultado: null };
 var $ = function (id) { return document.getElementById(id); };
 
 function irPara(n) {
@@ -518,12 +557,13 @@ function prepararTela2() {
   state.idx = indexar260(state.b260.linhas);
   var caps = resumoCaps(state.regs);
   state.caps = {};
+  state.fornOff = {};
   var emis = state.regs.map(function (r) { return r.emissao; }).filter(function (e) { return e != null; });
   if (!emis.length) { msg('msg-2', 'erro', 'Nenhuma data de emissão foi reconhecida na base 1067.'); }
   $('dt-ini').value = emis.length ? serialParaISO(Math.min.apply(null, emis)) : '';
   $('dt-fim').value = emis.length ? serialParaISO(Math.max.apply(null, emis)) : '';
   desenharCaps(caps);
-  atualizarPrevia();
+  atualizarTudo();
 }
 
 function desenharCaps(caps) {
@@ -538,13 +578,41 @@ function desenharCaps(caps) {
 
 function capsDaTela() { return resumoCaps(state.regs); }
 
+function opcoesTela() {
+  return {
+    campo: document.querySelector('input[name=valor]:checked').value,
+    juntarStatus: $('juntar-status').checked,
+    juntarVenc: $('juntar-venc').checked
+  };
+}
+
+function capsMarcados() { return Object.keys(state.caps).filter(function (k) { return state.caps[k]; }); }
+function periodoTela() { return { ini: isoParaSerial($('dt-ini').value), fim: isoParaSerial($('dt-fim').value) }; }
+
+/* Fornecedores dos CAPs marcados dentro do período */
+function desenharForn() {
+  var p = periodoTela();
+  var ok = capsMarcados().length > 0 && p.ini != null && p.fim != null && p.ini <= p.fim;
+  var forns = ok ? resumoForn(filtrar(state.regs, state.caps, p.ini, p.fim, null)) : [];
+  var termo = normH($('forn-busca').value);
+  var visiveis = forns.filter(function (f) { return !termo || normH(f.nome).indexOf(termo) >= 0; });
+  var html = visiveis.map(function (f) {
+    return '<label class="cap-item"><input type="checkbox" data-forn="' + esc(f.chave) + '"' + (state.fornOff[f.chave] ? '' : ' checked') + '>' +
+      '<span class="nome">' + esc(f.nome) + '</span><span class="qtd">' + f.qtd + ' parcela' + (f.qtd > 1 ? 's' : '') + '</span>' +
+      '<span class="valor">R$ ' + fmtMoeda(f.valor) + '</span></label>';
+  }).join('');
+  $('forn-lista').innerHTML = html || '<div class="cap-item">' + (ok ? 'Nenhum fornecedor no recorte.' : 'Marque um CAP e informe o período para listar os fornecedores.') + '</div>';
+  state.fornVisiveis = visiveis;
+}
+
+function atualizarTudo() { desenharForn(); atualizarPrevia(); }
+
 function atualizarPrevia() {
-  var ini = isoParaSerial($('dt-ini').value), fim = isoParaSerial($('dt-fim').value);
-  var escolhidos = Object.keys(state.caps).filter(function (k) { return state.caps[k]; });
+  var p = periodoTela(), ini = p.ini, fim = p.fim;
+  var escolhidos = capsMarcados();
   var ok = escolhidos.length > 0 && ini != null && fim != null && ini <= fim;
-  var regs = ok ? filtrar(state.regs, state.caps, ini, fim) : [];
-  var campo = document.querySelector('input[name=valor]:checked').value;
-  var nfs = montarNFs(regs, state.idx, campo).nfs;
+  var regs = ok ? filtrar(state.regs, state.caps, ini, fim, state.fornOff) : [];
+  var nfs = montarNFs(regs, state.idx, opcoesTela()).nfs;
   var txt = escolhidos.length + ' CAP' + (escolhidos.length === 1 ? '' : 's') + ' marcado' + (escolhidos.length === 1 ? '' : 's') + '. ';
   txt += ok ? regs.length + ' parcela' + (regs.length === 1 ? '' : 's') + ' em ' + nfs.length + ' NF' + (nfs.length === 1 ? '' : 's') + ' no período.' : 'Marque ao menos um CAP e informe um período válido.';
   $('previa').textContent = txt;
@@ -554,21 +622,22 @@ function atualizarPrevia() {
 
 function gerar() {
   var ini = isoParaSerial($('dt-ini').value), fim = isoParaSerial($('dt-fim').value);
-  var campo = document.querySelector('input[name=valor]:checked').value;
-  var regs = filtrar(state.regs, state.caps, ini, fim);
-  var r = montarNFs(regs, state.idx, campo);
+  var opc = opcoesTela();
+  var regs = filtrar(state.regs, state.caps, ini, fim, state.fornOff);
+  var r = montarNFs(regs, state.idx, opc);
+  r.opc = opc;
   r.ini = ini; r.fim = fim; r.parcelas = regs.length;
   state.resultado = r;
   desenharResultado(r);
   irPara(3);
 }
 
-function classeStatus(s) { return s === 'PAGO' ? 'st-pago' : (s === 'A PAGAR' ? 'st-apagar' : 'st-emissao'); }
+function classeStatus(s) { return s === 'PAGO' ? 'st-pago' : (s === 'A PAGAR' ? 'st-apagar' : (s === 'EMISSÃO' ? 'st-emissao' : 'st-misto')); }
 
 function desenharResultado(r) {
-  var t = totaisPorStatus(r.nfs);
+  var t = r.reais;
   $('kpis').innerHTML =
-    kpi('NFs', r.nfs.length, r.parcelas + ' parcelas, ' + t.linhas + ' linhas') +
+    kpi('NFs', r.nfs.length, r.parcelas + ' parcelas, ' + r.linhas + ' linhas') +
     kpi('Total do memorando', 'R$ ' + fmtMoeda(t.total), fmtData(r.ini) + ' a ' + fmtData(r.fim)) +
     kpi('Pago', 'R$ ' + fmtMoeda(t['PAGO']), '') +
     kpi('A pagar', 'R$ ' + fmtMoeda(t['A PAGAR']), '') +
@@ -576,7 +645,7 @@ function desenharResultado(r) {
 
   var av = [];
   var mistas = r.nfs.filter(function (n) { return n.grupos.length > 1; });
-  if (mistas.length) av.push('<b>' + mistas.length + ' NF' + (mistas.length > 1 ? 's' : '') + ' com situações diferentes</b>, por isso a linha foi duplicada e as células iguais mescladas: ' + mistas.slice(0, 12).map(function (n) { return esc(n.nf); }).join(', ') + (mistas.length > 12 ? '...' : ''));
+  if (mistas.length) av.push('<b>' + mistas.length + ' NF' + (mistas.length > 1 ? 's' : '') + ' com mais de uma linha</b> (situações ou vencimentos separados), com as células iguais mescladas: ' + mistas.slice(0, 12).map(function (n) { return esc(n.nf); }).join(', ') + (mistas.length > 12 ? '...' : ''));
   if (r.naoAchou) av.push('<b>' + r.naoAchou + ' parcela' + (r.naoAchou > 1 ? 's' : '') + '</b> não ' + (r.naoAchou > 1 ? 'foram encontradas' : 'foi encontrada') + ' na base 260 e ' + (r.naoAchou > 1 ? 'entraram' : 'entrou') + ' como EMISSÃO.');
   var div = r.nfs.filter(function (n) { return n.emissaoDivergente; });
   if (div.length) av.push('<b>' + div.length + ' NF' + (div.length > 1 ? 's' : '') + ' com datas de emissão diferentes entre as parcelas</b> (usada a menor): ' + div.slice(0, 12).map(function (n) { return esc(n.nf); }).join(', '));
@@ -624,7 +693,7 @@ function copiarTabela() {
 }
 
 function novaAnalise() {
-  state = { b1067: null, b260: null, regs: [], idx: null, caps: {}, ini: null, fim: null, resultado: null };
+  state = { b1067: null, b260: null, regs: [], idx: null, caps: {}, fornOff: {}, ini: null, fim: null, resultado: null };
   $('arquivo').value = '';
   $('chip-1067').className = 'base-chip falta'; $('chip-1067').innerHTML = '<b>Base 1067</b> (CAPs): aguardando';
   $('chip-260').className = 'base-chip falta'; $('chip-260').innerHTML = '<b>Base 260</b> (pago e a pagar): aguardando';
@@ -642,16 +711,23 @@ if (typeof document !== 'undefined' && $('dropzone')) {
   $('btn-voltar-2').addEventListener('click', function () { irPara(1); });
   $('cap-busca').addEventListener('input', function () { desenharCaps(capsDaTela()); });
   $('cap-lista').addEventListener('change', function (e) {
-    var cb = e.target; if (cb.dataset && cb.dataset.cap !== undefined) { state.caps[cb.dataset.cap] = cb.checked; atualizarPrevia(); }
+    var cb = e.target; if (cb.dataset && cb.dataset.cap !== undefined) { state.caps[cb.dataset.cap] = cb.checked; atualizarTudo(); }
   });
   $('cap-todos').addEventListener('click', function () {
     var termo = normH($('cap-busca').value);
     capsDaTela().forEach(function (c) { if (!termo || normH(c.cap).indexOf(termo) >= 0) state.caps[c.cap] = true; });
-    desenharCaps(capsDaTela()); atualizarPrevia();
+    desenharCaps(capsDaTela()); atualizarTudo();
   });
-  $('cap-nenhum').addEventListener('click', function () { state.caps = {}; desenharCaps(capsDaTela()); atualizarPrevia(); });
-  ['dt-ini', 'dt-fim'].forEach(function (id) { $(id).addEventListener('change', atualizarPrevia); });
+  $('cap-nenhum').addEventListener('click', function () { state.caps = {}; desenharCaps(capsDaTela()); atualizarTudo(); });
+  ['dt-ini', 'dt-fim'].forEach(function (id) { $(id).addEventListener('change', atualizarTudo); });
   document.querySelectorAll('input[name=valor]').forEach(function (el) { el.addEventListener('change', atualizarPrevia); });
+  ['juntar-status', 'juntar-venc'].forEach(function (id) { $(id).addEventListener('change', atualizarPrevia); });
+  $('forn-busca').addEventListener('input', desenharForn);
+  $('forn-lista').addEventListener('change', function (e) {
+    var cb = e.target; if (cb.dataset && cb.dataset.forn !== undefined) { state.fornOff[cb.dataset.forn] = !cb.checked; atualizarPrevia(); }
+  });
+  $('forn-todos').addEventListener('click', function () { (state.fornVisiveis || []).forEach(function (f) { delete state.fornOff[f.chave]; }); desenharForn(); atualizarPrevia(); });
+  $('forn-nenhum').addEventListener('click', function () { (state.fornVisiveis || []).forEach(function (f) { state.fornOff[f.chave] = true; }); desenharForn(); atualizarPrevia(); });
   $('btn-gerar').addEventListener('click', gerar);
   $('btn-copiar').addEventListener('click', copiarTabela);
   $('btn-nova').addEventListener('click', novaAnalise);

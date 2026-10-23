@@ -837,3 +837,9 @@ nomes das colunas, não pelo nome da aba.
   A coluna G (TIPO PAGAMENTO, antes PIX ou BOLETO) sai vazia; o status vai na coluna J.
 - Valor: `ValorParc` por padrão, com opção de `TotalValorLiq` (diferem em parte das parcelas).
 - O `REL..xlsx` real nunca vai para o repositório (público).
+
+### Análise de Emissão de NF: filtro de fornecedor e agrupamento (2026-10-22)
+
+- Tela 2 ganhou o cartão **Fornecedores**: lista os fornecedores dos CAPs marcados no período, tudo marcado por padrão (`state.fornOff` guarda os desmarcados, chave `codForn` ou nome).
+- Agrupamento: **Não separar PAGO e A PAGAR** (rótulo "PAGO / A PAGAR", EMISSÃO continua separada) e **Não separar por data de vencimento** (marcado por padrão, vencimentos concatenados; desmarcado, uma linha por vencimento).
+- Os totais por situação nos cartões do topo usam a situação real da parcela, mesmo com as linhas juntadas.
