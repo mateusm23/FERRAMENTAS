@@ -228,8 +228,8 @@ table.memo td.st { text-align: center; font-weight: 700; }
       <div class="card-titulo"><div class="card-num">?</div><h2>Como a ferramenta decide</h2></div>
       <p class="card-hint">As regras aplicadas a cada parcela de CAP.</p>
       <div class="regras">
-        <div class="regra"><strong>Pago, a pagar ou emissão</strong>Cada parcela (processo e parcela) é procurada na base 260. Se tem valor pago, fica PAGO. Se tem valor a pagar, fica A PAGAR. Se não aparece na 260, está em EMISSÃO.</div>
-        <div class="regra"><strong>Soma por NF</strong>As parcelas do mesmo fornecedor e da mesma nota fiscal são somadas. Os vencimentos aparecem todos na mesma célula, separados por vírgula.</div>
+        <div class="regra"><strong>Pago, a pagar ou emissão</strong>Cada parcela (processo e parcela) é procurada na base 260. O valor pago fica em PAGO e o valor a pagar fica em A PAGAR, sempre com o valor da 260. Se não aparece na 260, está em EMISSÃO (com o valor da 1067).</div>
+        <div class="regra"><strong>Soma por NF</strong>As parcelas do mesmo fornecedor e da mesma nota fiscal são somadas, usando o valor da base 260 (a 1067 repete o valor total do documento em algumas parcelas). Os vencimentos aparecem todos na mesma célula, separados por vírgula.</div>
         <div class="regra"><strong>NF com situações diferentes</strong>Se uma NF tem parcelas em situações diferentes, a linha é duplicada, uma para cada situação, e as células iguais (item, emissão, NF e fornecedor) saem mescladas.</div>
       </div>
     </div>
@@ -260,18 +260,11 @@ table.memo td.st { text-align: center; font-weight: 700; }
     </div>
 
     <div class="card">
-      <div class="card-titulo"><div class="card-num">4</div><h2>Período, valor e agrupamento</h2></div>
-      <p class="card-hint">Entram as parcelas cuja data de emissão está dentro do período (inclusive as duas datas).</p>
+      <div class="card-titulo"><div class="card-num">4</div><h2>Período e agrupamento</h2></div>
+      <p class="card-hint">Entram as parcelas cuja data de emissão está dentro do período (inclusive as duas datas). O valor de cada parcela vem da base 260, somado por processo e parcela.</p>
       <div class="campos">
         <div class="campo"><label for="dt-ini">Emissão de</label><input type="date" id="dt-ini"></div>
         <div class="campo"><label for="dt-fim">Emissão até</label><input type="date" id="dt-fim"></div>
-        <div class="campo">
-          <label>Valor da parcela</label>
-          <div class="opcoes">
-            <label><input type="radio" name="valor" value="ValorParc" checked> Valor da parcela</label>
-            <label><input type="radio" name="valor" value="TotalValorLiq"> Valor líquido</label>
-          </div>
-        </div>
       </div>
       <div class="agrup">
         <div class="campo"><label>Agrupamento das linhas</label></div>
@@ -419,19 +412,24 @@ function indexar260(linhas) {
 
 function chaveParcela(r) { return r.emp + '|' + r.obra + '|' + r.proc + '|' + r.parc; }
 
-function statusParcela(r, idx) {
+/* Partes da parcela com o valor da base 260: pago, a pagar e projetado (emissão).
+   Sem registro na 260, a parcela entra em emissão com o valor da base 1067. */
+function partesParcela(r, idx) {
   var o = idx[chaveParcela(r)];
-  if (!o) return { status: 'EMISSÃO', achou: false };
-  if (o.apagar > TOLERANCIA) return { status: 'A PAGAR', achou: true };
-  if (o.pago > TOLERANCIA) return { status: 'PAGO', achou: true };
-  return { status: 'EMISSÃO', achou: true };
+  if (!o) return { achou: false, partes: [{ status: 'EMISSÃO', valor: r.valorParc }] };
+  var p = [];
+  if (o.pago > TOLERANCIA) p.push({ status: 'PAGO', valor: o.pago });
+  if (o.apagar > TOLERANCIA) p.push({ status: 'A PAGAR', valor: o.apagar });
+  if (o.projetado > TOLERANCIA) p.push({ status: 'EMISSÃO', valor: o.projetado });
+  if (!p.length) p.push({ status: 'EMISSÃO', valor: r.valorParc });
+  return { achou: true, partes: p };
 }
 
 function resumoCaps(regs) {
   var m = {};
   regs.forEach(function (r) {
-    var o = m[r.cap] || (m[r.cap] = { cap: r.cap, qtd: 0, valor: 0 });
-    o.qtd++; o.valor += r.valorParc;
+    var o = m[r.cap] || (m[r.cap] = { cap: r.cap, qtd: 0 });
+    o.qtd++;
   });
   return Object.keys(m).sort().map(function (k) { return m[k]; });
 }
@@ -448,32 +446,37 @@ function resumoForn(regs) {
   var m = {};
   regs.forEach(function (r) {
     var k = chaveForn(r);
-    var o = m[k] || (m[k] = { chave: k, nome: r.fornecedor || k, qtd: 0, valor: 0 });
-    o.qtd++; o.valor += r.valorParc;
+    var o = m[k] || (m[k] = { chave: k, nome: r.fornecedor || k, qtd: 0 });
+    o.qtd++;
   });
   return Object.keys(m).map(function (k) { return m[k]; }).sort(function (a, b) { return a.nome.localeCompare(b.nome); });
 }
 
-/* Monta as NFs. opc: { campo, juntarStatus, juntarVenc } */
+/* Monta as NFs. opc: { juntarStatus, juntarVenc }. O valor vem da base 260, somado por processo e parcela. */
 function montarNFs(regs, idx, opc) {
   opc = opc || {};
   var nfs = {}, reais = { 'PAGO': 0, 'A PAGAR': 0, 'EMISSÃO': 0, total: 0 };
-  var semNF = 0, naoAchou = 0;
+  var semNF = 0, naoAchou = 0, parcelas = 0, vistos = {};
   regs.forEach(function (r) {
+    var kp = chaveParcela(r);
+    if (vistos[kp]) return;
+    vistos[kp] = true;
+    parcelas++;
     if (!r.nf) semNF++;
     var k = [r.emp, r.obra, r.codForn, r.nf].join('|');
     var nf = nfs[k] || (nfs[k] = { nf: r.nf, fornecedor: r.fornecedor, emissoes: [], grupos: {} });
     nf.emissoes.push(r.emissao);
-    var st = statusParcela(r, idx);
-    if (!st.achou) naoAchou++;
-    var valor = opc.campo === 'TotalValorLiq' ? r.valorLiq : r.valorParc;
-    reais[st.status] += valor; reais.total += valor;
-    var rot = (opc.juntarStatus && st.status !== 'EMISSÃO') ? ROTULO_JUNTO : st.status;
-    var gk = rot + (opc.juntarVenc ? '' : '|' + r.venc);
-    var gr = nf.grupos[gk] || (nf.grupos[gk] = { status: rot, venc: [], valor: 0, parcelas: 0 });
-    gr.valor += valor;
-    gr.parcelas++;
-    if (r.venc != null && gr.venc.indexOf(r.venc) < 0) gr.venc.push(r.venc);
+    var pp = partesParcela(r, idx);
+    if (!pp.achou) naoAchou++;
+    pp.partes.forEach(function (pt) {
+      reais[pt.status] += pt.valor; reais.total += pt.valor;
+      var rot = (opc.juntarStatus && pt.status !== 'EMISSÃO') ? ROTULO_JUNTO : pt.status;
+      var gk = rot + (opc.juntarVenc ? '' : '|' + r.venc);
+      var gr = nf.grupos[gk] || (nf.grupos[gk] = { status: rot, venc: [], valor: 0, parcelas: 0 });
+      gr.valor += pt.valor;
+      gr.parcelas++;
+      if (r.venc != null && gr.venc.indexOf(r.venc) < 0) gr.venc.push(r.venc);
+    });
   });
   var lista = Object.keys(nfs).map(function (k) {
     var n = nfs[k];
@@ -496,7 +499,7 @@ function montarNFs(regs, idx, opc) {
   lista.forEach(function (n, i) { n.item = i + 1; });
   var linhas = 0;
   lista.forEach(function (n) { linhas += n.grupos.length; });
-  return { nfs: lista, semNF: semNF, naoAchou: naoAchou, reais: reais, linhas: linhas };
+  return { nfs: lista, semNF: semNF, naoAchou: naoAchou, reais: reais, linhas: linhas, parcelas: parcelas };
 }
 
 /* ============================================================
@@ -571,7 +574,7 @@ function desenharCaps(caps) {
   var html = caps.filter(function (c) { return !termo || normH(c.cap).indexOf(termo) >= 0; }).map(function (c) {
     return '<label class="cap-item"><input type="checkbox" data-cap="' + esc(c.cap) + '"' + (state.caps[c.cap] ? ' checked' : '') + '>' +
       '<span class="nome">' + esc(c.cap) + '</span><span class="qtd">' + c.qtd + ' parcela' + (c.qtd > 1 ? 's' : '') + '</span>' +
-      '<span class="valor">R$ ' + fmtMoeda(c.valor) + '</span></label>';
+      '</label>';
   }).join('');
   $('cap-lista').innerHTML = html || '<div class="cap-item">Nenhum CAP encontrado.</div>';
 }
@@ -580,7 +583,6 @@ function capsDaTela() { return resumoCaps(state.regs); }
 
 function opcoesTela() {
   return {
-    campo: document.querySelector('input[name=valor]:checked').value,
     juntarStatus: $('juntar-status').checked,
     juntarVenc: $('juntar-venc').checked
   };
@@ -599,7 +601,7 @@ function desenharForn() {
   var html = visiveis.map(function (f) {
     return '<label class="cap-item"><input type="checkbox" data-forn="' + esc(f.chave) + '"' + (state.fornOff[f.chave] ? '' : ' checked') + '>' +
       '<span class="nome">' + esc(f.nome) + '</span><span class="qtd">' + f.qtd + ' parcela' + (f.qtd > 1 ? 's' : '') + '</span>' +
-      '<span class="valor">R$ ' + fmtMoeda(f.valor) + '</span></label>';
+      '</label>';
   }).join('');
   $('forn-lista').innerHTML = html || '<div class="cap-item">' + (ok ? 'Nenhum fornecedor no recorte.' : 'Marque um CAP e informe o período para listar os fornecedores.') + '</div>';
   state.fornVisiveis = visiveis;
@@ -612,9 +614,9 @@ function atualizarPrevia() {
   var escolhidos = capsMarcados();
   var ok = escolhidos.length > 0 && ini != null && fim != null && ini <= fim;
   var regs = ok ? filtrar(state.regs, state.caps, ini, fim, state.fornOff) : [];
-  var nfs = montarNFs(regs, state.idx, opcoesTela()).nfs;
+  var mr = montarNFs(regs, state.idx, opcoesTela()), nfs = mr.nfs;
   var txt = escolhidos.length + ' CAP' + (escolhidos.length === 1 ? '' : 's') + ' marcado' + (escolhidos.length === 1 ? '' : 's') + '. ';
-  txt += ok ? regs.length + ' parcela' + (regs.length === 1 ? '' : 's') + ' em ' + nfs.length + ' NF' + (nfs.length === 1 ? '' : 's') + ' no período.' : 'Marque ao menos um CAP e informe um período válido.';
+  txt += ok ? mr.parcelas + ' parcela' + (mr.parcelas === 1 ? '' : 's') + ' em ' + nfs.length + ' NF' + (nfs.length === 1 ? '' : 's') + ' no período.' : 'Marque ao menos um CAP e informe um período válido.';
   $('previa').textContent = txt;
   $('btn-gerar').disabled = !(ok && regs.length);
   if (ini != null && fim != null && ini > fim) msg('msg-2', 'erro', 'A data inicial é maior que a data final.'); else msg('msg-2', '', '');
@@ -626,7 +628,7 @@ function gerar() {
   var regs = filtrar(state.regs, state.caps, ini, fim, state.fornOff);
   var r = montarNFs(regs, state.idx, opc);
   r.opc = opc;
-  r.ini = ini; r.fim = fim; r.parcelas = regs.length;
+  r.ini = ini; r.fim = fim;
   state.resultado = r;
   desenharResultado(r);
   irPara(3);

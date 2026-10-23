@@ -843,3 +843,10 @@ nomes das colunas, não pelo nome da aba.
 - Tela 2 ganhou o cartão **Fornecedores**: lista os fornecedores dos CAPs marcados no período, tudo marcado por padrão (`state.fornOff` guarda os desmarcados, chave `codForn` ou nome).
 - Agrupamento: **Não separar PAGO e A PAGAR** (rótulo "PAGO / A PAGAR", EMISSÃO continua separada) e **Não separar por data de vencimento** (marcado por padrão, vencimentos concatenados; desmarcado, uma linha por vencimento).
 - Os totais por situação nos cartões do topo usam a situação real da parcela, mesmo com as linhas juntadas.
+
+### Análise de Emissão de NF: valor vem da base 260 (2026-10-22)
+
+- A base 1067 não é confiável para valor: em várias parcelas repete o total do documento (ex.: PAILON, 400.000 em cada parcela, quando a 260 tem 100.000 por parcela).
+- O valor de cada parcela é a soma na **260** por empresa+obra+processo+parcela: `Pago` vai para PAGO, `APagar` para A PAGAR, `Projetado` para EMISSÃO. Parcela sem registro na 260 entra em EMISSÃO com o `ValorParc` da 1067.
+- A mesma parcela em dois CAPs selecionados é contada uma vez. O CAP só decide se a parcela entra, não divide o valor (a 260 não separa por CAP).
+- Sumiram a opção de valor e os valores por CAP e fornecedor nas listas (vinham da 1067).
