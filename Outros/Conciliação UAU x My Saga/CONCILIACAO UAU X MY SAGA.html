@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Conciliação UAU x Mais Saga</title>
+<title>Conciliação UAU x My Saga</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231c6ee8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 8h14l-3-3M20 16H6l3 3'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -189,8 +189,8 @@ table.tab td.ctr { text-align: center; white-space: nowrap; }
   <div class="wrap">
     <div class="ic"><svg class="ico" width="28" height="28" viewBox="0 0 24 24"><path d="M4 8h14l-3-3M20 16H6l3 3"/></svg></div>
     <div>
-      <h1>Conciliação UAU x Mais Saga</h1>
-      <p>Compare os processos de pagamento do UAU com as notas de despesa do Mais Saga. A ferramenta lista o que não foi encontrado no Mais Saga e o que existe só no Mais Saga.</p>
+      <h1>Conciliação UAU x My Saga</h1>
+      <p>Compare os processos de pagamento do UAU com as notas de despesa do My Saga. A ferramenta lista o que não foi encontrado no My Saga e o que existe só no My Saga.</p>
     </div>
   </div>
 </header>
@@ -217,11 +217,11 @@ table.tab td.ctr { text-align: center; white-space: nowrap; }
         <div class="msgerro hide" id="erroUau"></div>
       </div>
       <div class="card">
-        <h2>Notas de despesa do Mais Saga</h2>
-        <p class="sub">CSV exportado do Mais Saga, com o número da nota, o fornecedor, o valor e o status.</p>
+        <h2>Notas de despesa do My Saga</h2>
+        <p class="sub">CSV exportado do My Saga, com o número da nota, o fornecedor, o valor e o status.</p>
         <div class="drop" id="dropPortal" tabindex="0">
           <svg class="ico" viewBox="0 0 24 24"><path d="M12 16V4m0 0L8 8m4-4l4 4M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg>
-          <strong>Arraste o CSV do Mais Saga aqui</strong>
+          <strong>Arraste o CSV do My Saga aqui</strong>
           <small>ou clique para escolher (.csv)</small>
           <div class="info" id="infoPortal"></div>
         </div>
@@ -233,7 +233,7 @@ table.tab td.ctr { text-align: center; white-space: nowrap; }
     <details id="detEquiv">
       <summary>Equivalências de fornecedores</summary>
       <div class="corpo">
-        <p>Use quando o mesmo fornecedor tem nomes diferentes no Mais Saga e no UAU (razão social e nome fantasia, por exemplo). Uma equivalência por linha, no formato <code>nome no Mais Saga = nome no UAU</code>. Basta uma parte do nome. Linhas começadas por # são comentário.</p>
+        <p>Use quando o mesmo fornecedor tem nomes diferentes no My Saga e no UAU (razão social e nome fantasia, por exemplo). Uma equivalência por linha, no formato <code>nome no My Saga = nome no UAU</code>. Basta uma parte do nome. Linhas começadas por # são comentário.</p>
         <textarea class="equiv" id="equiv" spellcheck="false" placeholder="Exemplo fictício:&#10;ALFA SEGUROS = BETA PROTECAO"></textarea>
         <div class="equiv-acoes">
           <button class="btn peq" id="btnEquivArquivo">Carregar de arquivo (.txt)</button>
@@ -340,8 +340,8 @@ function parseCSV(text) {
   return out;
 }
 
-// Lê o CSV de notas de despesa do Mais Saga. Devolve { notas, ignoradas, avisos }.
-function lerMaisSaga(text) {
+// Lê o CSV de notas de despesa do My Saga. Devolve { notas, ignoradas, avisos }.
+function lerMySaga(text) {
   const linhas = parseCSV(text.replace(/^﻿/, ''));
   if (!linhas.length) throw new Error('O arquivo está vazio.');
   const cab = linhas[0].map(norm);
@@ -349,7 +349,7 @@ function lerMaisSaga(text) {
   const idx = { nota: col('nota'), forn: col('fornecedor'), unid: col('unidade'), valor: col('valor'), status: col('status'), sit: col('situacao do pagamento'),
                 limite: col('limite'), venc: col('venc'), incl: col('inclusao'), integr: col('integr erp'), resp: col('responsavel') };
   const faltam = [['NOTA', idx.nota], ['Fornecedor', idx.forn], ['VALOR', idx.valor], ['Status', idx.status]].filter(x => x[1] < 0).map(x => x[0]);
-  if (faltam.length) throw new Error('Este arquivo não parece ser a lista de notas de despesa do Mais Saga. Faltam as colunas: ' + faltam.join(', ') + '.');
+  if (faltam.length) throw new Error('Este arquivo não parece ser a lista de notas de despesa do My Saga. Faltam as colunas: ' + faltam.join(', ') + '.');
   const notas = []; const ignoradas = { semNota: 0, cancelada: 0, rascunho: 0 }; const avisos = [];
   linhas.slice(1).forEach((l, i) => {
     const g = k => (idx[k] >= 0 ? (l[idx[k]] || '').trim() : '');
@@ -394,7 +394,7 @@ function lerUau(rows, conf) {
   return { parcelas, avisos, confDiverge };
 }
 
-// Como o valor do Mais Saga (nota inteira) confere com o grupo de parcelas do UAU.
+// Como o valor do My Saga (nota inteira) confere com o grupo de parcelas do UAU.
 function valorConfere(grupo, v) {
   if (!grupo.length) return null;
   const soma = grupo.reduce((a, p) => a + p.liq, 0);
@@ -404,7 +404,7 @@ function valorConfere(grupo, v) {
   return null;
 }
 
-// Equivalências de fornecedores: linhas "nome no Mais Saga = nome no UAU". Basta parte do nome. Linhas com # são comentário.
+// Equivalências de fornecedores: linhas "nome no My Saga = nome no UAU". Basta parte do nome. Linhas com # são comentário.
 function parseEquivalencias(texto) {
   const lista = [], erros = [];
   String(texto || '').split(/\r?\n/).forEach((l, i) => {
@@ -434,7 +434,7 @@ function conciliar(parcelas, notas, equivs) {
   // desempate: valor mais exato primeiro, depois vencimento mais próximo
   const pertoDe = n => (a, b) => Math.round(Math.abs(a.liq - n.valor) * 100) - Math.round(Math.abs(b.liq - n.valor) * 100) || dist(a.venc, n.venc) - dist(b.venc, n.venc);
   const mesmoValor = (p, n) => Math.abs(p.liq - n.valor) < TOL;
-  // Valor do UAU na base da comparação. O Mais Saga registra a nota bruta e o UAU as parcelas líquidas (após retenções).
+  // Valor do UAU na base da comparação. O My Saga registra a nota bruta e o UAU as parcelas líquidas (após retenções).
   const basear = (n, grupo, confere) => {
     const liq = soma(grupo); let uau = liq;
     if (confere === 'Valor da nota fiscal') { const q = grupo.find(p => p.vNF != null && Math.abs(p.vNF - n.valor) < TOL); if (q) uau = arred(q.vNF); }
@@ -447,12 +447,12 @@ function conciliar(parcelas, notas, equivs) {
     let grupo = (porNf.get(n.nfNum) || []).filter(p => mesmo(n.tok, p.tok));
     if (!grupo.length) return;
     const confere = valorConfere(grupo, n.valor);
-    if (confere === 'Uma parcela') { // a nota do Mais Saga é uma parcela só: não reivindicar as outras
+    if (confere === 'Uma parcela') { // a nota do My Saga é uma parcela só: não reivindicar as outras
       const iguais = grupo.filter(p => mesmoValor(p, n));
       grupo = [iguais.filter(p => !usada.has(p.id)).sort(pertoDe(n))[0] || iguais[0]];
     }
     resultados[i] = base(n, Object.assign({ tipo: confere ? 'encontrado' : 'valorDif', grupo, confere,
-      motivo: confere ? 'Mesma nota e fornecedor. Valor confere (' + confere.toLowerCase() + ').' : 'Mesma nota e fornecedor, mas o valor do Mais Saga difere do UAU.' }, basear(n, grupo, confere)));
+      motivo: confere ? 'Mesma nota e fornecedor. Valor confere (' + confere.toLowerCase() + ').' : 'Mesma nota e fornecedor, mas o valor do My Saga difere do UAU.' }, basear(n, grupo, confere)));
     marca(grupo, n);
   });
   // passo 2: mesma nota e valor, fornecedor de nome diferente
@@ -482,10 +482,10 @@ function conciliar(parcelas, notas, equivs) {
     const achada = parcelas.filter(p => p.tipo !== 3 && !usada.has(p.id) && mesmo(n.tok, p.tok) && mesmoValor(p, n)).sort(pertoDe(n))[0];
     if (!achada) return;
     resultados[i] = base(n, { tipo: 'provavel', grupo: [achada], confere: 'Uma parcela', valorUau: arred(achada.liq), somaLiq: arred(achada.liq), dif: 0,
-      motivo: 'Mesmo fornecedor e mesmo valor, mas o número da nota é diferente (Mais Saga: ' + n.nota + '. UAU: ' + (achada.nf || 'sem nota') + '). Conferir.' });
+      motivo: 'Mesmo fornecedor e mesmo valor, mas o número da nota é diferente (My Saga: ' + n.nota + '. UAU: ' + (achada.nf || 'sem nota') + '). Conferir.' });
     marca([achada], n);
   });
-  // o que sobrou do Mais Saga: só no Mais Saga, com possíveis pares
+  // o que sobrou do My Saga: só no My Saga, com possíveis pares
   notas.forEach((n, i) => {
     if (resultados[i]) return;
     resultados[i] = base(n, { tipo: 'soPortal', motivo: 'Nenhuma parcela do UAU casou com esta nota.', candidatos: candidatos(n, parcelas, porNf, usada, mesmo) });
@@ -507,7 +507,7 @@ function candidatos(n, parcelas, porNf, usada, mesmo) {
   });
   parcelas.filter(p => p.tipo !== 3 && mesmo(n.tok, p.tok) && !mapa.has(p.id) && !usada.has(p.id))
     .sort((a, b) => Math.abs(a.liq - n.valor) - Math.abs(b.liq - n.valor)).slice(0, 3)
-    .forEach(p => add(p, 'Mesmo fornecedor, sem par no Mais Saga', 2));
+    .forEach(p => add(p, 'Mesmo fornecedor, sem par no My Saga', 2));
   return Array.from(mapa.values()).sort((a, b) => a.prio - b.prio).slice(0, 6);
 }
 
@@ -522,11 +522,11 @@ function conferenciasDe(parcelas, notas, resultados, naoEnc, usada) {
   const ok = c => (c ? 'OK' : 'DIVERGE');
   const soma4 = cont('encontrado') + cont('valorDif') + cont('provavel') + cont('soPortal');
   return [
-    ['Notas do Mais Saga: encontrado + valor diferente + provável + só no Mais Saga = notas lidas', soma4, notas.length, ok(soma4 === notas.length), 'Toda nota do Mais Saga foi classificada uma vez'],
+    ['Notas do My Saga: encontrado + valor diferente + provável + só no My Saga = notas lidas', soma4, notas.length, ok(soma4 === notas.length), 'Toda nota do My Saga foi classificada uma vez'],
     ['Parcelas do UAU: com par + sem par = parcelas lidas', usada.size + naoEnc.length, parcelas.length, ok(usada.size + naoEnc.length === parcelas.length), 'Toda parcela do UAU foi classificada uma vez'],
     ['Valor líquido do UAU: com par + sem par = total lido', arred(somaUsada + somaNao), arred(somaUau), ok(Math.abs(somaUsada + somaNao - somaUau) < 0.05), 'Nenhum valor se perdeu nem se repetiu'],
-    ['Valor das notas do Mais Saga (soma)', arred(somaN), '-', '-', 'Informativo, sem canceladas e rascunhos'],
-    ['Notas repetidas no Mais Saga (mesma nota e fornecedor)', repetidas, 0, repetidas ? 'ATENÇÃO' : 'OK', 'Nota lançada duas vezes no Mais Saga'],
+    ['Valor das notas do My Saga (soma)', arred(somaN), '-', '-', 'Informativo, sem canceladas e rascunhos'],
+    ['Notas repetidas no My Saga (mesma nota e fornecedor)', repetidas, 0, repetidas ? 'ATENÇÃO' : 'OK', 'Nota lançada duas vezes no My Saga'],
   ];
 }
 
@@ -560,7 +560,7 @@ function chipStatus(st) {
 }
 function chipSit(s) { return '<span class="chip ' + (s === 'Paga' ? 'ok' : s === 'A pagar' ? 'info' : 'neutro') + '">' + esc(s || '-') + '</span>'; }
 function chipTipo(t) {
-  return { encontrado: '<span class="chip ok">Encontrado</span>', valorDif: '<span class="chip err">Valor diferente</span>', provavel: '<span class="chip warn">Provável</span>', soPortal: '<span class="chip warn">Só no Mais Saga</span>' }[t];
+  return { encontrado: '<span class="chip ok">Encontrado</span>', valorDif: '<span class="chip err">Valor diferente</span>', provavel: '<span class="chip warn">Provável</span>', soPortal: '<span class="chip warn">Só no My Saga</span>' }[t];
 }
 
 // ---- arquivos ----
@@ -593,7 +593,7 @@ async function lerArquivoPortal(file) {
   try {
     const buf = await file.arrayBuffer(); let texto;
     try { texto = new TextDecoder('utf-8', { fatal: true }).decode(buf); } catch (e) { texto = new TextDecoder('windows-1252').decode(buf); }
-    S.portal = lerMaisSaga(texto); S.nomePortal = file.name; S.res = null;
+    S.portal = lerMySaga(texto); S.nomePortal = file.name; S.res = null;
     const ig = S.portal.ignoradas, soma = S.portal.notas.reduce((a, n) => a + n.valor, 0);
     marcarDrop('dropPortal', 'infoPortal', 'erroPortal', true, '<strong>' + esc(file.name) + '</strong><br>Notas lidas: ' + S.portal.notas.length + '. Valor: ' + esc(fmtMoeda(soma)) +
       '.<br>Fora da conciliação: ' + ig.cancelada + ' cancelada(s), ' + ig.rascunho + ' rascunho(s), ' + ig.semNota + ' sem número de nota.');
@@ -636,19 +636,19 @@ function desenhar() {
   const somaNao = v.nao.reduce((a, p) => a + p.liq, 0);
   const ocultasRet = r.naoEncontrados.filter(p => p.tipo === 3).length;
   $('kpis').innerHTML = [
-    kpi('nao', 'Não encontrados no Mais Saga', v.nao.length, fmtMoeda(somaNao), 'destaque'),
-    kpi('inv', 'Só no Mais Saga (investigar)', v.inv.length, fmtMoeda(v.inv.reduce((a, x) => a + x.nota.valor, 0)), 'warn'),
+    kpi('nao', 'Não encontrados no My Saga', v.nao.length, fmtMoeda(somaNao), 'destaque'),
+    kpi('inv', 'Só no My Saga (investigar)', v.inv.length, fmtMoeda(v.inv.reduce((a, x) => a + x.nota.valor, 0)), 'warn'),
     kpi('enc', 'Encontrados', cont('encontrado'), 'Valor confere', 'ok'),
     kpi('enc', 'Valor diferente', cont('valorDif'), 'Mesma nota, valor difere', 'err'),
     kpi('enc', 'Prováveis', cont('provavel'), 'Conferir', 'warn'),
-    kpi('enc', 'Notas do Mais Saga lidas', S.portal.notas.length, fmtMoeda(S.portal.notas.reduce((a, n) => a + n.valor, 0)), '')
+    kpi('enc', 'Notas do My Saga lidas', S.portal.notas.length, fmtMoeda(S.portal.notas.reduce((a, n) => a + n.valor, 0)), '')
   ].join('');
   document.querySelectorAll('.kpi').forEach(k => k.addEventListener('click', () => { S.aba = k.dataset.aba; desenhar(); }));
   const av = []; const aviso = (t, c) => av.push('<div class="aviso ' + (c || '') + '">' + t + '</div>');
   if (!v.o.retencao && ocultasRet) aviso('Retenções de imposto fora da lista Não encontrado: ' + ocultasRet + ' parcela(s). Marque "Incluir retenções de imposto" para vê-las.', 'info');
   const minInc = S.portal.notas.map(n => n.inclusao).filter(Boolean).sort((a, b) => a - b)[0];
   const minGer = S.uau.parcelas.map(p => p.geracao).filter(Boolean).sort((a, b) => a - b)[0];
-  if (minInc && minGer && minGer > minInc) aviso('A base do UAU começa em ' + fmtData(minGer) + ' e o Mais Saga tem notas incluídas desde ' + fmtData(minInc) + '. Notas anteriores podem aparecer em Só no Mais Saga por falta de dado no UAU.');
+  if (minInc && minGer && minGer > minInc) aviso('A base do UAU começa em ' + fmtData(minGer) + ' e o My Saga tem notas incluídas desde ' + fmtData(minInc) + '. Notas anteriores podem aparecer em Só no My Saga por falta de dado no UAU.');
   S.uau.avisos.concat(S.portal.avisos).forEach(t => aviso(esc(t)));
   r.conferencias.filter(c => c[3] === 'DIVERGE').forEach(c => aviso('Conferência divergente: ' + esc(c[0])));
   $('avisos').innerHTML = av.join('');
@@ -660,14 +660,14 @@ function desenhar() {
 function kpi(aba, titulo, n, sub, cls) { return '<button class="kpi ' + cls + '" data-aba="' + aba + '"><div class="v">' + n + '</div><div class="t">' + esc(titulo) + '</div><div class="m">' + esc(sub) + '</div></button>'; }
 const LIM = 500;
 function htmlNao(l) {
-  if (!l.length) return '<div class="tabwrap"><div class="vazio">Nenhuma parcela do UAU ficou sem par no Mais Saga com estes filtros.</div></div>';
+  if (!l.length) return '<div class="tabwrap"><div class="vazio">Nenhuma parcela do UAU ficou sem par no My Saga com estes filtros.</div></div>';
   const linhas = l.slice(0, LIM).map(p => '<tr><td class="ctr">' + p.proc + '</td><td class="ctr">' + p.parc + '</td><td>' + esc(p.fornecedor) + '</td><td class="ctr">' + esc(p.nf || '-') + '</td><td class="num">' + esc(fmtMoeda(p.liq)) +
     '</td><td class="ctr">' + fmtData(p.venc) + '</td><td class="ctr">' + fmtData(p.geracao) + '</td><td class="ctr">' + chipSit(p.sit) + '</td></tr>').join('');
   return '<div class="tabwrap"><table class="tab"><thead><tr><th>Processo</th><th>Parcela</th><th>Fornecedor</th><th>Nota fiscal</th><th class="num">Valor líquido</th><th>Vencimento</th><th>Geração</th><th>Situação</th></tr></thead><tbody>' + linhas + '</tbody></table>' +
     (l.length > LIM ? '<div class="limite">Mostrando as primeiras ' + LIM + ' de ' + l.length + ' linhas. O Excel exportado tem todas.</div>' : '') + '</div>';
 }
 function htmlInvestigar(l) {
-  if (!l.length) return '<div class="cards-inv"><div class="vazio">Toda nota do Mais Saga tem par no UAU. Nada a investigar.</div></div>';
+  if (!l.length) return '<div class="cards-inv"><div class="vazio">Toda nota do My Saga tem par no UAU. Nada a investigar.</div></div>';
   return '<div class="cards-inv">' + l.map(x => {
     const n = x.nota;
     const cands = (x.candidatos || []).map(c => '<tr><td>' + esc(c.razao) + (c.jaUsada ? ' <span class="chip neutro">Já usada em outra nota</span>' : '') + '</td><td class="ctr">' + c.p.proc + '/' + c.p.parc + '</td><td>' + esc(c.p.fornecedor) +
@@ -679,11 +679,11 @@ function htmlInvestigar(l) {
   }).join('') + '</div>';
 }
 function htmlEncontrados(l) {
-  if (!l.length) return '<div class="tabwrap"><div class="vazio">Nenhuma nota do Mais Saga casou com o UAU.</div></div>';
+  if (!l.length) return '<div class="tabwrap"><div class="vazio">Nenhuma nota do My Saga casou com o UAU.</div></div>';
   const linhas = l.slice(0, LIM).map(x => { const n = x.nota;
     return '<tr><td>' + chipTipo(x.tipo) + '</td><td class="ctr">' + esc(n.nota) + '</td><td>' + esc(n.fornecedor) + '</td><td class="num">' + esc(fmtMoeda(n.valor)) + '</td><td class="num">' + esc(fmtMoeda(x.valorUau)) +
       '</td><td class="num">' + (x.dif ? esc(fmtMoeda(x.dif)) : '-') + '</td><td>' + esc(x.confere || '-') + '</td><td class="ctr">' + chipStatus(n.status) + '</td><td>' + esc(x.grupo.map(p => p.proc + '/' + p.parc).join(', ')) + '</td></tr>'; }).join('');
-  return '<div class="tabwrap"><table class="tab"><thead><tr><th>Resultado</th><th>Nota</th><th>Fornecedor no Mais Saga</th><th class="num">Valor no Mais Saga</th><th class="num">Valor no UAU (base da comparação)</th><th class="num">Diferença</th><th>Valor confere com</th><th>Status no Mais Saga</th><th>Processos do UAU</th></tr></thead><tbody>' + linhas + '</tbody></table>' +
+  return '<div class="tabwrap"><table class="tab"><thead><tr><th>Resultado</th><th>Nota</th><th>Fornecedor no My Saga</th><th class="num">Valor no My Saga</th><th class="num">Valor no UAU (base da comparação)</th><th class="num">Diferença</th><th>Valor confere com</th><th>Status no My Saga</th><th>Processos do UAU</th></tr></thead><tbody>' + linhas + '</tbody></table>' +
     (l.length > LIM ? '<div class="limite">Mostrando as primeiras ' + LIM + ' de ' + l.length + ' linhas. O Excel exportado tem todas.</div>' : '') + '</div>';
 }
 // ---- exportar Excel ----
@@ -722,30 +722,30 @@ async function exportarExcel() {
   // resumo
   const ws = wb.addWorksheet('Resumo', { views: [{ showGridLines: false }], properties: { tabColor: { argb: corARGB('--navy') } } });
   ws.getColumn(1).width = 46; ws.getColumn(2).width = 18; ws.getColumn(3).width = 22;
-  ws.mergeCells('A1:C1'); const t = ws.getCell('A1'); t.value = 'Conciliação UAU x Mais Saga'; t.font = { name: 'Plus Jakarta Sans', size: 16, bold: true, color: { argb: corARGB('--white') } };
+  ws.mergeCells('A1:C1'); const t = ws.getCell('A1'); t.value = 'Conciliação UAU x My Saga'; t.font = { name: 'Plus Jakarta Sans', size: 16, bold: true, color: { argb: corARGB('--white') } };
   t.alignment = { vertical: 'middle', indent: 1 }; t.fill = { type: 'gradient', gradient: 'angle', degree: 30, stops: [{ position: 0, color: { argb: corARGB('--primary') } }, { position: 1, color: { argb: corARGB('--navy') } }] }; ws.getRow(1).height = 32;
   const o = v.o; const filtro = [o.de || o.ate ? 'Geração do processo ' + (o.de ? 'de ' + fmtData(toDate(o.de)) : '') + (o.ate ? ' até ' + fmtData(toDate(o.ate)) : '') : 'Todos os lançamentos', o.retencao ? 'com retenções de imposto' : 'sem retenções de imposto'].join(', ');
-  const info = [['Base do UAU', S.nomeUau], ['Notas do Mais Saga', S.nomePortal], ['Filtro da lista Não encontrado', filtro], ['Gerado em', hoje], ['Equivalências de fornecedores usadas', S.equivs.length]];
+  const info = [['Base do UAU', S.nomeUau], ['Notas do My Saga', S.nomePortal], ['Filtro da lista Não encontrado', filtro], ['Gerado em', hoje], ['Equivalências de fornecedores usadas', S.equivs.length]];
   let linha = 3; info.forEach(i => { ws.getCell(linha, 1).value = i[0]; ws.getCell(linha, 1).font = { name: 'Plus Jakarta Sans', size: 10, bold: true }; ws.mergeCells(linha, 2, linha, 3); const cv = ws.getCell(linha, 2); cv.value = i[1]; cv.font = { name: 'Plus Jakarta Sans', size: 10 }; cv.alignment = { horizontal: 'left' }; if (i[1] instanceof Date) cv.numFmt = 'dd/mm/yyyy hh:mm'; linha++; });
   linha++;
   const bloco = (tit, cab, dados) => { ws.getCell(linha, 1).value = tit; ws.getCell(linha, 1).font = { name: 'Plus Jakarta Sans', size: 11, bold: true, color: { argb: corARGB('--primary') } }; linha++;
     cab.forEach((c, i) => { const h = ws.getCell(linha, i + 1); h.value = c; h.font = { name: 'Plus Jakarta Sans', size: 10, bold: true, color: { argb: corARGB('--white') } }; h.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: corARGB('--navy') } }; if (i) h.alignment = { horizontal: 'right' }; }); linha++;
     dados.forEach(d => { d.forEach((x, i) => { const c = ws.getCell(linha, i + 1); c.value = x; c.font = { name: 'Plus Jakarta Sans', size: 10 }; if (i === 2) c.numFmt = '"R$" #,##0.00'; if (i) c.alignment = { horizontal: 'right' }; }); linha++; }); linha++; };
-  bloco('Do UAU para o Mais Saga', ['Situação', 'Parcelas', 'Valor líquido'], [
-    ['Não encontrado no Mais Saga', v.nao.length, arred(v.nao.reduce((a, p) => a + p.liq, 0))],
+  bloco('Do UAU para o My Saga', ['Situação', 'Parcelas', 'Valor líquido'], [
+    ['Não encontrado no My Saga', v.nao.length, arred(v.nao.reduce((a, p) => a + p.liq, 0))],
     ['Sem par, mas fora dos filtros (retenções, datas, situação)', r.naoEncontrados.length - v.nao.length, arred(r.naoEncontrados.filter(p => v.nao.indexOf(p) < 0).reduce((a, p) => a + p.liq, 0))],
-    ['Com par no Mais Saga', r.usada.size, arred(S.uau.parcelas.filter(p => r.usada.has(p.id)).reduce((a, p) => a + p.liq, 0))],
+    ['Com par no My Saga', r.usada.size, arred(S.uau.parcelas.filter(p => r.usada.has(p.id)).reduce((a, p) => a + p.liq, 0))],
     ['Total de parcelas do UAU lidas', S.uau.parcelas.length, arred(S.uau.parcelas.reduce((a, p) => a + p.liq, 0))]]);
-  bloco('Do Mais Saga para o UAU', ['Resultado', 'Notas', 'Valor'], [
+  bloco('Do My Saga para o UAU', ['Resultado', 'Notas', 'Valor'], [
     ['Encontrado, valor confere', cont('encontrado'), arred(r.resultados.filter(x => x.tipo === 'encontrado').reduce((a, x) => a + x.nota.valor, 0))],
     ['Valor diferente', cont('valorDif'), arred(r.resultados.filter(x => x.tipo === 'valorDif').reduce((a, x) => a + x.nota.valor, 0))],
     ['Provável (conferir)', cont('provavel'), arred(r.resultados.filter(x => x.tipo === 'provavel').reduce((a, x) => a + x.nota.valor, 0))],
-    ['Só no Mais Saga (investigar)', cont('soPortal'), arred(r.resultados.filter(x => x.tipo === 'soPortal').reduce((a, x) => a + x.nota.valor, 0))]]);
+    ['Só no My Saga (investigar)', cont('soPortal'), arred(r.resultados.filter(x => x.tipo === 'soPortal').reduce((a, x) => a + x.nota.valor, 0))]]);
   const porSt = {}; S.portal.notas.forEach(n => { porSt[n.status] = porSt[n.status] || [0, 0]; porSt[n.status][0]++; porSt[n.status][1] += n.valor; });
-  bloco('Notas do Mais Saga por status', ['Status', 'Notas', 'Valor'], Object.keys(porSt).map(k => [k, porSt[k][0], arred(porSt[k][1])]));
+  bloco('Notas do My Saga por status', ['Status', 'Notas', 'Valor'], Object.keys(porSt).map(k => [k, porSt[k][0], arred(porSt[k][1])]));
   // não encontrado
-  const nao = v.nao.slice().sort(ordem).map(p => ({ proc: p.proc, parc: p.parc, forn: p.fornecedor, nf: p.nf, liq: p.liq, vnf: p.vNF, ger: dataXl(p.geracao), venc: dataXl(p.venc), emi: dataXl(p.emissao), pgto: dataXl(p.pgto), sit: p.sit, tipo: p.tipo, ctr: p.contrato || null, med: p.medicao || null, obs: 'Nenhuma nota do Mais Saga casou com este processo.' }));
-  abaTabela(wb, 'Não encontrado', 'Processos do UAU não encontrados no Mais Saga', filtro + '. ' + nao.length + ' parcela(s).', [
+  const nao = v.nao.slice().sort(ordem).map(p => ({ proc: p.proc, parc: p.parc, forn: p.fornecedor, nf: p.nf, liq: p.liq, vnf: p.vNF, ger: dataXl(p.geracao), venc: dataXl(p.venc), emi: dataXl(p.emissao), pgto: dataXl(p.pgto), sit: p.sit, tipo: p.tipo, ctr: p.contrato || null, med: p.medicao || null, obs: 'Nenhuma nota do My Saga casou com este processo.' }));
+  abaTabela(wb, 'Não encontrado', 'Processos do UAU não encontrados no My Saga', filtro + '. ' + nao.length + ' parcela(s).', [
     { h: 'Processo', k: 'proc', w: 10, f: 'ctr' }, { h: 'Parcela', k: 'parc', w: 9, f: 'ctr' }, { h: 'Fornecedor', k: 'forn', w: 42 }, { h: 'Nota fiscal', k: 'nf', w: 14, f: 'ctr' },
     { h: 'Valor líquido', k: 'liq', w: 16, f: 'rs' }, { h: 'Valor da nota fiscal (não somar)', k: 'vnf', w: 18, f: 'rs' }, { h: 'Data de geração', k: 'ger', w: 13, f: 'data' }, { h: 'Data de vencimento', k: 'venc', w: 13, f: 'data' },
     { h: 'Data de emissão', k: 'emi', w: 13, f: 'data' }, { h: 'Data de pagamento', k: 'pgto', w: 13, f: 'data' }, { h: 'Situação da parcela', k: 'sit', w: 14, f: 'ctr' }, { h: 'Tipo do processo (código)', k: 'tipo', w: 12, f: 'ctr' },
@@ -753,32 +753,32 @@ async function exportarExcel() {
   // investigar
   const inv = v.inv.map(x => { const n = x.nota; return { nota: n.nota, forn: n.fornecedor, cnpj: n.cnpj, unid: n.unidade, val: n.valor, st: n.status, venc: dataXl(n.venc), incl: dataXl(n.inclusao), mot: x.motivo,
     pares: (x.candidatos || []).map(c => c.razao + ': ' + c.p.proc + '/' + c.p.parc + ' ' + c.p.fornecedor + ' (nota ' + (c.p.nf || '-') + ', ' + fmtMoeda(c.p.liq) + ')').join('\n') }; });
-  abaTabela(wb, 'Investigar', 'Notas só no Mais Saga', 'Notas do Mais Saga sem par no UAU. ' + inv.length + ' nota(s).', [
+  abaTabela(wb, 'Investigar', 'Notas só no My Saga', 'Notas do My Saga sem par no UAU. ' + inv.length + ' nota(s).', [
     { h: 'Nota', k: 'nota', w: 16, f: 'ctr' }, { h: 'Fornecedor', k: 'forn', w: 42 }, { h: 'CNPJ', k: 'cnpj', w: 20, f: 'ctr' }, { h: 'Unidade', k: 'unid', w: 36 }, { h: 'Valor', k: 'val', w: 16, f: 'rs' },
-    { h: 'Status no Mais Saga', k: 'st', w: 22, f: 'ctr' }, { h: 'Vencimento', k: 'venc', w: 13, f: 'data' }, { h: 'Inclusão', k: 'incl', w: 13, f: 'data' }, { h: 'Motivo', k: 'mot', w: 40, wrap: true }, { h: 'Possíveis pares no UAU', k: 'pares', w: 90, wrap: true }], inv, corARGB('--warn'));
+    { h: 'Status no My Saga', k: 'st', w: 22, f: 'ctr' }, { h: 'Vencimento', k: 'venc', w: 13, f: 'data' }, { h: 'Inclusão', k: 'incl', w: 13, f: 'data' }, { h: 'Motivo', k: 'mot', w: 40, wrap: true }, { h: 'Possíveis pares no UAU', k: 'pares', w: 90, wrap: true }], inv, corARGB('--warn'));
   // encontrados
   const rot = { encontrado: 'Encontrado', valorDif: 'Valor diferente', provavel: 'Provável' };
   const enc = v.encontrados.map(x => { const n = x.nota; return { res: rot[x.tipo], nota: n.nota, forn: n.fornecedor, cnpj: n.cnpj, val: n.valor, uau: x.valorUau, dif: x.dif, conf: x.confere, liq: x.somaLiq, st: n.status, sit: n.situacao, vp: dataXl(n.venc), vu: dataXl(x.grupo.map(p => p.venc).filter(Boolean).sort((a, b) => a - b)[0]), procs: x.grupo.map(p => p.proc + '/' + p.parc).join(', '), fu: x.grupo[0].fornecedor, mot: x.motivo }; });
-  abaTabela(wb, 'Encontrados', 'Notas do Mais Saga com par no UAU', enc.length + ' nota(s).', [
-    { h: 'Resultado', k: 'res', w: 16, f: 'ctr' }, { h: 'Nota', k: 'nota', w: 16, f: 'ctr' }, { h: 'Fornecedor no Mais Saga', k: 'forn', w: 40 }, { h: 'CNPJ', k: 'cnpj', w: 20, f: 'ctr' },
-    { h: 'Valor no Mais Saga', k: 'val', w: 16, f: 'rs' }, { h: 'Valor no UAU (base da comparação)', k: 'uau', w: 20, f: 'rs' }, { h: 'Diferença', k: 'dif', w: 14, f: 'rs' }, { h: 'Valor confere com', k: 'conf', w: 20 }, { h: 'Soma das parcelas do UAU (líquido)', k: 'liq', w: 20, f: 'rs' },
-    { h: 'Status no Mais Saga', k: 'st', w: 22, f: 'ctr' }, { h: 'Situação do pagamento no Mais Saga', k: 'sit', w: 16, f: 'ctr' }, { h: 'Vencimento no Mais Saga', k: 'vp', w: 13, f: 'data' }, { h: 'Menor vencimento no UAU', k: 'vu', w: 13, f: 'data' },
+  abaTabela(wb, 'Encontrados', 'Notas do My Saga com par no UAU', enc.length + ' nota(s).', [
+    { h: 'Resultado', k: 'res', w: 16, f: 'ctr' }, { h: 'Nota', k: 'nota', w: 16, f: 'ctr' }, { h: 'Fornecedor no My Saga', k: 'forn', w: 40 }, { h: 'CNPJ', k: 'cnpj', w: 20, f: 'ctr' },
+    { h: 'Valor no My Saga', k: 'val', w: 16, f: 'rs' }, { h: 'Valor no UAU (base da comparação)', k: 'uau', w: 20, f: 'rs' }, { h: 'Diferença', k: 'dif', w: 14, f: 'rs' }, { h: 'Valor confere com', k: 'conf', w: 20 }, { h: 'Soma das parcelas do UAU (líquido)', k: 'liq', w: 20, f: 'rs' },
+    { h: 'Status no My Saga', k: 'st', w: 22, f: 'ctr' }, { h: 'Situação do pagamento no My Saga', k: 'sit', w: 16, f: 'ctr' }, { h: 'Vencimento no My Saga', k: 'vp', w: 13, f: 'data' }, { h: 'Menor vencimento no UAU', k: 'vu', w: 13, f: 'data' },
     { h: 'Processos do UAU (processo/parcela)', k: 'procs', w: 30, wrap: true }, { h: 'Fornecedor no UAU', k: 'fu', w: 40 }, { h: 'Como foi encontrado', k: 'mot', w: 60, wrap: true }], enc, corARGB('--ok'));
   // legenda
   abaTabela(wb, 'Legenda', 'Como ler esta conciliação', 'Regras usadas no cruzamento.', [{ h: 'Item', k: 'i', w: 34 }, { h: 'O que significa', k: 'd', w: 120, wrap: true }], [
-    { i: 'Chave do cruzamento', d: 'Número da nota fiscal (parte antes da barra no Mais Saga) e nome do fornecedor parecido. O CNPJ do fornecedor não existe no UAU consultado.' },
+    { i: 'Chave do cruzamento', d: 'Número da nota fiscal (parte antes da barra no My Saga) e nome do fornecedor parecido. O CNPJ do fornecedor não existe no UAU consultado.' },
     { i: 'Encontrado', d: 'Mesma nota, fornecedor parecido e valor igual ao UAU.' },
-    { i: 'Valor diferente', d: 'Mesma nota e fornecedor, mas o valor do Mais Saga não bate com a soma das parcelas, com o valor da nota nem com uma parcela do UAU.' },
+    { i: 'Valor diferente', d: 'Mesma nota e fornecedor, mas o valor do My Saga não bate com a soma das parcelas, com o valor da nota nem com uma parcela do UAU.' },
     { i: 'Provável', d: 'Mesma nota e mesmo valor com fornecedor de nome diferente, parcela do UAU sem nota fiscal, ou mesmo fornecedor e valor com número de nota diferente. Conferir manualmente.' },
-    { i: 'Só no Mais Saga', d: 'Nota do Mais Saga sem nenhuma parcela casada no UAU. A aba Investigar traz os possíveis pares.' },
-    { i: 'Não encontrado', d: 'Parcela do UAU que nenhuma nota do Mais Saga reivindicou.' },
-    { i: 'Equivalências de fornecedores', d: 'Lista mantida na ferramenta para o mesmo fornecedor com nomes diferentes no Mais Saga e no UAU. Vale nos dois sentidos.' },
-    { i: 'Valor confere com', d: 'Soma das parcelas da nota no UAU, valor total da nota fiscal ou uma parcela. O Mais Saga registra a nota inteira (bruta), o UAU registra por parcela (líquida, depois das retenções de imposto). Quando confere com o valor da nota, a diferença para a soma líquida das parcelas é a retenção, e aparece na coluna Soma das parcelas do UAU (líquido).' },
-    { i: 'Status no Mais Saga', d: 'Integrada: já no ERP do cliente. Em aprovação e Aguardando integração: lançada no Mais Saga, ainda pendente.' },
+    { i: 'Só no My Saga', d: 'Nota do My Saga sem nenhuma parcela casada no UAU. A aba Investigar traz os possíveis pares.' },
+    { i: 'Não encontrado', d: 'Parcela do UAU que nenhuma nota do My Saga reivindicou.' },
+    { i: 'Equivalências de fornecedores', d: 'Lista mantida na ferramenta para o mesmo fornecedor com nomes diferentes no My Saga e no UAU. Vale nos dois sentidos.' },
+    { i: 'Valor confere com', d: 'Soma das parcelas da nota no UAU, valor total da nota fiscal ou uma parcela. O My Saga registra a nota inteira (bruta), o UAU registra por parcela (líquida, depois das retenções de imposto). Quando confere com o valor da nota, a diferença para a soma líquida das parcelas é a retenção, e aparece na coluna Soma das parcelas do UAU (líquido).' },
+    { i: 'Status no My Saga', d: 'Integrada: já no ERP do cliente. Em aprovação e Aguardando integração: lançada no My Saga, ainda pendente.' },
     { i: 'Retenções de imposto', d: 'Processos de tipo 3 no UAU (retenção gerada a partir de outro processo). Ficam fora da lista Não encontrado, a menos que o filtro as inclua.' }], corARGB('--faint'));
   const buf = await wb.xlsx.writeBuffer();
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
-  a.download = 'Conciliacao UAU x Mais Saga ' + hoje.toISOString().slice(0, 10) + '.xlsx'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  a.download = 'Conciliacao UAU x My Saga ' + hoje.toISOString().slice(0, 10) + '.xlsx'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
 }
 
 // ---- exportar PDF ----
@@ -796,24 +796,24 @@ async function exportarPDF() {
   const filtro = (o.de || o.ate ? 'Geração do processo ' + (o.de ? 'de ' + fmtData(toDate(o.de)) : '') + (o.ate ? ' até ' + fmtData(toDate(o.ate)) : '') : 'Todos os lançamentos') + (o.retencao ? ', com retenções de imposto' : ', sem retenções de imposto');
   // faixa de título
   doc.setFillColor(...navy); doc.rect(0, 0, W, 66, 'F'); doc.setFillColor(...accent); doc.rect(0, 66, W, 3, 'F');
-  doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(19); doc.text('Conciliação UAU x Mais Saga', M, 31);
+  doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(19); doc.text('Conciliação UAU x My Saga', M, 31);
   doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5);
-  doc.text(pdfTxt('Base do UAU: ' + S.nomeUau + '   |   Notas do Mais Saga: ' + S.nomePortal), M, 47);
+  doc.text(pdfTxt('Base do UAU: ' + S.nomeUau + '   |   Notas do My Saga: ' + S.nomePortal), M, 47);
   doc.text(pdfTxt(filtro + '   |   Gerado em ' + hoje.toLocaleString('pt-BR')), M, 59);
   const estilo = { styles: { fontSize: 7.5, cellPadding: 3, textColor: ink, overflow: 'linebreak', lineColor: [228, 228, 228], lineWidth: 0.3 },
     headStyles: { fillColor: navy, textColor: [255, 255, 255], fontStyle: 'bold' }, alternateRowStyles: { fillColor: zebra }, showHead: 'everyPage' };
   const fora = r.naoEncontrados.filter(p => v.nao.indexOf(p) < 0);
   const dir = { halign: 'right' }, ctr = { halign: 'center' };
   // resumo em duas tabelas lado a lado
-  doc.autoTable(Object.assign({}, estilo, { startY: 84, tableWidth: 372, margin: { left: M, right: M, bottom: 34 }, head: [['Do UAU para o Mais Saga', 'Parcelas', 'Valor líquido']],
-    body: [['Não encontrado no Mais Saga', v.nao.length, fmtMoeda(arred(v.nao.reduce((a, p) => a + p.liq, 0)))], ['Sem par, fora dos filtros', fora.length, fmtMoeda(arred(fora.reduce((a, p) => a + p.liq, 0)))],
-      ['Com par no Mais Saga', r.usada.size, fmtMoeda(arred(S.uau.parcelas.filter(p => r.usada.has(p.id)).reduce((a, p) => a + p.liq, 0)))],
+  doc.autoTable(Object.assign({}, estilo, { startY: 84, tableWidth: 372, margin: { left: M, right: M, bottom: 34 }, head: [['Do UAU para o My Saga', 'Parcelas', 'Valor líquido']],
+    body: [['Não encontrado no My Saga', v.nao.length, fmtMoeda(arred(v.nao.reduce((a, p) => a + p.liq, 0)))], ['Sem par, fora dos filtros', fora.length, fmtMoeda(arred(fora.reduce((a, p) => a + p.liq, 0)))],
+      ['Com par no My Saga', r.usada.size, fmtMoeda(arred(S.uau.parcelas.filter(p => r.usada.has(p.id)).reduce((a, p) => a + p.liq, 0)))],
       ['Total de parcelas do UAU', S.uau.parcelas.length, fmtMoeda(arred(S.uau.parcelas.reduce((a, p) => a + p.liq, 0)))]].map(l => l.map(pdfTxt)),
     columnStyles: { 1: dir, 2: dir } }));
   const fimA = doc.lastAutoTable.finalY;
-  doc.autoTable(Object.assign({}, estilo, { startY: 84, tableWidth: 372, margin: { left: M + 410, right: M, bottom: 34 }, head: [['Do Mais Saga para o UAU', 'Notas', 'Valor']],
+  doc.autoTable(Object.assign({}, estilo, { startY: 84, tableWidth: 372, margin: { left: M + 410, right: M, bottom: 34 }, head: [['Do My Saga para o UAU', 'Notas', 'Valor']],
     body: [['Encontrado, valor confere', cont('encontrado'), fmtMoeda(somaT('encontrado'))], ['Valor diferente', cont('valorDif'), fmtMoeda(somaT('valorDif'))],
-      ['Provável (conferir)', cont('provavel'), fmtMoeda(somaT('provavel'))], ['Só no Mais Saga (investigar)', cont('soPortal'), fmtMoeda(somaT('soPortal'))]].map(l => l.map(pdfTxt)),
+      ['Provável (conferir)', cont('provavel'), fmtMoeda(somaT('provavel'))], ['Só no My Saga (investigar)', cont('soPortal'), fmtMoeda(somaT('soPortal'))]].map(l => l.map(pdfTxt)),
     columnStyles: { 1: dir, 2: dir } }));
   let y = Math.max(fimA, doc.lastAutoTable.finalY) + 26;
   const secao = (titulo, sub, head, body, colunas, extra) => {
@@ -824,21 +824,21 @@ async function exportarPDF() {
     doc.autoTable(Object.assign({}, estilo, { startY: y + 20, margin: { left: M, right: M, bottom: 34 }, head: [head.map(pdfTxt)], body: body.map(l => l.map(pdfTxt)), columnStyles: colunas }, extra || {}));
     y = doc.lastAutoTable.finalY + 26;
   };
-  secao('Processos do UAU não encontrados no Mais Saga', v.nao.length + ' parcela(s). ' + filtro + '.', ['Processo', 'Parcela', 'Fornecedor', 'Nota fiscal', 'Valor líquido', 'Vencimento', 'Geração', 'Situação'],
+  secao('Processos do UAU não encontrados no My Saga', v.nao.length + ' parcela(s). ' + filtro + '.', ['Processo', 'Parcela', 'Fornecedor', 'Nota fiscal', 'Valor líquido', 'Vencimento', 'Geração', 'Situação'],
     v.nao.slice().sort(ordem).map(p => [p.proc, p.parc, p.fornecedor, p.nf || '-', fmtMoeda(p.liq), fmtData(p.venc), fmtData(p.geracao), p.sit]),
     { 0: ctr, 1: ctr, 3: ctr, 4: dir, 5: ctr, 6: ctr, 7: ctr });
-  secao('Notas só no Mais Saga (investigar)', v.inv.length + ' nota(s) sem par no UAU.', ['Nota', 'Fornecedor', 'Valor', 'Status', 'Vencimento', 'Motivo', 'Possíveis pares no UAU'],
+  secao('Notas só no My Saga (investigar)', v.inv.length + ' nota(s) sem par no UAU.', ['Nota', 'Fornecedor', 'Valor', 'Status', 'Vencimento', 'Motivo', 'Possíveis pares no UAU'],
     v.inv.map(x => [x.nota.nota, x.nota.fornecedor, fmtMoeda(x.nota.valor), x.nota.status, fmtData(x.nota.venc), x.motivo,
       (x.candidatos || []).map(c => c.razao + ': ' + c.p.proc + '/' + c.p.parc + ' ' + c.p.fornecedor + ' (nota ' + (c.p.nf || '-') + ', ' + fmtMoeda(c.p.liq) + ')').join('\n') || 'Nenhum candidato.']),
     { 0: ctr, 2: dir, 3: ctr, 4: ctr, 5: { cellWidth: 130 }, 6: { cellWidth: 230 } });
   const rot = { encontrado: 'Encontrado', valorDif: 'Valor diferente', provavel: 'Provável' };
-  secao('Notas do Mais Saga com par no UAU', v.encontrados.length + ' nota(s).', ['Resultado', 'Nota', 'Fornecedor no Mais Saga', 'Valor no Mais Saga', 'Valor no UAU', 'Diferença', 'Valor confere com', 'Status no Mais Saga', 'Processos do UAU'],
+  secao('Notas do My Saga com par no UAU', v.encontrados.length + ' nota(s).', ['Resultado', 'Nota', 'Fornecedor no My Saga', 'Valor no My Saga', 'Valor no UAU', 'Diferença', 'Valor confere com', 'Status no My Saga', 'Processos do UAU'],
     v.encontrados.map(x => [rot[x.tipo], x.nota.nota, x.nota.fornecedor, fmtMoeda(x.nota.valor), fmtMoeda(x.valorUau), x.dif ? fmtMoeda(x.dif) : '-', x.confere || '-', x.nota.status, x.grupo.map(p => p.proc + '/' + p.parc).join(', ')]),
     { 0: ctr, 1: ctr, 3: dir, 4: dir, 5: dir, 7: ctr },
     { didParseCell: d => { if (d.section === 'body' && d.column.index === 0) { d.cell.styles.fontStyle = 'bold'; d.cell.styles.textColor = d.cell.raw === 'Encontrado' ? corRGB('--ok-d') : d.cell.raw === 'Valor diferente' ? corRGB('--err') : corRGB('--warn-d'); } } });
   const n = doc.internal.getNumberOfPages();
-  for (let i = 1; i <= n; i++) { doc.setPage(i); doc.setFontSize(8); doc.setTextColor(...faint); doc.text('Conciliação UAU x Mais Saga', M, H - 16); doc.text('Página ' + i + ' de ' + n, W - M, H - 16, { align: 'right' }); }
-  doc.save('Conciliacao UAU x Mais Saga ' + hoje.toISOString().slice(0, 10) + '.pdf');
+  for (let i = 1; i <= n; i++) { doc.setPage(i); doc.setFontSize(8); doc.setTextColor(...faint); doc.text('Conciliação UAU x My Saga', M, H - 16); doc.text('Página ' + i + ' de ' + n, W - M, H - 16, { align: 'right' }); }
+  doc.save('Conciliacao UAU x My Saga ' + hoje.toISOString().slice(0, 10) + '.pdf');
 }
 
 // ---- exemplo fictício ----
@@ -872,7 +872,7 @@ function carregarExemplo() {
     '6666/1;Fulano;KAPPA OBRAS LTDA - 77.777.777/0001-77;OBRA EXEMPLO - 11.111.111/0001-11;R$ 500,00;EM APROVAÇÃO;;18/11/2026;30/11/2026;05/10/2026;',
     ';Fulano;;;R$ 0,00;RASCUNHO;;;;06/10/2026;',
     ';Fulano;;;R$ 0,00;CANCELADA;;;;06/10/2026;'].join('\n');
-  S.portal = lerMaisSaga(csv); S.nomePortal = 'exemplo-mais-saga-ficticio.csv'; S.res = null;
+  S.portal = lerMySaga(csv); S.nomePortal = 'exemplo-my-saga-ficticio.csv'; S.res = null;
   marcarDrop('dropUau', 'infoUau', 'erroUau', true, '<strong>Exemplo fictício</strong><br>Parcelas lidas: ' + S.uau.parcelas.length + '.');
   marcarDrop('dropPortal', 'infoPortal', 'erroPortal', true, '<strong>Exemplo fictício</strong><br>Notas lidas: ' + S.portal.notas.length + '.');
   atualizarBotoes();
