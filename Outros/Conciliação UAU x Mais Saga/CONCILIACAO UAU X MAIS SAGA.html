@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Conciliação UAU x Mais Saga</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231c6ee8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 8h14l-3-3M20 16H6l3 3'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+:root {
+  /* Tokens de cor: fonte única das cores. A interface e o Excel exportado leem daqui. */
+  --primary:   #1c6ee8;
+  --secondary: #1A3EB5;
+  --accent:    #0FE4F5;
+  --navy:      #000D5C;
+
+  --ink:           #191A1C;
+  --light:         #F5F5F5;
+  --white:         #FFFFFF;
+  --muted:         rgba(25,26,28,0.68);
+  --border:        #E4E4E4;
+  --border-strong: #CDCFD5;
+  --faint:         #8B8E97;
+  --zebra:         #FAFAFA;
+
+  --tint:        #E4EDFC;
+  --tint-2:      #F3F7FE;
+  --tint-3:      #F1F5FC;
+  --tint-border: #D5E3FB;
+
+  --ok:    #0F9B6E;  --ok-l:   #E8F8F2;  --ok-b:   #B8E6DA;  --ok-d:   #0B6E50;
+  --warn:  #B45309;  --warn-l: #FFF4E6;  --warn-b: #FCD9B0;  --warn-d: #7A3A06;
+  --err:   #C0392B;  --err-l:  #FDECEA;  --err-b:  #F1B9B3;
+
+  --grad-inst:      linear-gradient(120deg, var(--primary), var(--navy));
+  --grad-btn:       linear-gradient(120deg, var(--primary), var(--secondary));
+  --grad-btn-hover: linear-gradient(120deg, var(--secondary), var(--navy));
+
+  --shadow: 0 1px 2px rgba(25,26,28,.05);
+}
+
+/* ---- base ---- */
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: var(--ink); background: var(--light); font-size: 14px; line-height: 1.5; padding-bottom: 88px; }
+h1, h2, h3 { letter-spacing: -0.02em; margin: 0; }
+button { font-family: inherit; cursor: pointer; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 20px; }
+.hide { display: none !important; }
+.rotulo { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--faint); }
+
+/* ---- banner ---- */
+.banner { position: relative; background: var(--grad-inst); color: var(--white); padding: 46px 0 26px; }
+.banner a.voltar-portal { position: absolute; top: 12px; left: 20px; color: rgba(255,255,255,.7); font-size: 12.5px; text-decoration: none; padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,.25); }
+.banner a.voltar-portal:hover { background: rgba(255,255,255,.1); color: #fff; }
+.banner .wrap { display: flex; align-items: center; gap: 18px; }
+.banner .ic { width: 52px; height: 52px; border-radius: 12px; background: rgba(255,255,255,.14); display: grid; place-items: center; flex: none; }
+.banner h1 { font-size: 26px; font-weight: 800; }
+.banner p { margin: 4px 0 0; opacity: .85; max-width: 720px; }
+
+/* ---- passos ---- */
+.passos { display: flex; gap: 10px; margin: 18px 0 8px; }
+.passo { display: flex; align-items: center; gap: 8px; padding: 6px 14px 6px 6px; border-radius: 999px; background: var(--white); border: 1px solid var(--border); color: var(--muted); font-weight: 600; font-size: 13px; }
+.passo .n { width: 24px; height: 24px; border-radius: 50%; background: var(--light); display: grid; place-items: center; font-size: 12px; }
+.passo.atual { border-color: var(--primary); color: var(--ink); }
+.passo.atual .n { background: var(--primary); color: var(--white); }
+.passo.feito .n { background: var(--accent); color: var(--navy); }
+
+/* ---- cartoes e upload ---- */
+.card { background: var(--white); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); padding: 20px; }
+.card h2 { font-size: 17px; font-weight: 700; }
+.card .sub { color: var(--muted); margin: 4px 0 14px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 12px; }
+.drop { border: 2px dashed var(--border-strong); border-radius: 12px; padding: 26px 16px; text-align: center; background: var(--tint-2); transition: .15s; cursor: pointer; }
+.drop:hover, .drop.sobre { border-color: var(--primary); background: var(--tint); }
+.drop.pronto { border-style: solid; border-color: var(--ok-b); background: var(--ok-l); }
+.drop.erro { border-style: solid; border-color: var(--err-b); background: var(--err-l); }
+.drop strong { display: block; font-size: 14px; }
+.drop small { color: var(--muted); }
+.drop .info { margin-top: 6px; font-size: 13px; }
+.ico { stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.drop .ico { width: 30px; height: 30px; color: var(--primary); margin-bottom: 6px; }
+.drop.pronto .ico { color: var(--ok); }
+.msgerro { margin-top: 10px; padding: 10px 12px; border-radius: 8px; background: var(--err-l); border: 1px solid var(--err-b); color: var(--err); font-weight: 500; }
+details { background: var(--white); border: 1px solid var(--border); border-radius: 12px; margin-top: 12px; }
+details summary { padding: 14px 18px; font-weight: 700; cursor: pointer; list-style: none; display: flex; justify-content: space-between; }
+details summary::after { content: '+'; color: var(--primary); font-size: 18px; line-height: 1; }
+details[open] summary::after { content: '\2212'; }
+details .corpo { padding: 0 18px 16px; color: var(--muted); }
+details .corpo p { margin: 6px 0; }
+details code, .cmd { background: var(--light); border: 1px solid var(--border); border-radius: 6px; padding: 2px 6px; font-family: Consolas, monospace; font-size: 12.5px; color: var(--ink); }
+.cmd { display: block; padding: 10px 12px; margin: 8px 0; white-space: pre-wrap; }
+
+/* ---- equivalencias ---- */
+textarea.equiv { width: 100%; min-height: 96px; font: 13px Consolas, monospace; padding: 10px; border: 1px solid var(--border-strong); border-radius: 8px; resize: vertical; color: var(--ink); }
+.equiv-acoes { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 8px; }
+.btn.peq { padding: 6px 12px; font-size: 13px; }
+.equiv-status { color: var(--muted); font-size: 13px; }
+
+/* ---- chips ---- */
+.chip { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 600; border: 1px solid transparent; white-space: nowrap; }
+.chip.ok { background: var(--ok-l); color: var(--ok-d); border-color: var(--ok-b); }
+.chip.warn { background: var(--warn-l); color: var(--warn-d); border-color: var(--warn-b); }
+.chip.err { background: var(--err-l); color: var(--err); border-color: var(--err-b); }
+.chip.info { background: var(--tint); color: var(--secondary); border-color: var(--tint-border); }
+.chip.neutro { background: var(--light); color: var(--muted); border-color: var(--border); }
+
+/* ---- kpis ---- */
+.kpis { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin: 6px 0 14px; }
+.kpi { background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; cursor: pointer; text-align: left; font: inherit; color: inherit; }
+.kpi:hover { border-color: var(--primary); }
+.kpi .v { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.15; }
+.kpi .t { font-size: 12px; color: var(--muted); font-weight: 500; }
+.kpi .m { font-size: 12px; color: var(--faint); }
+.kpi.destaque { background: var(--grad-inst); color: var(--white); border-color: transparent; }
+.kpi.destaque .t, .kpi.destaque .m { color: rgba(255,255,255,.8); }
+.kpi.err .v { color: var(--err); } .kpi.warn .v { color: var(--warn); } .kpi.ok .v { color: var(--ok-d); }
+
+/* ---- filtros e abas ---- */
+.filtros { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: flex-start; background: var(--white); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+.filtros .campo { display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: var(--muted); font-weight: 600; }
+.filtros input[type=date], .filtros input[type=search] { font: inherit; font-weight: 500; font-size: 13px; height: 36px; padding: 0 10px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--white); color: var(--ink); }
+.filtros .grupo-chk { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; min-height: 36px; }
+.filtros .chk { display: flex; flex-direction: row; align-items: center; gap: 6px; font-weight: 500; font-size: 13px; color: var(--ink); }
+.filtros .busca { flex: 1 1 220px; }
+.filtros .busca input { width: 100%; }
+.abas { display: flex; gap: 4px; margin: 14px 0 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.aba { background: none; border: 0; padding: 10px 16px; font-weight: 600; color: var(--muted); border-bottom: 3px solid transparent; font-size: 14px; }
+.aba.ativa { color: var(--primary); border-bottom-color: var(--primary); }
+.aba .n { margin-left: 6px; background: var(--light); border-radius: 999px; padding: 1px 8px; font-size: 12px; }
+.aba.ativa .n { background: var(--tint); }
+.aviso { margin-top: 12px; padding: 10px 14px; border-radius: 10px; background: var(--warn-l); border: 1px solid var(--warn-b); color: var(--warn-d); }
+.aviso.info { background: var(--tint-2); border-color: var(--tint-border); color: var(--secondary); }
+
+/* ---- tabelas ---- */
+.tabwrap { background: var(--white); border: 1px solid var(--border); border-top: 0; border-radius: 0 0 12px 12px; overflow: auto; max-height: 62vh; }
+table.tab { border-collapse: collapse; width: 100%; font-size: 13px; }
+table.tab th { position: sticky; top: 0; background: var(--navy); color: var(--white); text-align: left; padding: 9px 10px; font-size: 12px; white-space: nowrap; z-index: 1; }
+table.tab td { padding: 7px 10px; border-top: 1px solid var(--border); vertical-align: top; }
+table.tab tr:nth-child(even) td { background: var(--zebra); }
+table.tab td.num, table.tab th.num { text-align: right; white-space: nowrap; }
+table.tab td.ctr { text-align: center; white-space: nowrap; }
+.vazio { padding: 28px; text-align: center; color: var(--muted); }
+.limite { padding: 8px 12px; font-size: 12px; color: var(--muted); background: var(--light); }
+
+/* ---- investigar ---- */
+.cards-inv { display: grid; gap: 12px; padding: 14px; background: var(--light); border: 1px solid var(--border); border-top: 0; border-radius: 0 0 12px 12px; max-height: 62vh; overflow: auto; }
+.inv { background: var(--white); border: 1px solid var(--border); border-left: 4px solid var(--warn); border-radius: 10px; padding: 12px 14px; }
+.inv .topo { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: baseline; }
+.inv .forn { font-weight: 700; }
+.inv .valor { margin-left: auto; font-weight: 800; font-size: 16px; }
+.inv .meta { color: var(--muted); font-size: 12.5px; margin-top: 2px; }
+.inv .motivo { margin: 8px 0 6px; font-weight: 500; }
+.inv table { margin-top: 6px; }
+
+/* ---- conferencias ---- */
+.conf { padding: 16px; background: var(--white); border: 1px solid var(--border); border-top: 0; border-radius: 0 0 12px 12px; }
+.conf h3 { font-size: 15px; margin: 4px 0 8px; }
+
+/* ---- barra de acao ---- */
+.barra { position: fixed; left: 0; right: 0; bottom: 0; background: var(--white); border-top: 1px solid var(--border); padding: 12px 0; z-index: 10; }
+.barra .wrap { display: flex; gap: 10px; align-items: center; }
+.barra .esp { flex: 1; color: var(--muted); font-size: 13px; }
+.btn { border: 1px solid var(--border-strong); background: var(--white); color: var(--ink); padding: 10px 18px; border-radius: 10px; font-weight: 700; font-size: 14px; }
+.btn:hover { border-color: var(--primary); color: var(--primary); }
+.btn.prim { background: var(--grad-btn); color: var(--white); border: 0; }
+.btn.prim:hover { background: var(--grad-btn-hover); color: var(--white); }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+.busy { position: fixed; inset: 0; background: rgba(255,255,255,.75); display: grid; place-items: center; z-index: 50; font-weight: 700; }
+
+@media (max-width: 860px) {
+  .grid2 { grid-template-columns: 1fr; }
+  .kpis { grid-template-columns: repeat(2, 1fr); }
+  .banner h1 { font-size: 21px; }
+  .barra .esp { display: none; }
+  .barra .wrap { justify-content: space-between; }
+}
+</style>
+</head>
+<body>
+
+<header class="banner">
+  <a class="voltar-portal" href="../../index.html">← Portal</a>
+  <div class="wrap">
+    <div class="ic"><svg class="ico" width="28" height="28" viewBox="0 0 24 24"><path d="M4 8h14l-3-3M20 16H6l3 3"/></svg></div>
+    <div>
+      <h1>Conciliação UAU x Mais Saga</h1>
+      <p>Compare os processos de pagamento do UAU com as notas de despesa do Mais Saga. A ferramenta lista o que não foi encontrado no Mais Saga e o que existe só no Mais Saga.</p>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="passos">
+    <div class="passo atual" id="passo1"><span class="n">1</span>Arquivos</div>
+    <div class="passo" id="passo2"><span class="n">2</span>Resultado</div>
+  </div>
+
+  <!-- ---- tela 1: arquivos ---- -->
+  <section id="tela1">
+    <div class="grid2">
+      <div class="card">
+        <h2>Base do UAU</h2>
+        <p class="sub">Excel gerado pela consulta (aba Base UAU). Traz todos os processos de pagamento da obra.</p>
+        <div class="drop" id="dropUau" tabindex="0">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M12 16V4m0 0L8 8m4-4l4 4M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg>
+          <strong>Arraste o Excel do UAU aqui</strong>
+          <small>ou clique para escolher (.xlsx)</small>
+          <div class="info" id="infoUau"></div>
+        </div>
+        <input type="file" id="fileUau" accept=".xlsx,.xls" class="hide">
+        <div class="msgerro hide" id="erroUau"></div>
+      </div>
+      <div class="card">
+        <h2>Notas de despesa do Mais Saga</h2>
+        <p class="sub">CSV exportado do Mais Saga, com o número da nota, o fornecedor, o valor e o status.</p>
+        <div class="drop" id="dropPortal" tabindex="0">
+          <svg class="ico" viewBox="0 0 24 24"><path d="M12 16V4m0 0L8 8m4-4l4 4M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"/></svg>
+          <strong>Arraste o CSV do Mais Saga aqui</strong>
+          <small>ou clique para escolher (.csv)</small>
+          <div class="info" id="infoPortal"></div>
+        </div>
+        <input type="file" id="filePortal" accept=".csv,.txt" class="hide">
+        <div class="msgerro hide" id="erroPortal"></div>
+      </div>
+    </div>
+
+    <details id="detEquiv">
+      <summary>Equivalências de fornecedores</summary>
+      <div class="corpo">
+        <p>Use quando o mesmo fornecedor tem nomes diferentes no Mais Saga e no UAU (razão social e nome fantasia, por exemplo). Uma equivalência por linha, no formato <code>nome no Mais Saga = nome no UAU</code>. Basta uma parte do nome. Linhas começadas por # são comentário.</p>
+        <textarea class="equiv" id="equiv" spellcheck="false" placeholder="Exemplo fictício:&#10;ALFA SEGUROS = BETA PROTECAO"></textarea>
+        <div class="equiv-acoes">
+          <button class="btn peq" id="btnEquivArquivo">Carregar de arquivo (.txt)</button>
+          <button class="btn peq" id="btnEquivBaixar">Baixar a lista</button>
+          <span class="equiv-status" id="equivStatus"></span>
+        </div>
+        <input type="file" id="fileEquiv" accept=".txt" class="hide">
+        <p>A lista fica salva neste navegador. Cada linha vale nos dois sentidos.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ---- tela 2: resultado ---- -->
+  <section id="tela2" class="hide">
+    <div class="kpis" id="kpis"></div>
+    <div class="filtros" id="filtros">
+      <label class="campo">Gerado de<input type="date" id="fDe"></label>
+      <label class="campo">Gerado até<input type="date" id="fAte"></label>
+      <div class="campo">Situação da parcela
+        <div class="grupo-chk">
+          <label class="chk"><input type="checkbox" class="fSit" value="Paga" checked>Paga</label>
+          <label class="chk"><input type="checkbox" class="fSit" value="A pagar" checked>A pagar</label>
+          <label class="chk"><input type="checkbox" class="fSit" value="Em emissão" checked>Em emissão</label>
+          <label class="chk"><input type="checkbox" class="fSit" value="Em banco" checked>Em banco</label>
+        </div>
+      </div>
+      <div class="campo">Retenções
+        <div class="grupo-chk"><label class="chk"><input type="checkbox" id="fRet">Incluir retenções de imposto</label></div>
+      </div>
+      <label class="campo busca">Buscar<input type="search" id="fBusca" placeholder="Fornecedor, nota ou processo"></label>
+    </div>
+    <div id="avisos"></div>
+    <div class="abas" id="abas"></div>
+    <div id="conteudo"></div>
+  </section>
+</main>
+
+<div class="barra">
+  <div class="wrap">
+    <button class="btn hide" id="btnVoltar">Voltar aos arquivos</button>
+    <button class="btn" id="btnExemplo">Carregar exemplo fictício</button>
+    <div class="esp" id="statusBarra"></div>
+    <button class="btn prim" id="btnConciliar" disabled>Conciliar</button>
+    <button class="btn hide" id="btnPdf">Exportar PDF</button>
+    <button class="btn prim hide" id="btnExportar">Exportar Excel</button>
+  </div>
+</div>
+
+<script>
+// <conciliacao>
+const RUIDO = new Set(['LTDA','EIRELI','ME','EPP','SA','DE','DA','DO','DOS','DAS','E','COM','IND','COMERCIO','INDUSTRIA','SERVICOS','SERVICO','EM','CIA','PARA','MATERIAIS','CONSTRUCAO','DISTRIBUIDORA','TRANSPORTE','TRANSPORTES','COMERCIAL','IMP','EXP','REPRESENTACAO']);
+const TOL = 0.02;
+const STATUS_FORA = ['CANCELADA', 'RASCUNHO'];
+
+function semAcento(s) { return String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+function tokensNome(s) {
+  const t = semAcento(s).toUpperCase().replace(/\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}/g, ' ').replace(/[^A-Z ]/g, ' ');
+  return t.split(/\s+/).filter(x => x.length > 1 && !RUIDO.has(x));
+}
+function simNome(a, b) {
+  if (!a.length || !b.length) return 0;
+  const ja = a.join(''), jb = b.join('');
+  if (Math.min(ja.length, jb.length) >= 6 && (ja.indexOf(jb) === 0 || jb.indexOf(ja) === 0)) return 1;
+  const sb = new Set(b);
+  const inter = new Set(a.filter(x => sb.has(x))).size;
+  return inter / Math.min(new Set(a).size, sb.size);
+}
+function nfNum(s) { return String(s == null ? '' : s).split('/')[0].replace(/\D/g, '').replace(/^0+/, ''); }
+function norm(s) { return semAcento(s).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim(); }
+
+function parseMoney(s) {
+  if (typeof s === 'number') return s;
+  const t = String(s == null ? '' : s).replace(/R\$/g, '').replace(/\s/g, '').replace(/\./g, '').replace(',', '.');
+  return t === '' ? NaN : Number(t);
+}
+function ymd(y, m, d) { return new Date(Date.UTC(y, m - 1, d)); }
+function toDate(v) {
+  if (v == null || v === '') return null;
+  if (v instanceof Date) { if (isNaN(v)) return null; const d = new Date(v.getTime() + 12 * 3600 * 1000); return ymd(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()); }
+  if (typeof v === 'number') { const d = new Date(Math.round((v - 25569) * 86400000) + 12 * 3600 * 1000); return ymd(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()); }
+  const m = String(v).trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/) ;
+  if (m) return ymd(+m[3], +m[2], +m[1]);
+  const iso = String(v).trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return iso ? ymd(+iso[1], +iso[2], +iso[3]) : null;
+}
+function fmtData(d) { return d ? String(d.getUTCDate()).padStart(2, '0') + '/' + String(d.getUTCMonth() + 1).padStart(2, '0') + '/' + d.getUTCFullYear() : ''; }
+function fmtMoeda(n) { return n == null || isNaN(n) ? '' : n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+function fmtNum(x) { return typeof x === 'number' ? x.toLocaleString('pt-BR', { minimumFractionDigits: x % 1 ? 2 : 0, maximumFractionDigits: 2 }) : x; }
+function arred(n) { return Math.round(n * 100) / 100; }
+
+function parseCSV(text) {
+  const primeira = text.split(/\r?\n/, 1)[0] || '';
+  const sep = (primeira.match(/;/g) || []).length >= (primeira.match(/,/g) || []).length ? ';' : ',';
+  const out = []; let row = [], cur = '', q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) { if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += c; }
+    else if (c === '"') q = true;
+    else if (c === sep) { row.push(cur); cur = ''; }
+    else if (c === '\n' || c === '\r') { if (c === '\r' && text[i + 1] === '\n') i++; row.push(cur); cur = ''; if (row.some(x => x !== '')) out.push(row); row = []; }
+    else cur += c;
+  }
+  if (cur !== '' || row.length) { row.push(cur); if (row.some(x => x !== '')) out.push(row); }
+  return out;
+}
+
+// Lê o CSV de notas de despesa do Mais Saga. Devolve { notas, ignoradas, avisos }.
+function lerMaisSaga(text) {
+  const linhas = parseCSV(text.replace(/^﻿/, ''));
+  if (!linhas.length) throw new Error('O arquivo está vazio.');
+  const cab = linhas[0].map(norm);
+  const col = nome => cab.indexOf(nome);
+  const idx = { nota: col('nota'), forn: col('fornecedor'), unid: col('unidade'), valor: col('valor'), status: col('status'), sit: col('situacao do pagamento'),
+                limite: col('limite'), venc: col('venc'), incl: col('inclusao'), integr: col('integr erp'), resp: col('responsavel') };
+  const faltam = [['NOTA', idx.nota], ['Fornecedor', idx.forn], ['VALOR', idx.valor], ['Status', idx.status]].filter(x => x[1] < 0).map(x => x[0]);
+  if (faltam.length) throw new Error('Este arquivo não parece ser a lista de notas de despesa do Mais Saga. Faltam as colunas: ' + faltam.join(', ') + '.');
+  const notas = []; const ignoradas = { semNota: 0, cancelada: 0, rascunho: 0 }; const avisos = [];
+  linhas.slice(1).forEach((l, i) => {
+    const g = k => (idx[k] >= 0 ? (l[idx[k]] || '').trim() : '');
+    const status = g('status').toUpperCase();
+    if (status === 'CANCELADA') { ignoradas.cancelada++; return; }
+    if (status === 'RASCUNHO') { ignoradas.rascunho++; return; }
+    if (!g('nota')) { ignoradas.semNota++; return; }
+    const valor = parseMoney(g('valor'));
+    if (isNaN(valor)) { avisos.push('Linha ' + (i + 2) + ' do CSV com valor ilegível: "' + g('valor') + '".'); return; }
+    const f = g('forn'); const m = f.match(/^(.*?)\s+-\s+(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})\s*$/);
+    const nome = m ? m[1] : f;
+    notas.push({ linha: i + 2, nota: g('nota'), nfNum: nfNum(g('nota')), fornecedor: nome, cnpj: m ? m[2] : '', tok: tokensNome(nome), unidade: g('unid'),
+                 valor, status, situacao: g('sit'), limite: toDate(g('limite')), venc: toDate(g('venc')), inclusao: toDate(g('incl')), integr: toDate(g('integr')) });
+  });
+  if (!notas.length) throw new Error('Nenhuma nota válida foi encontrada no arquivo.');
+  return { notas, ignoradas, avisos };
+}
+
+const COLUNAS_UAU = ['Processo', 'Parcela', 'Fornecedor', 'Nota fiscal', 'Valor líquido'];
+// Lê as linhas da aba Base UAU (objetos por cabeçalho). Devolve { parcelas, avisos, confDiverge }.
+function lerUau(rows, conf) {
+  if (!rows || !rows.length) throw new Error('A aba da base do UAU está vazia.');
+  const cab = Object.keys(rows[0]);
+  const faltam = COLUNAS_UAU.filter(c => cab.indexOf(c) < 0);
+  if (faltam.length) throw new Error('Este arquivo não parece ser a base gerada pela consulta do UAU. Faltam as colunas: ' + faltam.join(', ') + '.');
+  const avisos = []; const parcelas = []; const ids = new Set(); let repetidos = 0;
+  rows.forEach(r => {
+    if (r['Processo'] == null || r['Processo'] === '') return;
+    const num = x => (x == null || x === '' ? null : Number(x));
+    const nf = r['Nota fiscal'] == null ? '' : String(r['Nota fiscal']).trim();
+    const p = { proc: Number(r['Processo']), parc: Number(r['Parcela']), fornecedor: String(r['Fornecedor'] || '').trim(), nf, nfNum: nfNum(nf),
+                vNF: num(r['Valor da nota fiscal (não somar)']), liq: num(r['Valor líquido']) || 0, bruto: num(r['Valor bruto']),
+                geracao: toDate(r['Data de geração do processo']), venc: toDate(r['Data de vencimento']), emissao: toDate(r['Data de emissão']), pgto: toDate(r['Data de pagamento']),
+                sit: r['Situação da parcela'] || '', tipo: num(r['Tipo do processo (código)']), contrato: num(r['Contrato']), medicao: num(r['Medição']), oc: num(r['Ordem de compra']) };
+    p.tok = tokensNome(p.fornecedor); p.id = p.proc + '/' + p.parc + '/' + p.nf;
+    if (ids.has(p.id)) repetidos++; ids.add(p.id);
+    parcelas.push(p);
+  });
+  if (repetidos) avisos.push('Há ' + repetidos + ' linha(s) repetida(s) (mesmo processo, parcela e nota). Confira se o arquivo foi gerado duas vezes.');
+  const confDiverge = (conf || []).filter(c => c['Resultado'] === 'DIVERGE').map(c => c['Conferência']);
+  if (confDiverge.length) avisos.push('A aba Conferências do arquivo tem divergência: ' + confDiverge.join('; ') + '.');
+  return { parcelas, avisos, confDiverge };
+}
+
+// Como o valor do Mais Saga (nota inteira) confere com o grupo de parcelas do UAU.
+function valorConfere(grupo, v) {
+  if (!grupo.length) return null;
+  const soma = grupo.reduce((a, p) => a + p.liq, 0);
+  if (Math.abs(soma - v) < TOL) return 'Soma das parcelas';
+  if (grupo.some(p => p.vNF != null && Math.abs(p.vNF - v) < TOL)) return 'Valor da nota fiscal';
+  if (grupo.some(p => Math.abs(p.liq - v) < TOL)) return 'Uma parcela';
+  return null;
+}
+
+// Equivalências de fornecedores: linhas "nome no Mais Saga = nome no UAU". Basta parte do nome. Linhas com # são comentário.
+function parseEquivalencias(texto) {
+  const lista = [], erros = [];
+  String(texto || '').split(/\r?\n/).forEach((l, i) => {
+    const t = l.trim(); if (!t || t.charAt(0) === '#') return;
+    const p = t.split('=');
+    const a = p.length === 2 ? tokensNome(p[0]) : [], b = p.length === 2 ? tokensNome(p[1]) : [];
+    if (!a.length || !b.length) { erros.push(i + 1); return; }
+    lista.push({ a, b, txt: t });
+  });
+  return { lista, erros };
+}
+function mesmoFornecedor(ta, tb, equivs) {
+  if (simNome(ta, tb) >= 0.6) return true;
+  return (equivs || []).some(e => (simNome(ta, e.a) >= 0.6 && simNome(tb, e.b) >= 0.6) || (simNome(ta, e.b) >= 0.6 && simNome(tb, e.a) >= 0.6));
+}
+
+function conciliar(parcelas, notas, equivs) {
+  const mesmo = (a, b) => mesmoFornecedor(a, b, equivs);
+  const porNf = new Map();
+  parcelas.forEach(p => { if (p.nfNum) { if (!porNf.has(p.nfNum)) porNf.set(p.nfNum, []); porNf.get(p.nfNum).push(p); } });
+  const usada = new Map(); // id da parcela -> nota
+  const resultados = new Array(notas.length).fill(null);
+  const marca = (grupo, n) => grupo.forEach(p => { if (!usada.has(p.id)) usada.set(p.id, n); });
+  const base = (n, extra) => Object.assign({ nota: n, grupo: [], confere: null, valorUau: null, dif: null, motivo: '' }, extra);
+  const soma = g => arred(g.reduce((a, p) => a + p.liq, 0));
+  const dist = (x, y) => (x && y ? Math.abs(x - y) : 9e15);
+  // desempate: valor mais exato primeiro, depois vencimento mais próximo
+  const pertoDe = n => (a, b) => Math.round(Math.abs(a.liq - n.valor) * 100) - Math.round(Math.abs(b.liq - n.valor) * 100) || dist(a.venc, n.venc) - dist(b.venc, n.venc);
+  const mesmoValor = (p, n) => Math.abs(p.liq - n.valor) < TOL;
+  // Valor do UAU na base da comparação. O Mais Saga registra a nota bruta e o UAU as parcelas líquidas (após retenções).
+  const basear = (n, grupo, confere) => {
+    const liq = soma(grupo); let uau = liq;
+    if (confere === 'Valor da nota fiscal') { const q = grupo.find(p => p.vNF != null && Math.abs(p.vNF - n.valor) < TOL); if (q) uau = arred(q.vNF); }
+    return { valorUau: uau, somaLiq: liq, dif: arred(n.valor - uau) };
+  };
+
+  // passo 1: mesma nota e fornecedor igual (ou equivalente)
+  notas.forEach((n, i) => {
+    if (!n.nfNum) return;
+    let grupo = (porNf.get(n.nfNum) || []).filter(p => mesmo(n.tok, p.tok));
+    if (!grupo.length) return;
+    const confere = valorConfere(grupo, n.valor);
+    if (confere === 'Uma parcela') { // a nota do Mais Saga é uma parcela só: não reivindicar as outras
+      const iguais = grupo.filter(p => mesmoValor(p, n));
+      grupo = [iguais.filter(p => !usada.has(p.id)).sort(pertoDe(n))[0] || iguais[0]];
+    }
+    resultados[i] = base(n, Object.assign({ tipo: confere ? 'encontrado' : 'valorDif', grupo, confere,
+      motivo: confere ? 'Mesma nota e fornecedor. Valor confere (' + confere.toLowerCase() + ').' : 'Mesma nota e fornecedor, mas o valor do Mais Saga difere do UAU.' }, basear(n, grupo, confere)));
+    marca(grupo, n);
+  });
+  // passo 2: mesma nota e valor, fornecedor de nome diferente
+  notas.forEach((n, i) => {
+    if (resultados[i] || !n.nfNum) return;
+    const cand = (porNf.get(n.nfNum) || []).filter(p => !usada.has(p.id));
+    if (!cand.length) return;
+    const grupo = valorConfere(cand, n.valor) === 'Soma das parcelas' ? cand : cand.filter(p => mesmoValor(p, n)).sort(pertoDe(n)).slice(0, 1);
+    if (!grupo.length) return;
+    const confere2 = valorConfere(grupo, n.valor);
+    resultados[i] = base(n, Object.assign({ tipo: 'provavel', grupo, confere: confere2,
+      motivo: 'Mesma nota e mesmo valor, mas o fornecedor tem nome diferente no UAU (' + grupo[0].fornecedor + '). Se for o mesmo, cadastre em Equivalências de fornecedores.' }, basear(n, grupo, confere2)));
+    marca(grupo, n);
+  });
+  // passo 3: parcela do UAU sem nota fiscal, mesmo fornecedor e valor
+  notas.forEach((n, i) => {
+    if (resultados[i]) return;
+    const achada = parcelas.filter(p => !p.nfNum && p.tipo !== 3 && !usada.has(p.id) && mesmo(n.tok, p.tok) && mesmoValor(p, n)).sort(pertoDe(n))[0];
+    if (!achada) return;
+    resultados[i] = base(n, { tipo: 'provavel', grupo: [achada], confere: 'Uma parcela', valorUau: arred(achada.liq), somaLiq: arred(achada.liq), dif: 0,
+      motivo: 'O processo ' + achada.proc + '/' + achada.parc + ' no UAU está sem nota fiscal, mas tem o mesmo fornecedor e valor. Conferir.' });
+    marca([achada], n);
+  });
+  // passo 4: mesmo fornecedor e valor, número da nota diferente
+  notas.forEach((n, i) => {
+    if (resultados[i]) return;
+    const achada = parcelas.filter(p => p.tipo !== 3 && !usada.has(p.id) && mesmo(n.tok, p.tok) && mesmoValor(p, n)).sort(pertoDe(n))[0];
+    if (!achada) return;
+    resultados[i] = base(n, { tipo: 'provavel', grupo: [achada], confere: 'Uma parcela', valorUau: arred(achada.liq), somaLiq: arred(achada.liq), dif: 0,
+      motivo: 'Mesmo fornecedor e mesmo valor, mas o número da nota é diferente (Mais Saga: ' + n.nota + '. UAU: ' + (achada.nf || 'sem nota') + '). Conferir.' });
+    marca([achada], n);
+  });
+  // o que sobrou do Mais Saga: só no Mais Saga, com possíveis pares
+  notas.forEach((n, i) => {
+    if (resultados[i]) return;
+    resultados[i] = base(n, { tipo: 'soPortal', motivo: 'Nenhuma parcela do UAU casou com esta nota.', candidatos: candidatos(n, parcelas, porNf, usada, mesmo) });
+  });
+
+  const naoEncontrados = parcelas.filter(p => !usada.has(p.id));
+  return { resultados, naoEncontrados, usada, conferencias: conferenciasDe(parcelas, notas, resultados, naoEncontrados, usada) };
+}
+
+function candidatos(n, parcelas, porNf, usada, mesmo) {
+  const mapa = new Map(); const add = (p, razao, prio) => { if (!mapa.has(p.id) || mapa.get(p.id).prio > prio) mapa.set(p.id, { p, razao, prio, jaUsada: usada.has(p.id) }); };
+  // nota curta (1, 2, 3) repete entre fornecedores: só serve de pista com 4 dígitos ou mais
+  if (n.nfNum.length >= 4) (porNf.get(n.nfNum) || []).forEach(p => add(p, 'Mesma nota fiscal, outro fornecedor ou valor', 1));
+  parcelas.forEach(p => {
+    if (p.tipo === 3) return;
+    const mesmoForn = mesmo(n.tok, p.tok);
+    if (mesmoForn && Math.abs(p.liq - n.valor) < TOL) add(p, 'Mesmo fornecedor e mesmo valor' + (p.nfNum && p.nfNum !== n.nfNum ? ' (nota fiscal diferente: ' + p.nf + ')' : ''), 0);
+    else if (!mesmoForn && Math.abs(p.liq - n.valor) < TOL && n.valor >= 100) add(p, 'Mesmo valor, outro fornecedor', 3);
+  });
+  parcelas.filter(p => p.tipo !== 3 && mesmo(n.tok, p.tok) && !mapa.has(p.id) && !usada.has(p.id))
+    .sort((a, b) => Math.abs(a.liq - n.valor) - Math.abs(b.liq - n.valor)).slice(0, 3)
+    .forEach(p => add(p, 'Mesmo fornecedor, sem par no Mais Saga', 2));
+  return Array.from(mapa.values()).sort((a, b) => a.prio - b.prio).slice(0, 6);
+}
+
+function conferenciasDe(parcelas, notas, resultados, naoEnc, usada) {
+  const cont = t => resultados.filter(r => r.tipo === t).length;
+  const somaN = notas.reduce((a, n) => a + n.valor, 0);
+  const somaUau = parcelas.reduce((a, p) => a + p.liq, 0);
+  const somaNao = naoEnc.reduce((a, p) => a + p.liq, 0);
+  const somaUsada = parcelas.filter(p => usada.has(p.id)).reduce((a, p) => a + p.liq, 0);
+  const rep = new Map(); notas.forEach(n => { const k = n.nfNum + '|' + n.tok.join(' '); if (n.nfNum) rep.set(k, (rep.get(k) || 0) + 1); });
+  const repetidas = Array.from(rep.values()).filter(x => x > 1).length;
+  const ok = c => (c ? 'OK' : 'DIVERGE');
+  const soma4 = cont('encontrado') + cont('valorDif') + cont('provavel') + cont('soPortal');
+  return [
+    ['Notas do Mais Saga: encontrado + valor diferente + provável + só no Mais Saga = notas lidas', soma4, notas.length, ok(soma4 === notas.length), 'Toda nota do Mais Saga foi classificada uma vez'],
+    ['Parcelas do UAU: com par + sem par = parcelas lidas', usada.size + naoEnc.length, parcelas.length, ok(usada.size + naoEnc.length === parcelas.length), 'Toda parcela do UAU foi classificada uma vez'],
+    ['Valor líquido do UAU: com par + sem par = total lido', arred(somaUsada + somaNao), arred(somaUau), ok(Math.abs(somaUsada + somaNao - somaUau) < 0.05), 'Nenhum valor se perdeu nem se repetiu'],
+    ['Valor das notas do Mais Saga (soma)', arred(somaN), '-', '-', 'Informativo, sem canceladas e rascunhos'],
+    ['Notas repetidas no Mais Saga (mesma nota e fornecedor)', repetidas, 0, repetidas ? 'ATENÇÃO' : 'OK', 'Nota lançada duas vezes no Mais Saga'],
+  ];
+}
+
+function filtrarNaoEncontrados(lista, o) {
+  const de = o.de ? toDate(o.de) : null, ate = o.ate ? toDate(o.ate) : null, b = norm(o.busca || '');
+  return lista.filter(p => {
+    if (!o.retencao && p.tipo === 3) return false;
+    if (o.sits && o.sits.length && o.sits.indexOf(p.sit) < 0) return false;
+    if (de && (!p.geracao || p.geracao < de)) return false;
+    if (ate && (!p.geracao || p.geracao > ate)) return false;
+    if (b && norm([p.fornecedor, p.nf, p.proc + '/' + p.parc, p.proc].join(' ')).indexOf(b) < 0) return false;
+    return true;
+  });
+}
+// </conciliacao>
+
+// ===================================================================
+// Interface
+// ===================================================================
+const S = { uau: null, portal: null, res: null, equivs: [], aba: 'nao', nomeUau: '', nomePortal: '' };
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const TXT = s => { s = String(s); return s.charAt(0).toUpperCase() + s.slice(1); };
+
+function chipStatus(st) {
+  const s = String(st || '').toUpperCase();
+  if (s === 'INTEGRADA') return '<span class="chip ok">Integrada</span>';
+  if (s === 'EM APROVAÇÃO') return '<span class="chip warn">Em aprovação</span>';
+  if (s === 'AGUARDANDO INTEGRAÇÃO') return '<span class="chip info">Aguardando integração</span>';
+  return '<span class="chip neutro">' + esc(TXT(s.toLowerCase())) + '</span>';
+}
+function chipSit(s) { return '<span class="chip ' + (s === 'Paga' ? 'ok' : s === 'A pagar' ? 'info' : 'neutro') + '">' + esc(s || '-') + '</span>'; }
+function chipTipo(t) {
+  return { encontrado: '<span class="chip ok">Encontrado</span>', valorDif: '<span class="chip err">Valor diferente</span>', provavel: '<span class="chip warn">Provável</span>', soPortal: '<span class="chip warn">Só no Mais Saga</span>' }[t];
+}
+
+// ---- arquivos ----
+function dropar(dropId, fileId, tratar) {
+  const d = $(dropId), f = $(fileId);
+  d.addEventListener('click', () => f.click());
+  d.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') f.click(); });
+  ['dragenter', 'dragover'].forEach(ev => d.addEventListener(ev, e => { e.preventDefault(); d.classList.add('sobre'); }));
+  ['dragleave', 'drop'].forEach(ev => d.addEventListener(ev, e => { e.preventDefault(); d.classList.remove('sobre'); }));
+  d.addEventListener('drop', e => { if (e.dataTransfer.files[0]) tratar(e.dataTransfer.files[0]); });
+  f.addEventListener('change', () => { if (f.files[0]) tratar(f.files[0]); f.value = ''; });
+}
+function marcarDrop(dropId, infoId, erroId, ok, info, erro) {
+  const d = $(dropId); d.classList.toggle('pronto', ok); d.classList.toggle('erro', !ok && !!erro);
+  $(infoId).innerHTML = info || ''; const e = $(erroId); e.classList.toggle('hide', !erro); e.textContent = erro || '';
+}
+async function lerArquivoUau(file) {
+  try {
+    const wb = XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: true });
+    const ws = wb.Sheets['Base UAU'] || wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { raw: true, defval: null });
+    const conf = wb.Sheets['Conferências'] ? XLSX.utils.sheet_to_json(wb.Sheets['Conferências'], { raw: true, defval: null }) : [];
+    S.uau = lerUau(rows, conf); S.nomeUau = file.name; S.res = null;
+    const soma = S.uau.parcelas.reduce((a, p) => a + p.liq, 0);
+    marcarDrop('dropUau', 'infoUau', 'erroUau', true, '<strong>' + esc(file.name) + '</strong><br>Parcelas lidas: ' + S.uau.parcelas.length + '. Valor líquido: ' + esc(fmtMoeda(soma)) + '.' + (S.uau.avisos.length ? '<br>' + esc(S.uau.avisos.join(' ')) : ''));
+  } catch (e) { S.uau = null; marcarDrop('dropUau', 'infoUau', 'erroUau', false, '', e.message); }
+  atualizarBotoes();
+}
+async function lerArquivoPortal(file) {
+  try {
+    const buf = await file.arrayBuffer(); let texto;
+    try { texto = new TextDecoder('utf-8', { fatal: true }).decode(buf); } catch (e) { texto = new TextDecoder('windows-1252').decode(buf); }
+    S.portal = lerMaisSaga(texto); S.nomePortal = file.name; S.res = null;
+    const ig = S.portal.ignoradas, soma = S.portal.notas.reduce((a, n) => a + n.valor, 0);
+    marcarDrop('dropPortal', 'infoPortal', 'erroPortal', true, '<strong>' + esc(file.name) + '</strong><br>Notas lidas: ' + S.portal.notas.length + '. Valor: ' + esc(fmtMoeda(soma)) +
+      '.<br>Fora da conciliação: ' + ig.cancelada + ' cancelada(s), ' + ig.rascunho + ' rascunho(s), ' + ig.semNota + ' sem número de nota.');
+  } catch (e) { S.portal = null; marcarDrop('dropPortal', 'infoPortal', 'erroPortal', false, '', e.message); }
+  atualizarBotoes();
+}
+function atualizarBotoes() {
+  $('btnConciliar').disabled = !(S.uau && S.portal);
+  $('statusBarra').textContent = S.uau && S.portal ? 'Os dois arquivos foram lidos. Clique em Conciliar.' : 'Carregue os dois arquivos para conciliar.';
+}
+
+// ---- navegação ----
+function irParaTela(n) {
+  $('tela1').classList.toggle('hide', n !== 1); $('tela2').classList.toggle('hide', n !== 2);
+  $('btnVoltar').classList.toggle('hide', n !== 2); $('btnExemplo').classList.toggle('hide', n !== 1);
+  $('btnConciliar').classList.toggle('hide', n !== 1); $('btnExportar').classList.toggle('hide', n !== 2); $('btnPdf').classList.toggle('hide', n !== 2);
+  $('passo1').className = 'passo ' + (n === 1 ? 'atual' : 'feito'); $('passo2').className = 'passo ' + (n === 2 ? 'atual' : '');
+  window.scrollTo(0, 0);
+  if (n === 1) atualizarBotoes(); else $('statusBarra').textContent = 'Resultado da conciliação. Os filtros valem para a lista Não encontrado e para o Excel.';
+}
+function conciliarAgora() {
+  $('statusBarra').textContent = 'Conciliando...';
+  setTimeout(() => { S.equivs = lerEquivs().lista; S.res = conciliar(S.uau.parcelas, S.portal.notas, S.equivs); S.aba = 'nao'; irParaTela(2); desenhar(); }, 20);
+}
+
+// ---- resultado ----
+function opcoes() {
+  return { de: $('fDe').value, ate: $('fAte').value, retencao: $('fRet').checked, busca: $('fBusca').value,
+           sits: Array.from(document.querySelectorAll('.fSit:checked')).map(x => x.value) };
+}
+function visiveis() {
+  const o = opcoes(), r = S.res, b = norm(o.busca);
+  const nao = filtrarNaoEncontrados(r.naoEncontrados, o);
+  const casa = t => r.resultados.filter(x => (t === 'encontrados' ? x.tipo !== 'soPortal' : x.tipo === 'soPortal'))
+    .filter(x => !b || norm([x.nota.fornecedor, x.nota.nota, x.grupo.map(p => p.proc).join(' ')].join(' ')).indexOf(b) >= 0);
+  return { o, nao, encontrados: casa('encontrados'), inv: casa('inv') };
+}
+function desenhar() {
+  const r = S.res, v = visiveis(), cont = t => r.resultados.filter(x => x.tipo === t).length;
+  const somaNao = v.nao.reduce((a, p) => a + p.liq, 0);
+  const ocultasRet = r.naoEncontrados.filter(p => p.tipo === 3).length;
+  $('kpis').innerHTML = [
+    kpi('nao', 'Não encontrados no Mais Saga', v.nao.length, fmtMoeda(somaNao), 'destaque'),
+    kpi('inv', 'Só no Mais Saga (investigar)', v.inv.length, fmtMoeda(v.inv.reduce((a, x) => a + x.nota.valor, 0)), 'warn'),
+    kpi('enc', 'Encontrados', cont('encontrado'), 'Valor confere', 'ok'),
+    kpi('enc', 'Valor diferente', cont('valorDif'), 'Mesma nota, valor difere', 'err'),
+    kpi('enc', 'Prováveis', cont('provavel'), 'Conferir', 'warn'),
+    kpi('enc', 'Notas do Mais Saga lidas', S.portal.notas.length, fmtMoeda(S.portal.notas.reduce((a, n) => a + n.valor, 0)), '')
+  ].join('');
+  document.querySelectorAll('.kpi').forEach(k => k.addEventListener('click', () => { S.aba = k.dataset.aba; desenhar(); }));
+  const av = []; const aviso = (t, c) => av.push('<div class="aviso ' + (c || '') + '">' + t + '</div>');
+  if (!v.o.retencao && ocultasRet) aviso('Retenções de imposto fora da lista Não encontrado: ' + ocultasRet + ' parcela(s). Marque "Incluir retenções de imposto" para vê-las.', 'info');
+  const minInc = S.portal.notas.map(n => n.inclusao).filter(Boolean).sort((a, b) => a - b)[0];
+  const minGer = S.uau.parcelas.map(p => p.geracao).filter(Boolean).sort((a, b) => a - b)[0];
+  if (minInc && minGer && minGer > minInc) aviso('A base do UAU começa em ' + fmtData(minGer) + ' e o Mais Saga tem notas incluídas desde ' + fmtData(minInc) + '. Notas anteriores podem aparecer em Só no Mais Saga por falta de dado no UAU.');
+  S.uau.avisos.concat(S.portal.avisos).forEach(t => aviso(esc(t)));
+  r.conferencias.filter(c => c[3] === 'DIVERGE').forEach(c => aviso('Conferência divergente: ' + esc(c[0])));
+  $('avisos').innerHTML = av.join('');
+  const abas = [['nao', 'Não encontrado', v.nao.length], ['inv', 'Investigar', v.inv.length], ['enc', 'Encontrados', v.encontrados.length]];
+  $('abas').innerHTML = abas.map(a => '<button class="aba ' + (S.aba === a[0] ? 'ativa' : '') + '" data-aba="' + a[0] + '">' + a[1] + (a[2] != null ? '<span class="n">' + a[2] + '</span>' : '') + '</button>').join('');
+  document.querySelectorAll('.aba').forEach(b => b.addEventListener('click', () => { S.aba = b.dataset.aba; desenhar(); }));
+  $('conteudo').innerHTML = S.aba === 'nao' ? htmlNao(v.nao) : S.aba === 'inv' ? htmlInvestigar(v.inv) : htmlEncontrados(v.encontrados);
+}
+function kpi(aba, titulo, n, sub, cls) { return '<button class="kpi ' + cls + '" data-aba="' + aba + '"><div class="v">' + n + '</div><div class="t">' + esc(titulo) + '</div><div class="m">' + esc(sub) + '</div></button>'; }
+const LIM = 500;
+function htmlNao(l) {
+  if (!l.length) return '<div class="tabwrap"><div class="vazio">Nenhuma parcela do UAU ficou sem par no Mais Saga com estes filtros.</div></div>';
+  const linhas = l.slice(0, LIM).map(p => '<tr><td class="ctr">' + p.proc + '</td><td class="ctr">' + p.parc + '</td><td>' + esc(p.fornecedor) + '</td><td class="ctr">' + esc(p.nf || '-') + '</td><td class="num">' + esc(fmtMoeda(p.liq)) +
+    '</td><td class="ctr">' + fmtData(p.venc) + '</td><td class="ctr">' + fmtData(p.geracao) + '</td><td class="ctr">' + chipSit(p.sit) + '</td></tr>').join('');
+  return '<div class="tabwrap"><table class="tab"><thead><tr><th>Processo</th><th>Parcela</th><th>Fornecedor</th><th>Nota fiscal</th><th class="num">Valor líquido</th><th>Vencimento</th><th>Geração</th><th>Situação</th></tr></thead><tbody>' + linhas + '</tbody></table>' +
+    (l.length > LIM ? '<div class="limite">Mostrando as primeiras ' + LIM + ' de ' + l.length + ' linhas. O Excel exportado tem todas.</div>' : '') + '</div>';
+}
+function htmlInvestigar(l) {
+  if (!l.length) return '<div class="cards-inv"><div class="vazio">Toda nota do Mais Saga tem par no UAU. Nada a investigar.</div></div>';
+  return '<div class="cards-inv">' + l.map(x => {
+    const n = x.nota;
+    const cands = (x.candidatos || []).map(c => '<tr><td>' + esc(c.razao) + (c.jaUsada ? ' <span class="chip neutro">Já usada em outra nota</span>' : '') + '</td><td class="ctr">' + c.p.proc + '/' + c.p.parc + '</td><td>' + esc(c.p.fornecedor) +
+      '</td><td class="ctr">' + esc(c.p.nf || '-') + '</td><td class="num">' + esc(fmtMoeda(c.p.liq)) + '</td><td class="ctr">' + fmtData(c.p.venc) + '</td></tr>').join('');
+    return '<div class="inv"><div class="topo"><span class="forn">' + esc(n.fornecedor) + '</span><span class="chip neutro">Nota ' + esc(n.nota) + '</span>' + chipStatus(n.status) + '<span class="valor">' + esc(fmtMoeda(n.valor)) + '</span></div>' +
+      '<div class="meta">' + (n.cnpj ? 'CNPJ ' + esc(n.cnpj) + '. ' : '') + 'Unidade: ' + esc(n.unidade || '-') + '. Vencimento: ' + fmtData(n.venc) + '. Incluída em ' + fmtData(n.inclusao) + '.</div>' +
+      '<div class="motivo">' + esc(x.motivo) + '</div>' +
+      (cands ? '<table class="tab"><thead><tr><th>Possível par no UAU</th><th>Processo</th><th>Fornecedor no UAU</th><th>Nota</th><th class="num">Valor</th><th>Venc.</th></tr></thead><tbody>' + cands + '</tbody></table>' : '<div class="meta">Nenhum candidato no UAU por nota, fornecedor ou valor.</div>') + '</div>';
+  }).join('') + '</div>';
+}
+function htmlEncontrados(l) {
+  if (!l.length) return '<div class="tabwrap"><div class="vazio">Nenhuma nota do Mais Saga casou com o UAU.</div></div>';
+  const linhas = l.slice(0, LIM).map(x => { const n = x.nota;
+    return '<tr><td>' + chipTipo(x.tipo) + '</td><td class="ctr">' + esc(n.nota) + '</td><td>' + esc(n.fornecedor) + '</td><td class="num">' + esc(fmtMoeda(n.valor)) + '</td><td class="num">' + esc(fmtMoeda(x.valorUau)) +
+      '</td><td class="num">' + (x.dif ? esc(fmtMoeda(x.dif)) : '-') + '</td><td>' + esc(x.confere || '-') + '</td><td class="ctr">' + chipStatus(n.status) + '</td><td>' + esc(x.grupo.map(p => p.proc + '/' + p.parc).join(', ')) + '</td></tr>'; }).join('');
+  return '<div class="tabwrap"><table class="tab"><thead><tr><th>Resultado</th><th>Nota</th><th>Fornecedor no Mais Saga</th><th class="num">Valor no Mais Saga</th><th class="num">Valor no UAU (base da comparação)</th><th class="num">Diferença</th><th>Valor confere com</th><th>Status no Mais Saga</th><th>Processos do UAU</th></tr></thead><tbody>' + linhas + '</tbody></table>' +
+    (l.length > LIM ? '<div class="limite">Mostrando as primeiras ' + LIM + ' de ' + l.length + ' linhas. O Excel exportado tem todas.</div>' : '') + '</div>';
+}
+// ---- exportar Excel ----
+function corARGB(v) { const h = getComputedStyle(document.documentElement).getPropertyValue(v).trim().replace('#', ''); return 'FF' + (h.length === 3 ? h.split('').map(c => c + c).join('') : h).toUpperCase(); }
+function dataXl(d) { return d ? new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())) : null; }
+function abaTabela(wb, nome, titulo, sub, colunas, linhas, corAba) {
+  const ws = wb.addWorksheet(nome, { views: [{ showGridLines: false, state: 'frozen', ySplit: 4, zoomScale: 90 }], properties: { tabColor: { argb: corAba } },
+    pageSetup: { orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0 } });
+  const nc = colunas.length, borda = { style: 'thin', color: { argb: corARGB('--border') } };
+  colunas.forEach((c, i) => { ws.getColumn(i + 1).width = c.w; });
+  ws.mergeCells(1, 1, 1, nc); const t = ws.getCell(1, 1); t.value = titulo;
+  t.font = { name: 'Plus Jakarta Sans', size: 15, bold: true, color: { argb: corARGB('--white') } }; t.alignment = { vertical: 'middle', indent: 1 };
+  t.fill = { type: 'gradient', gradient: 'angle', degree: 30, stops: [{ position: 0, color: { argb: corARGB('--primary') } }, { position: 1, color: { argb: corARGB('--navy') } }] };
+  ws.getRow(1).height = 30;
+  ws.mergeCells(2, 1, 2, nc); const s = ws.getCell(2, 1); s.value = sub; s.font = { name: 'Plus Jakarta Sans', size: 10, color: { argb: corARGB('--faint') } }; s.alignment = { indent: 1 };
+  ws.getRow(3).height = 4; for (let i = 1; i <= nc; i++) ws.getCell(3, i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: corARGB('--border') } };
+  colunas.forEach((c, i) => { const h = ws.getCell(4, i + 1); h.value = c.h; h.font = { name: 'Plus Jakarta Sans', size: 10, bold: true, color: { argb: corARGB('--white') } };
+    h.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: corARGB('--navy') } }; h.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }; h.border = { left: { style: 'thin', color: { argb: corARGB('--white') } } }; });
+  ws.getRow(4).height = 32;
+  linhas.forEach((l, ri) => { const r = ws.getRow(5 + ri);
+    colunas.forEach((c, i) => { const cell = r.getCell(i + 1); let v = l[c.k]; if (v === undefined || v === '') v = null; cell.value = v;
+      cell.font = { name: 'Plus Jakarta Sans', size: 10 }; cell.border = { left: borda, right: borda };
+      if (c.f === 'rs') { cell.numFmt = '_-"R$"* #,##0.00_-;_-"R$"* -#,##0.00_-;_-"R$"* "-"??_-;_-@_-'; }
+      else if (c.f === 'data') { cell.numFmt = 'dd/mm/yyyy'; cell.alignment = { horizontal: 'center', vertical: 'top' }; }
+      else if (c.f === 'ctr') { cell.alignment = { horizontal: 'center', vertical: 'top' }; }
+      else { cell.alignment = { vertical: 'top', wrapText: !!c.wrap }; }
+      if (ri % 2 === 1) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: corARGB('--zebra') } }; }); });
+  if (linhas.length) ws.autoFilter = { from: { row: 4, column: 1 }, to: { row: 4 + linhas.length, column: nc } };
+  return ws;
+}
+const ordem = (a, b) => a.proc - b.proc || a.parc - b.parc;
+async function exportarExcel() {
+  const r = S.res, v = visiveis(), hoje = new Date();
+  const wb = new ExcelJS.Workbook(); wb.created = hoje;
+  const cont = t => r.resultados.filter(x => x.tipo === t).length;
+  // resumo
+  const ws = wb.addWorksheet('Resumo', { views: [{ showGridLines: false }], properties: { tabColor: { argb: corARGB('--navy') } } });
+  ws.getColumn(1).width = 46; ws.getColumn(2).width = 18; ws.getColumn(3).width = 22;
+  ws.mergeCells('A1:C1'); const t = ws.getCell('A1'); t.value = 'Conciliação UAU x Mais Saga'; t.font = { name: 'Plus Jakarta Sans', size: 16, bold: true, color: { argb: corARGB('--white') } };
+  t.alignment = { vertical: 'middle', indent: 1 }; t.fill = { type: 'gradient', gradient: 'angle', degree: 30, stops: [{ position: 0, color: { argb: corARGB('--primary') } }, { position: 1, color: { argb: corARGB('--navy') } }] }; ws.getRow(1).height = 32;
+  const o = v.o; const filtro = [o.de || o.ate ? 'Geração do processo ' + (o.de ? 'de ' + fmtData(toDate(o.de)) : '') + (o.ate ? ' até ' + fmtData(toDate(o.ate)) : '') : 'Todos os lançamentos', o.retencao ? 'com retenções de imposto' : 'sem retenções de imposto'].join(', ');
+  const info = [['Base do UAU', S.nomeUau], ['Notas do Mais Saga', S.nomePortal], ['Filtro da lista Não encontrado', filtro], ['Gerado em', hoje], ['Equivalências de fornecedores usadas', S.equivs.length]];
+  let linha = 3; info.forEach(i => { ws.getCell(linha, 1).value = i[0]; ws.getCell(linha, 1).font = { name: 'Plus Jakarta Sans', size: 10, bold: true }; ws.mergeCells(linha, 2, linha, 3); const cv = ws.getCell(linha, 2); cv.value = i[1]; cv.font = { name: 'Plus Jakarta Sans', size: 10 }; cv.alignment = { horizontal: 'left' }; if (i[1] instanceof Date) cv.numFmt = 'dd/mm/yyyy hh:mm'; linha++; });
+  linha++;
+  const bloco = (tit, cab, dados) => { ws.getCell(linha, 1).value = tit; ws.getCell(linha, 1).font = { name: 'Plus Jakarta Sans', size: 11, bold: true, color: { argb: corARGB('--primary') } }; linha++;
+    cab.forEach((c, i) => { const h = ws.getCell(linha, i + 1); h.value = c; h.font = { name: 'Plus Jakarta Sans', size: 10, bold: true, color: { argb: corARGB('--white') } }; h.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: corARGB('--navy') } }; if (i) h.alignment = { horizontal: 'right' }; }); linha++;
+    dados.forEach(d => { d.forEach((x, i) => { const c = ws.getCell(linha, i + 1); c.value = x; c.font = { name: 'Plus Jakarta Sans', size: 10 }; if (i === 2) c.numFmt = '"R$" #,##0.00'; if (i) c.alignment = { horizontal: 'right' }; }); linha++; }); linha++; };
+  bloco('Do UAU para o Mais Saga', ['Situação', 'Parcelas', 'Valor líquido'], [
+    ['Não encontrado no Mais Saga', v.nao.length, arred(v.nao.reduce((a, p) => a + p.liq, 0))],
+    ['Sem par, mas fora dos filtros (retenções, datas, situação)', r.naoEncontrados.length - v.nao.length, arred(r.naoEncontrados.filter(p => v.nao.indexOf(p) < 0).reduce((a, p) => a + p.liq, 0))],
+    ['Com par no Mais Saga', r.usada.size, arred(S.uau.parcelas.filter(p => r.usada.has(p.id)).reduce((a, p) => a + p.liq, 0))],
+    ['Total de parcelas do UAU lidas', S.uau.parcelas.length, arred(S.uau.parcelas.reduce((a, p) => a + p.liq, 0))]]);
+  bloco('Do Mais Saga para o UAU', ['Resultado', 'Notas', 'Valor'], [
+    ['Encontrado, valor confere', cont('encontrado'), arred(r.resultados.filter(x => x.tipo === 'encontrado').reduce((a, x) => a + x.nota.valor, 0))],
+    ['Valor diferente', cont('valorDif'), arred(r.resultados.filter(x => x.tipo === 'valorDif').reduce((a, x) => a + x.nota.valor, 0))],
+    ['Provável (conferir)', cont('provavel'), arred(r.resultados.filter(x => x.tipo === 'provavel').reduce((a, x) => a + x.nota.valor, 0))],
+    ['Só no Mais Saga (investigar)', cont('soPortal'), arred(r.resultados.filter(x => x.tipo === 'soPortal').reduce((a, x) => a + x.nota.valor, 0))]]);
+  const porSt = {}; S.portal.notas.forEach(n => { porSt[n.status] = porSt[n.status] || [0, 0]; porSt[n.status][0]++; porSt[n.status][1] += n.valor; });
+  bloco('Notas do Mais Saga por status', ['Status', 'Notas', 'Valor'], Object.keys(porSt).map(k => [k, porSt[k][0], arred(porSt[k][1])]));
+  // não encontrado
+  const nao = v.nao.slice().sort(ordem).map(p => ({ proc: p.proc, parc: p.parc, forn: p.fornecedor, nf: p.nf, liq: p.liq, vnf: p.vNF, ger: dataXl(p.geracao), venc: dataXl(p.venc), emi: dataXl(p.emissao), pgto: dataXl(p.pgto), sit: p.sit, tipo: p.tipo, ctr: p.contrato || null, med: p.medicao || null, obs: 'Nenhuma nota do Mais Saga casou com este processo.' }));
+  abaTabela(wb, 'Não encontrado', 'Processos do UAU não encontrados no Mais Saga', filtro + '. ' + nao.length + ' parcela(s).', [
+    { h: 'Processo', k: 'proc', w: 10, f: 'ctr' }, { h: 'Parcela', k: 'parc', w: 9, f: 'ctr' }, { h: 'Fornecedor', k: 'forn', w: 42 }, { h: 'Nota fiscal', k: 'nf', w: 14, f: 'ctr' },
+    { h: 'Valor líquido', k: 'liq', w: 16, f: 'rs' }, { h: 'Valor da nota fiscal (não somar)', k: 'vnf', w: 18, f: 'rs' }, { h: 'Data de geração', k: 'ger', w: 13, f: 'data' }, { h: 'Data de vencimento', k: 'venc', w: 13, f: 'data' },
+    { h: 'Data de emissão', k: 'emi', w: 13, f: 'data' }, { h: 'Data de pagamento', k: 'pgto', w: 13, f: 'data' }, { h: 'Situação da parcela', k: 'sit', w: 14, f: 'ctr' }, { h: 'Tipo do processo (código)', k: 'tipo', w: 12, f: 'ctr' },
+    { h: 'Contrato', k: 'ctr', w: 10, f: 'ctr' }, { h: 'Medição', k: 'med', w: 10, f: 'ctr' }, { h: 'Observação', k: 'obs', w: 46 }], nao, corARGB('--err'));
+  // investigar
+  const inv = v.inv.map(x => { const n = x.nota; return { nota: n.nota, forn: n.fornecedor, cnpj: n.cnpj, unid: n.unidade, val: n.valor, st: n.status, venc: dataXl(n.venc), incl: dataXl(n.inclusao), mot: x.motivo,
+    pares: (x.candidatos || []).map(c => c.razao + ': ' + c.p.proc + '/' + c.p.parc + ' ' + c.p.fornecedor + ' (nota ' + (c.p.nf || '-') + ', ' + fmtMoeda(c.p.liq) + ')').join('\n') }; });
+  abaTabela(wb, 'Investigar', 'Notas só no Mais Saga', 'Notas do Mais Saga sem par no UAU. ' + inv.length + ' nota(s).', [
+    { h: 'Nota', k: 'nota', w: 16, f: 'ctr' }, { h: 'Fornecedor', k: 'forn', w: 42 }, { h: 'CNPJ', k: 'cnpj', w: 20, f: 'ctr' }, { h: 'Unidade', k: 'unid', w: 36 }, { h: 'Valor', k: 'val', w: 16, f: 'rs' },
+    { h: 'Status no Mais Saga', k: 'st', w: 22, f: 'ctr' }, { h: 'Vencimento', k: 'venc', w: 13, f: 'data' }, { h: 'Inclusão', k: 'incl', w: 13, f: 'data' }, { h: 'Motivo', k: 'mot', w: 40, wrap: true }, { h: 'Possíveis pares no UAU', k: 'pares', w: 90, wrap: true }], inv, corARGB('--warn'));
+  // encontrados
+  const rot = { encontrado: 'Encontrado', valorDif: 'Valor diferente', provavel: 'Provável' };
+  const enc = v.encontrados.map(x => { const n = x.nota; return { res: rot[x.tipo], nota: n.nota, forn: n.fornecedor, cnpj: n.cnpj, val: n.valor, uau: x.valorUau, dif: x.dif, conf: x.confere, liq: x.somaLiq, st: n.status, sit: n.situacao, vp: dataXl(n.venc), vu: dataXl(x.grupo.map(p => p.venc).filter(Boolean).sort((a, b) => a - b)[0]), procs: x.grupo.map(p => p.proc + '/' + p.parc).join(', '), fu: x.grupo[0].fornecedor, mot: x.motivo }; });
+  abaTabela(wb, 'Encontrados', 'Notas do Mais Saga com par no UAU', enc.length + ' nota(s).', [
+    { h: 'Resultado', k: 'res', w: 16, f: 'ctr' }, { h: 'Nota', k: 'nota', w: 16, f: 'ctr' }, { h: 'Fornecedor no Mais Saga', k: 'forn', w: 40 }, { h: 'CNPJ', k: 'cnpj', w: 20, f: 'ctr' },
+    { h: 'Valor no Mais Saga', k: 'val', w: 16, f: 'rs' }, { h: 'Valor no UAU (base da comparação)', k: 'uau', w: 20, f: 'rs' }, { h: 'Diferença', k: 'dif', w: 14, f: 'rs' }, { h: 'Valor confere com', k: 'conf', w: 20 }, { h: 'Soma das parcelas do UAU (líquido)', k: 'liq', w: 20, f: 'rs' },
+    { h: 'Status no Mais Saga', k: 'st', w: 22, f: 'ctr' }, { h: 'Situação do pagamento no Mais Saga', k: 'sit', w: 16, f: 'ctr' }, { h: 'Vencimento no Mais Saga', k: 'vp', w: 13, f: 'data' }, { h: 'Menor vencimento no UAU', k: 'vu', w: 13, f: 'data' },
+    { h: 'Processos do UAU (processo/parcela)', k: 'procs', w: 30, wrap: true }, { h: 'Fornecedor no UAU', k: 'fu', w: 40 }, { h: 'Como foi encontrado', k: 'mot', w: 60, wrap: true }], enc, corARGB('--ok'));
+  // legenda
+  abaTabela(wb, 'Legenda', 'Como ler esta conciliação', 'Regras usadas no cruzamento.', [{ h: 'Item', k: 'i', w: 34 }, { h: 'O que significa', k: 'd', w: 120, wrap: true }], [
+    { i: 'Chave do cruzamento', d: 'Número da nota fiscal (parte antes da barra no Mais Saga) e nome do fornecedor parecido. O CNPJ do fornecedor não existe no UAU consultado.' },
+    { i: 'Encontrado', d: 'Mesma nota, fornecedor parecido e valor igual ao UAU.' },
+    { i: 'Valor diferente', d: 'Mesma nota e fornecedor, mas o valor do Mais Saga não bate com a soma das parcelas, com o valor da nota nem com uma parcela do UAU.' },
+    { i: 'Provável', d: 'Mesma nota e mesmo valor com fornecedor de nome diferente, parcela do UAU sem nota fiscal, ou mesmo fornecedor e valor com número de nota diferente. Conferir manualmente.' },
+    { i: 'Só no Mais Saga', d: 'Nota do Mais Saga sem nenhuma parcela casada no UAU. A aba Investigar traz os possíveis pares.' },
+    { i: 'Não encontrado', d: 'Parcela do UAU que nenhuma nota do Mais Saga reivindicou.' },
+    { i: 'Equivalências de fornecedores', d: 'Lista mantida na ferramenta para o mesmo fornecedor com nomes diferentes no Mais Saga e no UAU. Vale nos dois sentidos.' },
+    { i: 'Valor confere com', d: 'Soma das parcelas da nota no UAU, valor total da nota fiscal ou uma parcela. O Mais Saga registra a nota inteira (bruta), o UAU registra por parcela (líquida, depois das retenções de imposto). Quando confere com o valor da nota, a diferença para a soma líquida das parcelas é a retenção, e aparece na coluna Soma das parcelas do UAU (líquido).' },
+    { i: 'Status no Mais Saga', d: 'Integrada: já no ERP do cliente. Em aprovação e Aguardando integração: lançada no Mais Saga, ainda pendente.' },
+    { i: 'Retenções de imposto', d: 'Processos de tipo 3 no UAU (retenção gerada a partir de outro processo). Ficam fora da lista Não encontrado, a menos que o filtro as inclua.' }], corARGB('--faint'));
+  const buf = await wb.xlsx.writeBuffer();
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+  a.download = 'Conciliacao UAU x Mais Saga ' + hoje.toISOString().slice(0, 10) + '.xlsx'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+}
+
+// ---- exportar PDF ----
+function corRGB(v) { const h = corARGB(v).slice(2); return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)]; }
+const pdfTxt = s => String(s == null ? '' : s).replace(/[^\u0000-ÿ]/g, '?');
+async function exportarPDF() {
+  const r = S.res, v = visiveis(), hoje = new Date();
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+  const W = doc.internal.pageSize.getWidth(), H = doc.internal.pageSize.getHeight(), M = 30;
+  const navy = corRGB('--navy'), accent = corRGB('--accent'), ink = corRGB('--ink'), faint = corRGB('--faint'), zebra = corRGB('--zebra');
+  const cont = t => r.resultados.filter(x => x.tipo === t).length;
+  const somaT = t => arred(r.resultados.filter(x => x.tipo === t).reduce((a, x) => a + x.nota.valor, 0));
+  const o = v.o;
+  const filtro = (o.de || o.ate ? 'Geração do processo ' + (o.de ? 'de ' + fmtData(toDate(o.de)) : '') + (o.ate ? ' até ' + fmtData(toDate(o.ate)) : '') : 'Todos os lançamentos') + (o.retencao ? ', com retenções de imposto' : ', sem retenções de imposto');
+  // faixa de título
+  doc.setFillColor(...navy); doc.rect(0, 0, W, 66, 'F'); doc.setFillColor(...accent); doc.rect(0, 66, W, 3, 'F');
+  doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(19); doc.text('Conciliação UAU x Mais Saga', M, 31);
+  doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5);
+  doc.text(pdfTxt('Base do UAU: ' + S.nomeUau + '   |   Notas do Mais Saga: ' + S.nomePortal), M, 47);
+  doc.text(pdfTxt(filtro + '   |   Gerado em ' + hoje.toLocaleString('pt-BR')), M, 59);
+  const estilo = { styles: { fontSize: 7.5, cellPadding: 3, textColor: ink, overflow: 'linebreak', lineColor: [228, 228, 228], lineWidth: 0.3 },
+    headStyles: { fillColor: navy, textColor: [255, 255, 255], fontStyle: 'bold' }, alternateRowStyles: { fillColor: zebra }, showHead: 'everyPage' };
+  const fora = r.naoEncontrados.filter(p => v.nao.indexOf(p) < 0);
+  const dir = { halign: 'right' }, ctr = { halign: 'center' };
+  // resumo em duas tabelas lado a lado
+  doc.autoTable(Object.assign({}, estilo, { startY: 84, tableWidth: 372, margin: { left: M, right: M, bottom: 34 }, head: [['Do UAU para o Mais Saga', 'Parcelas', 'Valor líquido']],
+    body: [['Não encontrado no Mais Saga', v.nao.length, fmtMoeda(arred(v.nao.reduce((a, p) => a + p.liq, 0)))], ['Sem par, fora dos filtros', fora.length, fmtMoeda(arred(fora.reduce((a, p) => a + p.liq, 0)))],
+      ['Com par no Mais Saga', r.usada.size, fmtMoeda(arred(S.uau.parcelas.filter(p => r.usada.has(p.id)).reduce((a, p) => a + p.liq, 0)))],
+      ['Total de parcelas do UAU', S.uau.parcelas.length, fmtMoeda(arred(S.uau.parcelas.reduce((a, p) => a + p.liq, 0)))]].map(l => l.map(pdfTxt)),
+    columnStyles: { 1: dir, 2: dir } }));
+  const fimA = doc.lastAutoTable.finalY;
+  doc.autoTable(Object.assign({}, estilo, { startY: 84, tableWidth: 372, margin: { left: M + 410, right: M, bottom: 34 }, head: [['Do Mais Saga para o UAU', 'Notas', 'Valor']],
+    body: [['Encontrado, valor confere', cont('encontrado'), fmtMoeda(somaT('encontrado'))], ['Valor diferente', cont('valorDif'), fmtMoeda(somaT('valorDif'))],
+      ['Provável (conferir)', cont('provavel'), fmtMoeda(somaT('provavel'))], ['Só no Mais Saga (investigar)', cont('soPortal'), fmtMoeda(somaT('soPortal'))]].map(l => l.map(pdfTxt)),
+    columnStyles: { 1: dir, 2: dir } }));
+  let y = Math.max(fimA, doc.lastAutoTable.finalY) + 26;
+  const secao = (titulo, sub, head, body, colunas, extra) => {
+    if (y > H - 110) { doc.addPage(); y = 44; }
+    doc.setTextColor(...navy); doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.text(pdfTxt(titulo), M, y);
+    doc.setTextColor(...faint); doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.text(pdfTxt(sub), M, y + 13);
+    if (!body.length) { doc.setTextColor(...ink); doc.text('Nenhum item.', M, y + 32); y += 52; return; }
+    doc.autoTable(Object.assign({}, estilo, { startY: y + 20, margin: { left: M, right: M, bottom: 34 }, head: [head.map(pdfTxt)], body: body.map(l => l.map(pdfTxt)), columnStyles: colunas }, extra || {}));
+    y = doc.lastAutoTable.finalY + 26;
+  };
+  secao('Processos do UAU não encontrados no Mais Saga', v.nao.length + ' parcela(s). ' + filtro + '.', ['Processo', 'Parcela', 'Fornecedor', 'Nota fiscal', 'Valor líquido', 'Vencimento', 'Geração', 'Situação'],
+    v.nao.slice().sort(ordem).map(p => [p.proc, p.parc, p.fornecedor, p.nf || '-', fmtMoeda(p.liq), fmtData(p.venc), fmtData(p.geracao), p.sit]),
+    { 0: ctr, 1: ctr, 3: ctr, 4: dir, 5: ctr, 6: ctr, 7: ctr });
+  secao('Notas só no Mais Saga (investigar)', v.inv.length + ' nota(s) sem par no UAU.', ['Nota', 'Fornecedor', 'Valor', 'Status', 'Vencimento', 'Motivo', 'Possíveis pares no UAU'],
+    v.inv.map(x => [x.nota.nota, x.nota.fornecedor, fmtMoeda(x.nota.valor), x.nota.status, fmtData(x.nota.venc), x.motivo,
+      (x.candidatos || []).map(c => c.razao + ': ' + c.p.proc + '/' + c.p.parc + ' ' + c.p.fornecedor + ' (nota ' + (c.p.nf || '-') + ', ' + fmtMoeda(c.p.liq) + ')').join('\n') || 'Nenhum candidato.']),
+    { 0: ctr, 2: dir, 3: ctr, 4: ctr, 5: { cellWidth: 130 }, 6: { cellWidth: 230 } });
+  const rot = { encontrado: 'Encontrado', valorDif: 'Valor diferente', provavel: 'Provável' };
+  secao('Notas do Mais Saga com par no UAU', v.encontrados.length + ' nota(s).', ['Resultado', 'Nota', 'Fornecedor no Mais Saga', 'Valor no Mais Saga', 'Valor no UAU', 'Diferença', 'Valor confere com', 'Status no Mais Saga', 'Processos do UAU'],
+    v.encontrados.map(x => [rot[x.tipo], x.nota.nota, x.nota.fornecedor, fmtMoeda(x.nota.valor), fmtMoeda(x.valorUau), x.dif ? fmtMoeda(x.dif) : '-', x.confere || '-', x.nota.status, x.grupo.map(p => p.proc + '/' + p.parc).join(', ')]),
+    { 0: ctr, 1: ctr, 3: dir, 4: dir, 5: dir, 7: ctr },
+    { didParseCell: d => { if (d.section === 'body' && d.column.index === 0) { d.cell.styles.fontStyle = 'bold'; d.cell.styles.textColor = d.cell.raw === 'Encontrado' ? corRGB('--ok-d') : d.cell.raw === 'Valor diferente' ? corRGB('--err') : corRGB('--warn-d'); } } });
+  const n = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= n; i++) { doc.setPage(i); doc.setFontSize(8); doc.setTextColor(...faint); doc.text('Conciliação UAU x Mais Saga', M, H - 16); doc.text('Página ' + i + ' de ' + n, W - M, H - 16, { align: 'right' }); }
+  doc.save('Conciliacao UAU x Mais Saga ' + hoje.toISOString().slice(0, 10) + '.pdf');
+}
+
+// ---- exemplo fictício ----
+function carregarExemplo() {
+  const u = (proc, parc, forn, nf, liq, vNF, tipo, sit, ger, venc) => ({ Processo: proc, Parcela: parc, Fornecedor: forn, 'Nota fiscal': nf, 'Valor líquido': liq, 'Valor bruto': liq, 'Valor da nota fiscal (não somar)': vNF,
+    'Data de geração do processo': toDate(ger), 'Data de vencimento': toDate(venc), 'Situação da parcela': sit, 'Tipo do processo (código)': tipo });
+  const rows = [
+    u(9001, 1, 'ALFA MATERIAIS DE OBRA LTDA', '1001', 1000, 1000, 1, 'A pagar', '20/09/2026', '30/11/2026'),
+    u(9002, 1, 'BETA SERVICOS DE PINTURA LTDA', '2002', 500, 1500, 1, 'A pagar', '21/09/2026', '30/10/2026'),
+    u(9002, 2, 'BETA SERVICOS DE PINTURA LTDA', '2002', 500, 1500, 1, 'A pagar', '21/09/2026', '30/11/2026'),
+    u(9002, 3, 'BETA SERVICOS DE PINTURA LTDA', '2002', 500, 1500, 1, 'A pagar', '21/09/2026', '30/12/2026'),
+    u(9003, 1, 'GAMA TRANSPORTES LTDA', '3003', 800, 800, 1, 'A pagar', '22/09/2026', '30/11/2026'),
+    u(9004, 1, 'DELTA FERRAGENS LTDA', '4004', 300, 300, 1, 'A pagar', '23/09/2026', '30/11/2026'),
+    u(9005, 1, 'EPSILON ELETRICA LTDA', '5005', 1200, 1200, 1, 'A pagar', '24/09/2026', '30/11/2026'),
+    u(9006, 1, 'ZETA SEGUROS S.A.', '1', 2000, 2000, 1, 'A pagar', '25/09/2026', '30/11/2026'),
+    u(9007, 1, 'ETA COPIADORA LTDA', '0', 150, 150, 1, 'A pagar', '26/09/2026', '30/11/2026'),
+    u(9008, 1, 'ZETA SEGUROS S.A.', '', 40, 40, 3, 'A pagar', '25/09/2026', '30/11/2026'),
+    u(9009, 1, 'THETA LOCACOES LTDA', '9009', 2200, 2200, 1, 'Paga', '28/09/2026', '10/10/2026'),
+    u(9010, 1, 'IOTA CONSULTORIA LTDA', '8880', 3000, 3000, 1, 'A pagar', '29/09/2026', '30/11/2026'),
+    u(9011, 1, 'LAMBDA ENGENHARIA LTDA', '5550', 650, 650, 1, 'A pagar', '30/09/2026', '30/11/2026')
+  ];
+  S.uau = lerUau(rows, []); S.nomeUau = 'exemplo-uau-ficticio.xlsx';
+  const csv = ['NOTA;Responsável;Fornecedor;Unidade;VALOR;Status;Situação do pagamento;LIMITE;VENC.;INCLUSÃO;INTEGR. ERP',
+    '1001/001;Fulano;ALFA MATERIAIS DE OBRA LTDA - 11.111.111/0001-11;OBRA EXEMPLO - 11.111.111/0001-11;R$ 1.000,00;INTEGRADA;Em aberto;18/11/2026;30/11/2026;02/10/2026;03/10/2026',
+    '2002/001;Fulano;BETA SERVICOS DE PINTURA LTDA - 22.222.222/0001-22;OBRA EXEMPLO - 11.111.111/0001-11;R$ 1.500,00;EM APROVAÇÃO;;18/11/2026;30/11/2026;03/10/2026;',
+    '3003/001;Fulano;GAMA TRANSPORTES LTDA - 33.333.333/0001-33;OBRA EXEMPLO - 11.111.111/0001-11;R$ 850,00;AGUARDANDO INTEGRAÇÃO;;18/11/2026;30/11/2026;03/10/2026;',
+    '1/OU;Fulano;ORION PROTECAO SA - 44.444.444/0001-44;OBRA EXEMPLO - 11.111.111/0001-11;R$ 2.000,00;EM APROVAÇÃO;;18/11/2026;30/11/2026;04/10/2026;',
+    '7777/1;Fulano;ETA COPIADORA LTDA - 55.555.555/0001-55;OBRA EXEMPLO - 11.111.111/0001-11;R$ 150,00;AGUARDANDO INTEGRAÇÃO;;18/11/2026;30/11/2026;04/10/2026;',
+    '8888/1;Fulano;IOTA CONSULTORIA LTDA - 66.666.666/0001-66;OBRA EXEMPLO - 11.111.111/0001-11;R$ 3.000,00;EM APROVAÇÃO;;18/11/2026;30/11/2026;05/10/2026;',
+    '5555/1;Fulano;LAMBDA ENGENHARIA LTDA - 88.888.888/0001-88;OBRA EXEMPLO - 11.111.111/0001-11;R$ 700,00;EM APROVAÇÃO;;18/11/2026;30/11/2026;05/10/2026;',
+    '6666/1;Fulano;KAPPA OBRAS LTDA - 77.777.777/0001-77;OBRA EXEMPLO - 11.111.111/0001-11;R$ 500,00;EM APROVAÇÃO;;18/11/2026;30/11/2026;05/10/2026;',
+    ';Fulano;;;R$ 0,00;RASCUNHO;;;;06/10/2026;',
+    ';Fulano;;;R$ 0,00;CANCELADA;;;;06/10/2026;'].join('\n');
+  S.portal = lerMaisSaga(csv); S.nomePortal = 'exemplo-mais-saga-ficticio.csv'; S.res = null;
+  marcarDrop('dropUau', 'infoUau', 'erroUau', true, '<strong>Exemplo fictício</strong><br>Parcelas lidas: ' + S.uau.parcelas.length + '.');
+  marcarDrop('dropPortal', 'infoPortal', 'erroPortal', true, '<strong>Exemplo fictício</strong><br>Notas lidas: ' + S.portal.notas.length + '.');
+  atualizarBotoes();
+}
+
+// ---- equivalências de fornecedores ----
+const CHAVE_EQ = 'conc-equivalencias';
+function lerEquivs() { return parseEquivalencias($('equiv').value); }
+function atualizarEquiv(salvar) {
+  const r = lerEquivs();
+  $('equivStatus').textContent = 'Equivalências ativas: ' + r.lista.length + (r.erros.length ? '. Linhas com formato inválido: ' + r.erros.join(', ') + '.' : '');
+  $('detEquiv').querySelector('summary').textContent = 'Equivalências de fornecedores' + (r.lista.length ? ' (' + r.lista.length + ')' : '');
+  if (salvar) { try { localStorage.setItem(CHAVE_EQ, $('equiv').value); } catch (e) { /* navegador sem armazenamento */ } }
+}
+function carregarEquivSalvas() {
+  try { const v = localStorage.getItem(CHAVE_EQ); if (v) $('equiv').value = v; } catch (e) { /* sem armazenamento */ }
+  atualizarEquiv(false);
+}
+
+// ---- ligações ----
+dropar('dropUau', 'fileUau', lerArquivoUau);
+dropar('dropPortal', 'filePortal', lerArquivoPortal);
+$('btnConciliar').addEventListener('click', conciliarAgora);
+$('btnVoltar').addEventListener('click', () => irParaTela(1));
+$('btnExemplo').addEventListener('click', carregarExemplo);
+$('btnExportar').addEventListener('click', async () => { $('btnExportar').disabled = true; try { await exportarExcel(); } finally { $('btnExportar').disabled = false; } });
+['fDe', 'fAte', 'fRet', 'fBusca'].forEach(id => $(id).addEventListener('input', () => S.res && desenhar()));
+document.querySelectorAll('.fSit').forEach(c => c.addEventListener('change', () => S.res && desenhar()));
+$('equiv').addEventListener('input', () => atualizarEquiv(true));
+$('btnEquivArquivo').addEventListener('click', () => $('fileEquiv').click());
+$('fileEquiv').addEventListener('change', async e => { const f = e.target.files[0]; if (!f) return; $('equiv').value = (await f.text()).replace(/^﻿/, ''); atualizarEquiv(true); e.target.value = ''; });
+$('btnEquivBaixar').addEventListener('click', () => {
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['﻿' + $('equiv').value], { type: 'text/plain;charset=utf-8' }));
+  a.download = 'EQUIVALENCIAS.txt'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+});
+$('btnPdf').addEventListener('click', async () => { $('btnPdf').disabled = true; try { await exportarPDF(); } finally { $('btnPdf').disabled = false; } });
+carregarEquivSalvas();
+
+irParaTela(1);
+</script>
+  <script src="https://mateusm23.github.io/HUB/assets/tracker.js" data-tool="ferramentas"></script>
+</body>
+</html>

@@ -10,3 +10,8 @@ EXEMPLO DE BASE DE DADOS.xlsx
 **/base de teste/
 # PDFs reais de exemplo do Conversor de Verbas Rescisórias (nomes e salários de funcionários), só a nível informativo
 **/EXEMPLOS DE PDF/
+
+# Conciliação UAU x Mais Saga: equivalências de fornecedores e bases reais (dado de obra e de cliente)
+**/EQUIVALENCIAS*.txt
+**/Base UAU*.xlsx
+**/notas-de-despesa*.csv

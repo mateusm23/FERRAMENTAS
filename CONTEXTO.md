@@ -821,3 +821,21 @@ nada sai do navegador.
 - Regras de texto como no resto do portal: sem travessão e iniciais maiúsculas.
 - Nomenclatura: "Pacote de atividade" substitui "frente de serviço" em todos os textos (2026-10-13).
 - **Procedimento de extração** (aba e tela avulsa do painel, do material do time de prazo, slides 09, 10, 11, 18, 19 e 20 de Gerenciadora, Escala e Análise): no repositório público vai **só o passo a passo em texto**. Os prints originais mostram nome de obra e valores de clientes, então ficam só na versão interna (pasta de trabalho, `EXT_IMGS=1` no `montar-ferramenta.js`). Para publicar prints, primeiro trocar por telas de uma obra fictícia.
+
+## Conciliação UAU x Mais Saga (Outros)
+
+Arquivo: `Outros/Conciliação UAU x Mais Saga/CONCILIACAO UAU X MAIS SAGA.html`. Cruza o Excel de processos de
+pagamento do UAU com o CSV de notas de despesa do Mais Saga (portal de pagamentos do cliente) e lista o que está no
+UAU e não foi encontrado no Mais Saga, mais uma tela Investigar com o que existe só no Mais Saga. Exporta Excel
+(ExcelJS) e PDF (jsPDF e jspdf-autotable). Tudo roda no navegador.
+
+- **Chave do cruzamento**: número da nota fiscal (parte antes da barra no Mais Saga) e nome do fornecedor parecido.
+  O CNPJ do fornecedor não existe no Databricks, então não há cruzamento por CNPJ. Valor do Mais Saga é da nota
+  inteira (bruta) e o do UAU é por parcela (líquida): confere pela soma das parcelas, pelo valor da nota ou por uma parcela.
+- **Equivalências de fornecedores**: lista digitada na própria ferramenta (nome no Mais Saga = nome no UAU), salva no
+  `localStorage`. O arquivo real de equivalências fica só no computador do Mateus, coberto por `**/EQUIVALENCIAS*.txt`.
+- **A consulta que gera o Excel do UAU não está neste repositório**: usa o token do Databricks. Ela fica na pasta de
+  consultas da Área de Trabalho (`CONSULTAS/Consulta para Conciliação UAU x Mais Saga.py`), junto com os outros códigos de consulta.
+- **Dados**: o HTML só tem dados fictícios (botão "Carregar exemplo fictício"). Nunca commitar base do UAU, CSV do
+  Mais Saga nem equivalências reais (cobertos por `.gitignore`).
+- Regras de texto como no resto do portal: sem travessão e iniciais maiúsculas. Dinheiro sempre em R$ e data sempre como data.
