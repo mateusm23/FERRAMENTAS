@@ -113,6 +113,8 @@ body { font-family: 'DM Sans', sans-serif; background: var(--g1); color: var(--t
   display: flex; align-items: center; justify-content: space-between;
 }
 .card-tag { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; color: var(--g4); }
+.card-footer > div { display: flex; flex-direction: column; gap: 3px; }
+.card-meta { font-size: 9px; color: var(--g4); font-weight: 500; letter-spacing: .01em; }
 .card-arrow { font-size: 15px; color: var(--mid); transition: transform .2s; }
 .prevision-card .card-arrow { color: var(--purple); }
 .tool-card:hover .card-arrow { transform: translateX(4px); }
@@ -176,7 +178,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--g1); color: var(--t
           <div class="card-desc">Monta a programação semanal a partir do cronograma do Agilean, com Gantt por local, peso de cada atividade e filtros cascateados (torre/pavimento/etapa), pronta pra exportar em Excel.</div>
         </div>
         <div class="card-footer">
+          <div>
           <span class="card-tag">Planejamento</span>
+          <span class="card-meta">v2 &middot; 02/07/2026</span>
+          </div>
           <span class="card-arrow">→</span>
         </div>
       </a>
@@ -189,7 +194,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--g1); color: var(--t
           <div class="card-desc">Versão anterior, mantida como referência.</div>
         </div>
         <div class="card-footer">
+          <div>
           <span class="card-tag">Arquivo</span>
+          <span class="card-meta">v1 &middot; 19/06/2026</span>
+          </div>
           <span class="card-arrow">→</span>
         </div>
       </a>
@@ -202,7 +210,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--g1); color: var(--t
           <div class="card-desc">Cola a tabela "Base" do plugin Agilean no Excel e compara previsto x realizado, com desvio ponderado por macro etapa.</div>
         </div>
         <div class="card-footer">
+          <div>
           <span class="card-tag">Controle</span>
+          <span class="card-meta">v1 &middot; 23/06/2026</span>
+          </div>
           <span class="card-arrow">→</span>
         </div>
       </a>
@@ -215,7 +226,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--g1); color: var(--t
           <div class="card-desc">Curva S global, por unidade, desvio por etapa, IDP, projeção de término e exportação Excel.</div>
         </div>
         <div class="card-footer">
+          <div>
           <span class="card-tag">Controle</span>
+          <span class="card-meta">v3 &middot; 23/06/2026</span>
+          </div>
           <span class="card-arrow">→</span>
         </div>
       </a>
@@ -228,7 +242,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--g1); color: var(--t
           <div class="card-desc">Sobe o cronograma exportado do Agilean e gera Curva S, avanço mensal em gráfico, peso financeiro e desvio por etapa, tudo interativo.</div>
         </div>
         <div class="card-footer">
+          <div>
           <span class="card-tag">Controle</span>
+          <span class="card-meta">v4 &middot; 24/06/2026</span>
+          </div>
           <span class="card-arrow">→</span>
         </div>
       </a>
@@ -241,7 +258,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--g1); color: var(--t
           <div class="card-desc">Compara o R00 (antes de medir) com o R01 (depois de medir) do mesmo cronograma, sempre com base no método e na coluna de avanço do Agilean, com Local por atividade, calcula desvios de prazo e monta o relatório completo: justificativas, fotos e PDF pronto pra envio.</div>
         </div>
         <div class="card-footer">
+          <div>
           <span class="card-tag">Cronograma</span>
+          <span class="card-meta">v1 &middot; 13/07/2026</span>
+          </div>
           <span class="card-arrow">→</span>
         </div>
       </a>
@@ -265,7 +285,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--g1); color: var(--t
           <div class="card-desc">Compara o R00 (antes de medir) com o R01 (depois de medir) do mesmo cronograma, usando as colunas nativas do MS Project, calcula desvios de prazo e monta o relatório completo: justificativas, fotos e PDF pronto pra envio.</div>
         </div>
         <div class="card-footer">
+          <div>
           <span class="card-tag">Cronograma</span>
+          <span class="card-meta">v1 &middot; 02/07/2026</span>
+          </div>
           <span class="card-arrow">→</span>
         </div>
       </a>
@@ -278,7 +301,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--g1); color: var(--t
           <div class="card-desc">Classifica pavimentos e serviços a partir do XML do MS Project e monta o gráfico de fluxo de produção, com marcos, feriados e exportação para Excel.</div>
         </div>
         <div class="card-footer">
+          <div>
           <span class="card-tag">Cronograma</span>
+          <span class="card-meta">v1 &middot; 16/07/2026</span>
+          </div>
           <span class="card-arrow">→</span>
         </div>
       </a>
@@ -302,7 +328,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--g1); color: var(--t
           <div class="card-desc">Monta a programação semanal a partir da exportação do Prevision, com o mesmo padrão de Gantt e filtros da versão Agilean.</div>
         </div>
         <div class="card-footer">
+          <div>
           <span class="card-tag">Planejamento</span>
+          <span class="card-meta">v1 &middot; 19/06/2026</span>
+          </div>
           <span class="card-arrow">→</span>
         </div>
       </a>
@@ -336,7 +365,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--g1); color: var(--t
           <div class="card-desc">Refino dos relatórios gerados pelo sistema Secullum, cruza o Cadastro de Pessoas com o relatório de Acesso por Equipamento (catraca/facial) e calcula quantas pessoas trabalharam em cada obra, por dia e por empreiteiro.</div>
         </div>
         <div class="card-footer">
+          <div>
           <span class="card-tag">Controle</span>
+          <span class="card-meta">v1 &middot; 01/08/2026</span>
+          </div>
           <span class="card-arrow">→</span>
         </div>
       </a>
@@ -349,7 +381,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--g1); color: var(--t
           <div class="card-desc">Sobe a planilha do modelo de Chamada de Aporte Semanal e gera um PDF no mesmo padrão visual do Excel: Resumo Gerencial, Controle de EAP (sintético e analítico) e histórico de pagamentos e contratos, com seções configuráveis.</div>
         </div>
         <div class="card-footer">
+          <div>
           <span class="card-tag">Financeiro</span>
+          <span class="card-meta">v1 &middot; 14/08/2026</span>
+          </div>
           <span class="card-arrow">→</span>
         </div>
       </a>
@@ -362,7 +397,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--g1); color: var(--t
           <div class="card-desc">Sobe o PDF "Simulação de rescisão de contrato de trabalho" do UAU! e exporta um Excel tabulado, uma linha por funcionário, com conferência automática contra os totais do PDF e abas por empresa ou por obra, se preferir.</div>
         </div>
         <div class="card-footer">
+          <div>
           <span class="card-tag">Conversão</span>
+          <span class="card-meta">v1 &middot; 25/09/2026</span>
+          </div>
           <span class="card-arrow">→</span>
         </div>
       </a>
@@ -375,7 +413,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--g1); color: var(--t
           <div class="card-desc">Marca num predinho, frente por frente e pavimento por pavimento, o que roda no período e o que está previsto para o próximo, com empreiteiro e efetivo, e gera o PDF para o gestor com quadro de efetivo e fotos. Situações, empreiteiros, frentes e pavimentos são configuráveis.</div>
         </div>
         <div class="card-footer">
+          <div>
           <span class="card-tag">Controle</span>
+          <span class="card-meta">v1 &middot; 10/10/2026</span>
+          </div>
           <span class="card-arrow">→</span>
         </div>
       </a>
@@ -389,7 +430,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--g1); color: var(--t
           <div class="card-desc">Método de reunião semanal de 30 minutos para restrições, previsto x realizado, previsibilidade e planos de ação. Reúne o treinamento, a base de dados (exemplo e em branco) e o painel que se monta ao arrastar a base preenchida.</div>
         </div>
         <div class="card-footer">
+          <div>
           <span class="card-tag">Planejamento</span>
+          <span class="card-meta">v1 &middot; 13/10/2026</span>
+          </div>
           <span class="card-arrow">→</span>
         </div>
       </a>
@@ -402,7 +446,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--g1); color: var(--t
           <div class="card-desc">Sobe o Excel de processos de pagamento do UAU e o CSV de notas de despesa do My Saga, cruza por nota fiscal e fornecedor e lista o que não foi encontrado no My Saga e o que existe só nele. Exporta o resultado em Excel e em PDF.</div>
         </div>
         <div class="card-footer">
+          <div>
           <span class="card-tag">Conciliação</span>
+          <span class="card-meta">v1 &middot; 29/10/2026</span>
+          </div>
           <span class="card-arrow">→</span>
         </div>
       </a>
@@ -415,7 +462,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--g1); color: var(--t
           <div class="card-desc">Sobe o lote de laudos PDF de vistoria e gera uma planilha Excel com farol de controle e fotos de cada não conformidade, além de um PDF único consolidado com mapa clicável do empreendimento.</div>
         </div>
         <div class="card-footer">
+          <div>
           <span class="card-tag">Vistorias</span>
+          <span class="card-meta">v2.1 &middot; 21/07/2026</span>
+          </div>
           <span class="card-arrow">→</span>
         </div>
       </a>
@@ -428,7 +478,10 @@ body { font-family: 'DM Sans', sans-serif; background: var(--g1); color: var(--t
           <div class="card-desc">Sobe a base semanal preenchida e monta o relatório completo de obra, com checklist, fotos e exportação em Excel e PDF prontos para envio.</div>
         </div>
         <div class="card-footer">
+          <div>
           <span class="card-tag">Relatórios</span>
+          <span class="card-meta">v1 &middot; 06/11/2026</span>
+          </div>
           <span class="card-arrow">→</span>
         </div>
       </a>
