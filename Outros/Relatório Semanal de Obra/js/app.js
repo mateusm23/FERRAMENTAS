@@ -1,0 +1,244 @@
+import { goPage }          from './nav.js';
+import { showToast }        from './toast.js';
+import { loadImg, loadAnexo, removeAnexo, syncAnexoCaption } from './images.js';
+import { processarBase }    from './excel/reader.js';
+import { gerarXLSX, baixarTemplateComDados, baixarTemplateEmBranco } from './excel/exporter.js';
+import { gerarPDF }         from './pdf/builder.js';
+import { isoWeek, v, escapeHtml } from './utils.js';
+import { DB }               from './state.js';
+
+// ── LocalStorage ──────────────────────────────────────────────────────────────
+
+const LS_KEY = 'rso_form_state';
+const FORM_FIELDS = ['c_nome','c_ini','c_fim','c_sem','c_eng','c_obra','c_ger','c_avanco','parecer','positivos','atencao','encam','anexosObs'];
+
+function saveState() {
+  const state = {};
+  FORM_FIELDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) state[id] = el.value;
+  });
+  localStorage.setItem(LS_KEY, JSON.stringify(state));
+}
+
+function restoreState() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return;
+    const state = JSON.parse(raw);
+    Object.entries(state).forEach(([id, val]) => {
+      const el = document.getElementById(id);
+      if (el && val) el.value = val;
+    });
+  } catch (_) {}
+}
+
+// ── Auto-semana ISO a partir da data de início ─────────────────────────────────
+
+function autoWeek(force = false) {
+  const ini = document.getElementById('c_ini');
+  const semEl = document.getElementById('c_sem');
+  const fimEl = document.getElementById('c_fim');
+  if (!ini || !semEl) return;
+  if (!force && semEl.value) return;
+  if (!ini.value) return;
+  const d = new Date(ini.value + 'T12:00:00');
+  semEl.value = isoWeek(d);
+  if (fimEl && (force || !fimEl.value)) {
+    const sun = new Date(d);
+    sun.setDate(sun.getDate() + (7 - (sun.getDay() || 7)));
+    const y = sun.getFullYear();
+    const m = String(sun.getMonth() + 1).padStart(2, '0');
+    const day = String(sun.getDate()).padStart(2, '0');
+    fimEl.value = `${y}-${m}-${day}`;
+  }
+}
+
+// ── Prévia ao vivo da capa PDF ────────────────────────────────────────────────
+// Replica o HTML exato de buildCapaPage (pages.js) escalado via CSS transform
+
+function scaleCapaPreview() {
+  const frame = document.getElementById('capaPreviewFrame');
+  const inner = document.getElementById('capaPreviewInner');
+  if (!frame || !inner) return;
+  const scale = frame.offsetWidth / 1123;
+  inner.style.transform = `scale(${scale})`;
+  frame.style.height = Math.round(794 * scale) + 'px';
+}
+
+export function updateCapaPreview() {
+  const inner = document.getElementById('capaPreviewInner');
+  if (!inner) return;
+
+  const nome   = v('c_nome');
+  const avanco = parseInt(v('c_avanco')) || 0;
+  const elAvanco  = document.getElementById('c_avanco');
+  const isManual  = !!(elAvanco && elAvanco.dataset.userEdited);
+  const stats     = !isManual ? DB.avancoStats : null;
+  const aprovPct   = stats && stats.total > 0 ? stats.aprovadas / stats.total * 100 : avanco;
+  const estoquePct = stats && stats.total > 0 ? stats.estoque   / stats.total * 100 : 0;
+  const avancoCaption = stats && stats.total > 0
+    ? `<span style="color:#F5C800">●</span> ${stats.aprovadas} aprovadas&nbsp;&nbsp;<span style="color:#5B9BD5">●</span> ${stats.estoque} estoque <span style="opacity:.7">· de ${stats.total} unid.</span>`
+    : '';
+  const semStr = v('c_sem') || 'XX';
+  const iniStr = v('c_ini') ? new Date(v('c_ini') + 'T12:00:00').toLocaleDateString('pt-BR') : '';
+  const fimStr = v('c_fim') ? new Date(v('c_fim') + 'T12:00:00').toLocaleDateString('pt-BR') : '';
+  const mesAno = v('c_ini')
+    ? new Date(v('c_ini') + 'T12:00:00').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase()
+    : `SEMANA ${semStr}`;
+
+  // HTML idêntico ao buildCapaPage de pages.js
+  inner.innerHTML = `<div class="pdf-capa-land">
+    <div class="capal-photo">
+      ${DB.foto ? `<img src="${DB.foto}">` : `<div class="capal-photo-ph"></div>`}
+      <div class="capal-photo-overlay"></div>
+    </div>
+    <div class="capal-blue"></div>
+    <div style="position:absolute;top:38px;left:34px;z-index:5;max-width:170px">
+      ${DB.logo
+        ? `<img src="${DB.logo}" style="max-height:55px;max-width:170px;object-fit:contain">`
+        : `<div style="font-family:'Sora',sans-serif;font-weight:800;font-size:22px;color:#fff;letter-spacing:.06em">TRINUS</div>`}
+    </div>
+    ${avanco > 0 ? `
+    <div style="position:absolute;top:130px;left:34px;width:236px;z-index:5">
+      <div style="background:rgba(255,255,255,.1);border-radius:10px;padding:11px 14px;border:1px solid rgba(255,255,255,.12)">
+        <div style="font-size:8px;font-weight:700;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">Avanço de Entregas</div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="font-family:'Sora',sans-serif;font-weight:800;font-size:26px;color:#F5C800;flex-shrink:0">${avanco}%</div>
+          <div style="flex:1;min-width:0">
+            <div style="background:rgba(255,255,255,.18);border-radius:4px;height:7px;overflow:hidden;display:flex">
+              <div style="width:${aprovPct}%;height:100%;background:#F5C800"></div>
+              <div style="width:${estoquePct}%;height:100%;background:#5B9BD5"></div>
+            </div>
+            ${avancoCaption ? `<div style="font-size:7px;color:rgba(255,255,255,.5);margin-top:2px">${avancoCaption}</div>` : ''}
+          </div>
+        </div>
+      </div>
+    </div>` : ''}
+    <div class="capal-info">
+      <div class="capal-info-ttl">Relatório Semanal de Obra</div>
+      ${v('c_obra') ? `<div class="capal-info-sub">Construtora: ${escapeHtml(v('c_obra'))}</div>` : ''}
+      ${v('c_ger')  ? `<div class="capal-info-sub" style="margin-top:-6px">Gerenciadora: ${escapeHtml(v('c_ger'))}</div>` : ''}
+      <div class="capal-info-div"></div>
+      <div class="capal-info-row">${nome ? escapeHtml(nome) : '<span style="opacity:.3">NOME DA OBRA</span>'}</div>
+      <div class="capal-info-row-hl">${mesAno}</div>
+      ${iniStr ? `<div class="capal-info-row-hl">Semana do dia ${iniStr} a ${fimStr}</div>` : ''}
+      ${v('c_eng') ? `<div style="font-size:9.5px;color:rgba(255,255,255,.45);margin-top:8px">Eng.: ${escapeHtml(v('c_eng'))}</div>` : ''}
+    </div>
+    <div class="capal-brand"><div class="capal-brand-txt">TRINUS · GERENCIAMENTO DE OBRAS</div></div>
+    <div class="capal-accent-top"></div>
+    <div class="capal-accent-bot"></div>
+  </div>`;
+
+  scaleCapaPreview();
+}
+
+// ── Modal de escolha de template ─────────────────────────────────────────────
+
+function openModalTemplate() {
+  document.getElementById('modalTemplate').classList.add('show');
+}
+function closeModalTemplate() {
+  document.getElementById('modalTemplate').classList.remove('show');
+}
+
+// ── Registro de todos os event listeners ─────────────────────────────────────
+
+function wireEvents() {
+  // Navegação sidebar
+  for (let i = 0; i < 9; i++) {
+    document.getElementById('nav' + i)?.addEventListener('click', () => {
+      goPage(i);
+      // Ao entrar na Capa, a prévia pode ter ficado com escala 0 (calculada
+      // enquanto a página estava escondida) — recalcula ao tornar visível.
+      if (i === 1) updateCapaPreview();
+    });
+  }
+
+  // Botões de navegação nas páginas
+  document.querySelectorAll('[data-go]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const n = Number(btn.dataset.go);
+      goPage(n);
+      if (n === 1) updateCapaPreview();
+    });
+  });
+
+  // Header + sidebar actions
+  document.getElementById('btnBaixarTemplate')?.addEventListener('click', openModalTemplate);
+
+  // Modal template
+  document.getElementById('modalTemplateClose')?.addEventListener('click', closeModalTemplate);
+  document.getElementById('modalTemplate')?.addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeModalTemplate();
+  });
+  document.getElementById('btnTemplateEmBranco')?.addEventListener('click', () => {
+    closeModalTemplate();
+    baixarTemplateEmBranco();
+  });
+  document.getElementById('btnTemplateDados')?.addEventListener('click', () => {
+    closeModalTemplate();
+    baixarTemplateComDados();
+  });
+  document.getElementById('btnSbGerar')?.addEventListener('click', gerarPDF);
+  document.getElementById('btnSbXlsx')?.addEventListener('click', gerarXLSX);
+
+  // Upload da base (async para chamar preview depois)
+  document.getElementById('uploadFile')?.addEventListener('change', async function () {
+    await processarBase(this);
+    updateCapaPreview();
+  });
+
+  // Imagens da capa
+  document.getElementById('logoInput')?.addEventListener('change', function () {
+    loadImg('logo', this);
+    setTimeout(updateCapaPreview, 300);
+  });
+  document.getElementById('fotoInput')?.addEventListener('change', function () {
+    loadImg('foto', this);
+    setTimeout(updateCapaPreview, 300);
+  });
+
+  // Anexos (6 slots)
+  for (let i = 0; i < 6; i++) {
+    document.getElementById('anFile' + i)?.addEventListener('change', function () { loadAnexo(i, this); });
+    document.getElementById('anRemove' + i)?.addEventListener('click', () => removeAnexo(i));
+    document.getElementById('anCaption' + i)?.addEventListener('input', () => syncAnexoCaption(i));
+  }
+
+  // Auto-semana ao mudar data de início — força recálculo sempre
+  document.getElementById('c_ini')?.addEventListener('change', () => { autoWeek(true); updateCapaPreview(); });
+
+  // Preview ao vivo — atualiza ao mudar qualquer campo da capa
+  ['c_nome','c_ini','c_fim','c_sem','c_eng','c_obra','c_ger','c_avanco'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input',  updateCapaPreview);
+    document.getElementById(id)?.addEventListener('change', updateCapaPreview);
+  });
+
+  // Marca edição manual do Avanço de Entregas — assim o cálculo automático
+  // (ao subir uma nova base) não sobrescreve um valor digitado pelo usuário.
+  // Preenchimentos via script (reader.js) usam .value direto e não disparam 'input'.
+  document.getElementById('c_avanco')?.addEventListener('input', function () {
+    this.dataset.userEdited = '1';
+  });
+
+  // Persistência — salva ao alterar qualquer campo
+  FORM_FIELDS.forEach(id => {
+    document.getElementById(id)?.addEventListener('input', saveState);
+    document.getElementById(id)?.addEventListener('change', saveState);
+  });
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+// Em <script type="module"> o DOM já está pronto quando o módulo executa
+// (módulos são deferred por padrão — não precisamos de DOMContentLoaded)
+
+wireEvents();
+restoreState();
+
+const _ini = document.getElementById('c_ini');
+if (_ini && !_ini.value) _ini.valueAsDate = new Date();
+autoWeek();
+updateCapaPreview();
+window.addEventListener('resize', scaleCapaPreview);
+window.lucide?.createIcons();
