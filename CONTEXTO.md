@@ -839,3 +839,32 @@ UAU e não foi encontrado no My Saga, mais uma tela Investigar com o que existe 
 - **Dados**: o HTML só tem dados fictícios (botão "Carregar exemplo fictício"). Nunca commitar base do UAU, CSV do
   My Saga nem equivalências reais (cobertos por `.gitignore`).
 - Regras de texto como no resto do portal: sem travessão e iniciais maiúsculas. Dinheiro sempre em R$ e data sempre como data.
+
+## Análise de Emissão de NF (Outros), 2026-10-22
+
+Arquivo: `Outros/Análise de Emissão de NF/ANALISE DE EMISSAO DE NF.html`. Lê o relatório com as abas
+**1067** (CAPs, uma linha por parcela) e **260** (registro financeiro por insumo), reconhecidas pelos
+nomes das colunas, não pelo nome da aba.
+
+- Usuário marca os CAPs elegíveis e informa o período de **Emissão** (inclusive as duas datas).
+- Situação de cada parcela: chave empresa+obra+`Num_Proc`+`NumParc_Proc` contra `Proc/Parc` da 260.
+  Com `APagar` > 0 fica A PAGAR, com `Pago` > 0 fica PAGO, sem registro (ou só projetado) fica EMISSÃO.
+- Soma por NF (fornecedor+`DocFiscal_Proc`). Vencimentos concatenados na mesma célula. NF com situações
+  diferentes gera uma linha por situação, com item, emissão, NF e fornecedor mesclados (rowspan).
+- A tabela copiada espelha o memorando (10 colunas, fornecedor em D:F) e inclui o cabeçalho, para colar a partir de A8.
+  A coluna G (TIPO PAGAMENTO, antes PIX ou BOLETO) sai vazia; o status vai na coluna J.
+- Valor: `ValorParc` por padrão, com opção de `TotalValorLiq` (diferem em parte das parcelas).
+- O `REL..xlsx` real nunca vai para o repositório (público).
+
+### Análise de Emissão de NF: filtro de fornecedor e agrupamento (2026-10-22)
+
+- Tela 2 ganhou o cartão **Fornecedores**: lista os fornecedores dos CAPs marcados no período, tudo marcado por padrão (`state.fornOff` guarda os desmarcados, chave `codForn` ou nome).
+- Agrupamento: **Não separar PAGO e A PAGAR** (rótulo "PAGO / A PAGAR", EMISSÃO continua separada) e **Não separar por data de vencimento** (marcado por padrão, vencimentos concatenados; desmarcado, uma linha por vencimento).
+- Os totais por situação nos cartões do topo usam a situação real da parcela, mesmo com as linhas juntadas.
+
+### Análise de Emissão de NF: valor vem da base 260 (2026-10-22)
+
+- A base 1067 não é confiável para valor: em várias parcelas repete o total do documento (ex.: PAILON, 400.000 em cada parcela, quando a 260 tem 100.000 por parcela).
+- O valor de cada parcela é a soma na **260** por empresa+obra+processo+parcela: `Pago` vai para PAGO, `APagar` para A PAGAR, `Projetado` para EMISSÃO. Parcela sem registro na 260 entra em EMISSÃO com o `ValorParc` da 1067.
+- A mesma parcela em dois CAPs selecionados é contada uma vez. O CAP só decide se a parcela entra, não divide o valor (a 260 não separa por CAP).
+- Sumiram a opção de valor e os valores por CAP e fornecedor nas listas (vinham da 1067).
