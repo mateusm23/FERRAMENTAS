@@ -13,8 +13,10 @@ nunca commitar dados reais de obra/cliente, só código).
 ## Estrutura de pastas (estado atual)
 
 ```
-ferramentas/
+FERRAMENTAS/
 ├── index.html                                  ← portal, lista os cards de cada ferramenta
+├── README.md                                   ← apresentação pública (2026-11-14), gerada a partir dos cards do portal
+├── CONTEXTO.md                                 ← este arquivo, estado e decisões
 ├── Agilean/
 │   ├── Programação Semanal/
 │   │   ├── MONTAGEM DE PROGRAMAÇÃO SEMANAL v2.html   (ativa, card visível)
@@ -23,45 +25,71 @@ ferramentas/
 │   │   └── ANALISE DE PESO FINANCEIRO.html           (ativa, card visível)
 │   ├── Análise Física do Projeto/
 │   │   ├── ANALISE FISICA DO PROJETO.html            (v1, backup, não linkada)
-│   │   ├── ANALISE FISICA DO PROJETO v3.html         (card oculto — obsoleta, sem gráficos)
-│   │   └── ANALISE FISICA DO PROJETO v4.html         (ativa, card visível — tem gráficos)
+│   │   ├── ANALISE FISICA DO PROJETO v3.html         (card oculto, obsoleta, sem gráficos)
+│   │   └── ANALISE FISICA DO PROJETO v4.html         (ativa, card visível, tem gráficos)
 │   └── Relatório Semanal/
 │       ├── RELATORIO SEMANAL AGILEAN.html            (ativa, card visível)
-│       └── base de teste/                             (XML real de teste — nunca commitar, ver .gitignore)
+│       └── base de teste/                            (XML real de teste, nunca commitar, ver .gitignore)
 ├── Obsoletos/
 │   └── ANALISE FISICA DO PROJETO v2.html             (arquivada, fora do portal)
 ├── Microsoft Project/
-│   ├── Relatório Semanal/RELATORIO SEMANAL.html      (ativa, card visível — versão sem plugin Agilean)
-│   └── Linha de Balanço/gerador-linha-de-balanco.html (ativa, card visível)
+│   ├── Relatório Semanal/RELATORIO SEMANAL.html      (ativa, card visível, versão sem plugin Agilean)
+│   └── Linha de Balanço/
+│       ├── gerador-linha-de-balanco.html             (ativa, card visível, tudo inline, sem CDN)
+│       ├── RETROSPECTIVA.md                          (registro da construção da ferramenta)
+│       ├── libs/exceljs.min.js                       (biblioteca local, 925 KB)
+│       └── preview/                                  (10 rascunhos de conceito, sem card no portal, mantidos por decisão em 2026-11-14)
 ├── Prevision/
 │   └── Programação Semanal/PROGRAMACAO SEMANAL PREVISION.html (ativa, card visível)
 └── Outros/
     ├── Efetivo de Obra/
-    │   ├── EFETIVO DE OBRA.html               (ativa, card visível — única ferramenta sem CDN, tudo inline)
+    │   ├── EFETIVO DE OBRA.html               (ativa, card visível, única ferramenta de upload sem CDN)
     │   └── base de teste/                       (arquivos reais de exemplo, nunca commitar, ver .gitignore)
     ├── Chamada de Aporte Semanal/
-    │   ├── CHAMADA DE APORTE SEMANAL.html      (ativa, card visível, gera PDF a partir do Excel)
-    │   └── Modelo_Chamada_de_Aporte_Semanal.xlsx (modelo pra download, clone sanitizado do arquivo real - ver seção abaixo)
+    │   ├── CHAMADA DE APORTE SEMANAL.html      (página de escolha de versão, é o que o card do portal abre)
+    │   ├── v1/                                 (versão em produção nas obras, movida para cá em 2026-11-14 com git mv)
+    │   │   ├── CHAMADA DE APORTE SEMANAL.html
+    │   │   └── Modelo_Chamada_de_Aporte_Semanal.xlsx (clone sanitizado do arquivo real, ver seção abaixo)
+    │   └── v2/                                 (versão em teste, beta)
+    │       ├── CHAMADA DE APORTE SEMANAL.html
+    │       └── Modelo_Chamada_de_Aporte_Semanal.xlsx
     ├── Conversor de Verbas Rescisórias/
-    │   └── CONVERSOR DE VERBAS RESCISORIAS.html (ativa, card visível, PDF do UAU! -> Excel tabulado)
+    │   ├── CONVERSOR DE VERBAS RESCISORIAS.html (ativa, card visível, PDF do UAU! -> Excel tabulado)
+    │   └── pdfs-exemplo/                        (3 PDFs fictícios, Alfa, Beta e Gama, para demonstrar a ferramenta)
     ├── Relatório Diário de Obra/
     │   └── RELATORIO DIARIO DE OBRA.html       (ativa, card visível, predinho clicável -> PDF direto)
-    └── Planejamento Trimestral/
-        ├── PLANEJAMENTO TRIMESTRAL.html        (ativa, card visível; página com as 4 opções abaixo)
-        ├── Treinamento/APRESENTACAO PLANEJAMENTO TRIMESTRAL.html   (deck em telas)
-        ├── Base de Dados/BASE DE DADOS - EXEMPLO.xlsx e BASE DE DADOS - EM BRANCO.xlsx
-        └── Painel/PAINEL PLANEJAMENTO TRIMESTRAL.html               (arrasta a base .xlsx e monta o painel)
+    ├── Planejamento Trimestral/
+    │   ├── PLANEJAMENTO TRIMESTRAL.html        (ativa, card visível; página com as 4 opções abaixo)
+    │   ├── Treinamento/APRESENTACAO PLANEJAMENTO TRIMESTRAL.html   (deck em telas, 1,7 MB com as imagens embutidas)
+    │   ├── Base de Dados/BASE DE DADOS - EXEMPLO.xlsx e BASE DE DADOS - EM BRANCO.xlsx
+    │   └── Painel/PAINEL PLANEJAMENTO TRIMESTRAL.html               (arrasta a base .xlsx e monta o painel)
+    ├── Conciliação UAU x My Saga/
+    │   └── CONCILIACAO UAU X MY SAGA.html      (ativa, card visível, nova em 2026-10-29; bases reais cobertas pelo .gitignore)
+    ├── Análise de Emissão de NF/
+    │   ├── ANALISE DE EMISSAO DE NF.html       (ativa, card visível, nova em 2026-10-22, revertida e restaurada em 2026-11-10 com o mesmo conteúdo)
+    │   └── REL..xlsx, MEMORANDO MODELO.xlsx, MEMORANDO EXEMPLO - PREENCHIDO.xlsx
+    │                                            (reais, só na máquina do Mateus, excluídos por .git/info/exclude, que não é versionado, ver aviso abaixo)
+    └── Relatório Semanal de Obra/
+        ├── RELATORIO SEMANAL DE OBRA.html      (ativa, card visível, nova em 2026-11-06)
+        ├── css/, js/ (app, excel, pdf, render), templates/ (2 bases .xlsx)
+        │                                        (única ferramenta modular do repositório, não é um HTML autocontido)
+        └── BOAS_PRATICAS.md e PLANO_VALIDACAO.md (registro da sessão que a construiu)
 ```
+
+O card **Extrator de Vistorias** aparece no portal, mas aponta para outro repositório
+(`mateusm23/Compilador-Vistorias`), e não para um arquivo daqui.
 
 ## Cards do portal (`index.html`) — o que está visível/oculto e por quê
 
-- **Visíveis**: Programação Semanal (Agilean v2), Análise de Peso Financeiro,
-  Análise Física do Projeto (v4), Relatório Semanal de Obra (Agilean e MS
-  Project), Gerador de Linha de Balanço, Programação Semanal (Prevision),
-  Efetivo de Obra (seção **Outros**, nova em 2026-08-01), Chamada de Aporte
-  Semanal (seção **Outros**, nova em 2026-08-10), Conversor de Verbas
-  Rescisórias (seção **Outros**, nova em 2026-09-24), Relatório Diário de Obra
-  (seção **Outros**, nova em 2026-10-09).
+- **Visíveis** (16 cards, todos com versão e data no rodapé desde 2026-11-05):
+  Programação Semanal (Agilean v2), Análise de Peso Financeiro, Análise Física do
+  Projeto (v4), Relatório Semanal de Obra (Cronograma Agilean), Gerador de Linha de
+  Balanço, Relatório Semanal de Obra (Cronograma MS Project), Programação Semanal
+  (Prevision) e, na seção **Outros**: Efetivo de Obra (2026-08-01), Chamada de Aporte
+  Semanal (2026-08-10), Conversor de Verbas Rescisórias (2026-09-24), Relatório Diário
+  de Obra (2026-10-09), Planejamento Trimestral (2026-10-13), Análise de Emissão de NF
+  (2026-10-22), Conciliação UAU x My Saga (2026-10-29), Extrator de Vistorias (link
+  externo, outro repositório) e Relatório Semanal de Obra (Base Semanal, 2026-11-06).
 - **Ocultos** (`style="display:none"` no `<a class="tool-card">`):
   - Programação Semanal **HISTÓRICO** — versão anterior, mantida só como referência.
   - Análise Física do Projeto **v3** — obsoleta, substituída pela v4 (que tem
@@ -81,8 +109,33 @@ ferramentas/
 - **Descrições**: reescritas em 2026-07-13 pra deixar explícita a fonte de
   dados de cada ferramenta (upload de XML/XLSX vs. colar tabela do plugin
   Excel) e, nos dois Relatórios Semanais, que R00/R01 são o mesmo cronograma
-  antes/depois de medir. Sem travessão (—) nas descrições — preferência do
+  antes/depois de medir. Sem travessão nas descrições, preferência do
   usuário, usar vírgula pra encadear frases.
+- **Revisão de 2026-11-14**:
+  - O card da **Análise de Emissão de NF** era o único sem `card-meta`. Ganhou
+    "v1 · 22/10/2026", data do último commit que mudou a ferramenta (a
+    restauração de 2026-11-10 trouxe o arquivo igual ao de 22/10). Agora os 18
+    cards do `index.html` têm versão e data.
+  - Três cards se chamavam **Relatório Semanal de Obra**. Viraram "Relatório
+    Semanal de Obra (Cronograma Agilean)", "(Cronograma MS Project)" e
+    "(Base Semanal)", seguindo o parêntese que a versão de 2026-11-06 já usava.
+    O nome do card passa a dizer a entrada da ferramenta sem depender da seção.
+  - A tag do card de NF continua **Conciliação**: a ferramenta cruza duas bases
+    (1067 e 260), então a tag descreve o que ela faz.
+  - Criado o `README.md`, gerado a partir dos próprios cards do `index.html`
+    (nome, versão, data e descrição), para quem abre o repositório no GitHub.
+    Ao mudar um card, ajustar o README junto.
+  - Conferência dos 17 links internos dos cards: todos resolvem para arquivo
+    existente, com acento e caixa corretos. O `index.html` está em CRLF, então
+    toda edição por script precisa preservar o fim de linha.
+  - Varredura de envio de dados (POST, XHR, FormData, WebSocket, sendBeacon) em
+    todos os HTML e JS: nenhuma ferramenta manda arquivo para servidor. Essa
+    afirmação está no README, então refazer a varredura antes de mudá-la.
+  - **Aviso de risco**: os arquivos reais da Análise de Emissão de NF estão
+    excluídos pelo `.git/info/exclude`, que fica dentro do `.git` e não é
+    versionado. Em outro computador, ou num clone novo, essa proteção não
+    existe e um `git add` pegaria o `REL..xlsx` real num repositório público.
+    Mover a regra para o `.gitignore` ficou pendente de decisão do Mateus.
 
 ## Relatório Semanal de Obra (Agilean) — leitura do % de execução
 
@@ -623,6 +676,146 @@ a pedido explícito do usuário depois de ver a primeira versão redesenhada.
     3 abas usadas pela ferramenta) por nome do cliente, nomes de fornecedor
     reais e trecho da URL do SharePoint, pra garantir que nada sensível
     sobrou em aba oculta (CONFIG), metadado ou `customXml`.
+
+### Chamada de Aporte: duas versões no ar (2026-11-14)
+
+A ferramenta está em produção em duas obras, então a versão nova não substitui a
+antiga: as duas ficam publicadas ao mesmo tempo, no padrão que o Planejamento
+Trimestral já usa (um card do portal que abre uma página de escolha).
+
+- `CHAMADA DE APORTE SEMANAL.html` na raiz da pasta deixou de ser a ferramenta e
+  passou a ser a **página de escolha**. O caminho é o mesmo de antes, então o card
+  do portal e qualquer link salvo pelos engenheiros continuam funcionando, só que
+  agora caem na escolha entre as duas versões.
+- A versão em produção foi movida para `v1/` com `git mv`, preservando o histórico.
+  A única alteração nela foi o link de voltar, que agora aponta para a página de
+  escolha, mais o título e um selo dizendo qual versão está aberta.
+- `v2/` nasceu como cópia exata da v1 e é onde entram as mudanças pedidas pela obra.
+- Cada versão tem a **sua própria** planilha modelo na sua pasta. O botão "Baixar
+  planilha modelo" é um link relativo, então cada uma baixa a sua, e quem usa a v1
+  não é afetado pelo modelo novo.
+- A v2 precisa abrir também a planilha antiga, omitindo as seções que dependem das
+  tabelas novas e avisando na tela, em vez de falhar. Quem está no meio da semana
+  com o arquivo antigo não pode ficar sem gerar o PDF.
+- Quando a v2 for aprovada nas duas obras, ela passa a ser a v1 e a página de
+  escolha sai do caminho.
+
+### O que a v2 muda (pedido da obra, 2026-11-14)
+
+O problema relatado: o cliente recebe um valor de aporte e não consegue destacar
+de onde ele vem. Hoje o PDF traz um "Histórico de Pagamentos" que mistura pago com
+a pagar, o que embaralha a leitura, e o número do resumo não tem lista que o
+sustente.
+
+- **Ordem nova das seções**: resumo, pagamentos provisionados no sistema, pagamentos
+  gerenciais, históricos, e por último EAP sintético e analítico. O EAP saiu de cima,
+  onde empurrava o dinheiro para o fim do documento. A ordem é configurável na tela,
+  por alças, e a ordem acima é o padrão das duas obras.
+- **Glossário fechado antes do layout**:
+  - *Pagamentos provisionados no sistema*: processos já estruturados no UAU, com a
+    pagar na semana da chamada. Não é o que já foi pago.
+  - *Pagamentos gerenciais*: contas que o Mateus ainda não lançou no sistema e
+    pretende pagar na próxima semana. Não é projeção de contratação.
+  - *Histórico de pagamentos*: só o que já foi pago. Deixa de listar o a pagar.
+- Por isso a seção "Projeção de Contratação do Período" foi **renomeada** para
+  "Pagamentos Gerenciais", na ferramenta e na planilha. O nome antigo descrevia
+  outra coisa e era parte da confusão.
+- **A pagar com data fora da semana** (semanas seguintes, que vêm no mesmo extrato)
+  não entra em nenhuma das duas listas. Para não parecer que foi escondido, o resumo
+  informa quanto existe de a pagar lançado para depois da semana.
+- **Destaque do aporte** ganha a composição embaixo do valor: quanto está provisionado
+  no sistema e quanto é gerencial, cada linha remetendo à seção que a detalha.
+- **Nada no PDF diz que houve edição manual.** O Mateus corrige a Tabela1 direto
+  (valor, data, excluir linha) antes de enviar, porque o extrato do UAU traz
+  lançamentos que não serão pagos naquela semana (banco não conciliado no dia em que
+  o relatório foi tirado). Decisão explícita dele: o cliente não tem acesso ao
+  sistema e expor "ajustado à mão" gera desconforto. O PDF mostra a composição do
+  número e a lista que o sustenta, não o caminho até ele.
+- **Não existe tabela "ajustada" separada.** A lista nova é uma visão filtrada da
+  Tabela1 por fórmula, então ela e a linha do resumo não podem divergir. Mesmo assim
+  entra uma célula de conferência comparando as duas, porque fórmula de filtro quebra
+  em silêncio quando alguém mexe no intervalo.
+
+### Como a v2 ficou (2026-11-14)
+
+**Planilha** (`v2/Modelo_Chamada_de_Aporte_Semanal.xlsx`, montada por script pelo
+próprio Excel, sempre sobre cópia, nunca por reescrita do XML):
+
+- Tabela3 passou de `AB5:AD11` para `AB5:AF11`, com FORNECEDOR e DATA PREVISTA
+  inseridas antes de VALOR PREVISTO. A fórmula do resumo acompanhou sozinha
+  porque usa referência estruturada (`Tabela3[VALOR PREVISTO]`).
+- Bloco novo em `AH3:AL`, "Pagamentos provisionados no sistema", com uma fórmula
+  `FILTER` por coluna puxando da Tabela1 onde A_PAGAR é maior que zero e a data
+  de pagamento cai entre `C21` e `E21`. Uma fórmula por coluna, e não uma só com
+  várias colunas, porque é o padrão que a aba CONFIG oculta já usava.
+- `AL4` traz o total da lista e `AH4` compara esse total com a linha do resumo,
+  escrevendo "Conferência OK" ou a diferença em reais.
+- `B34` e `E34`: a pagar lançado para depois do período. Coube na linha 34, que
+  estava vazia, então nada abaixo foi deslocado e nenhuma referência mudou.
+- Rótulos `B30` e `B31` reescritos no vocabulário do glossário.
+
+**Ferramenta** (`v2/CHAMADA DE APORTE SEMANAL.html`):
+
+- A aba Detalhado passou a ser lida por **bloco**, não por letra de coluna fixa:
+  acha o título de cada bloco na linha acima do cabeçalho, delimita a janela de
+  colunas até onde o próximo bloco começa e casa cada cabeçalho pelo texto, sem
+  acento. É isso que faz a mesma ferramenta abrir o modelo novo (4 blocos) e o
+  antigo (3 blocos), e sobreviver a uma coluna a mais em qualquer um deles.
+- Dois rótulos aceitos por linha do resumo, o novo e o antigo.
+- Ordem padrão das seções: resumo, provisionados no sistema, gerenciais,
+  históricos, EAP sintético e EAP analítico. Arrastável por alça, salva em
+  `localStorage` (chave `chamada-aporte-v2-secoes`), com botão de voltar ao padrão.
+  A ordem salva é validada contra as chaves conhecidas, então uma ordem gravada por
+  uma versão anterior não deixa seção de fora.
+- Cada seção declara a orientação de página que precisa, e a troca é aplicada nos
+  dois sentidos. A versão 1 só sabia virar de retrato para paisagem, o que quebraria
+  com reordenação livre.
+- Histórico de pagamentos lista só linhas com PAGO maior que zero.
+- Composição do aporte pendurada no **total de saídas**, não no valor do aporte.
+  Provisionado mais gerencial não soma o aporte, porque o saldo bancário abate e o
+  fundo de reserva soma depois. Mostrar as duas linhas embaixo do aporte faria o
+  cliente conferir e achar erro.
+- Nada no PDF indica edição manual, decisão explícita do Mateus.
+- Planilha antiga abre normalmente: as seções que dependem das tabelas novas são
+  omitidas e a tela diz o que ficou de fora e por quê.
+
+**Três defeitos que só apareceram porque o teste rodou de verdade:**
+
+1. Derrame de fórmula de matriz não herda formato além da célula âncora. Da segunda
+   linha para baixo a data saía como 46345 e o valor como 85000 cru. O formato agora
+   é aplicado a toda a faixa possível do derrame.
+2. Célula com erro no Excel (`#DIV/0!`) chega ao SheetJS como `t="e"` e `v` igual ao
+   código do erro. Sem tratar, "% Executado do Orçamento" saía como **700,00%** no PDF,
+   na cara do cliente. `cellVal` e `cellText` agora devolvem vazio para célula de erro.
+   A versão 1 tem esse mesmo defeito.
+3. A coluna PROCESSO é data por baixo, exibida como "17-Jan". A fórmula copia o valor,
+   então a coluna da lista nova precisou do mesmo formato da coluna I da Tabela1, senão
+   aparecia o número de série.
+
+Um quarto, achado pelo teste e blindado por precaução: numa Tabela do Excel, a coluna
+de fórmula (CHAVE) continua preenchida depois de alguém **limpar o conteúdo** de uma
+linha em vez de **excluir** a linha. Sem ignorar as colunas de apoio ao decidir se a
+linha está vazia, cada linha limpa viraria uma linha fantasma no PDF.
+
+**Como foi testado** (`scratchpad`, fora do repositório):
+
+- O JS da ferramenta roda fora do navegador, num contexto com DOM e `localStorage`
+  falsos, lendo a planilha de verdade com o mesmo SheetJS da tela. Confere número a
+  número contra uma conta feita à mão, com três casos-limite: pagamento no último dia
+  do período (entra), pagamento fora da semana (vai para a linha do a pagar futuro) e
+  item já pago (não entra na lista).
+- O PDF é renderizado de verdade com pdfmake fora do navegador, e a orientação de cada
+  página é lida do `/MediaBox` do arquivo gerado, não presumida.
+- A largura de cada tabela é somada e comparada com a largura útil real da página, nas
+  duas orientações, por causa do vazamento de coluna já documentado acima.
+- A reordenação por alça é testada em navegador real, com mouse automatizado: arrasta,
+  confere a ordem, recarrega para provar que persistiu e volta ao padrão.
+- As páginas do PDF são convertidas em imagem e olhadas. Foi assim que os 700,00% e o
+  número de série na coluna Processo apareceram.
+
+`v2/Exemplo_Preenchido_Chamada_de_Aporte.xlsx` é a planilha fictícia desse teste, com
+botão próprio de download na ferramenta, para gerar um PDF sem precisar preencher nada.
+Passou pela varredura de nome de cliente antes de entrar no repositório.
 
 ## Conversor de Verbas Rescisórias (Outros)
 
