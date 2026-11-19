@@ -200,13 +200,17 @@ const SECOES = [
   { chave: 'eapAnalitico',  rotulo: 'Controle de EAP, analítico (completo)',  orientacao: 'portrait' },
 ];
 
-// Largura usada para centralizar tabelas em paisagem. Um pouco menor do que a
-// largura útil real da página (761.89pt) para dar folga a arredondamentos do pdfmake.
-const LANDSCAPE_CENTER_WIDTH = 730;
+// Largura útil real da página: A4 menos as margens de 40pt de cada lado.
+const LANDSCAPE_CENTER_WIDTH = 841.89 - 80;  // 761.89
+const PORTRAIT_CENTER_WIDTH = 595.28 - 80;   // 515.28
 
-// Mesma ideia em retrato: a largura útil real é 515.28pt (A4 menos 40pt de cada
-// margem), e aqui também fica folga para o arredondamento do pdfmake.
-const PORTRAIT_CENTER_WIDTH = 505;
+// O pdfmake trata a largura declarada de cada coluna como largura do CONTEÚDO e
+// soma o recheio da célula por cima. Com o layout de grade usado aqui são 5pt de
+// cada lado, ou seja, 10pt por coluna. Ignorar isso foi o que fez a tabela de
+// provisionados (500pt declarados em 5 colunas, 550pt na prática) passar da
+// margem direita numa área útil de 515pt. Toda conta de largura tem que somar
+// este valor, e é também a explicação do vazamento em paisagem visto antes.
+const PADDING_CELULA = 10;
 
 /* Paleta extraída das cores reais usadas na planilha modelo. */
 const COLOR = {
@@ -683,6 +687,66 @@ function extractDetalhado(wb) {
   return { pagamentos, contratos, gerenciais, provisionados };
 }
 
+/* Datas chegam como Date (leitura com cellDates) ou como número de série do
+   Excel, dependendo da célula. Compara tudo em número de série. */
+function paraSerie(v) {
+  if (isEmpty(v)) return null;
+  if (v instanceof Date) return Math.round((v.getTime() - Date.UTC(1899, 11, 30)) / 86400000);
+  const n = Number(v);
+  return Number.isNaN(n) ? null : Math.round(n);
+}
+
+/* Monta a lista de pagamentos provisionados no sistema.
+
+   A lista é **calculada da Tabela1**, e não lida de um bloco pronto da planilha.
+   Foi assim que passou a ser depois que a planilha de produção, que não tem esse
+   bloco, saiu sem a tabela no PDF. A regra é a mesma da linha do resumo: a pagar
+   maior que zero, com data de pagamento dentro do período da chamada. Assim
+   qualquer planilha, nova ou antiga, gera o PDF completo.
+
+   Quando a planilha também tem o bloco pronto, ele serve de conferência: se os
+   dois totais não baterem, a tela avisa em vez de escolher um em silêncio. */
+function montaProvisionados(detalhado, periodo) {
+  const de = paraSerie(periodo && periodo.de);
+  const ate = paraSerie(periodo && periodo.ate);
+  const daPlanilha = detalhado.provisionados ? detalhado.provisionados.rows : null;
+
+  if (de === null || ate === null) {
+    return {
+      rows: daPlanilha || [],
+      origem: daPlanilha ? 'planilha' : 'nenhuma',
+      aviso: daPlanilha ? null : 'O período de referência está em branco no Resumo Gerencial, então não dá para separar os pagamentos do período.',
+    };
+  }
+
+  const rows = detalhado.pagamentos.rows.filter(r => {
+    const d = paraSerie(r.DATA_DE_PAGAMENTO);
+    return Number(r.A_PAGAR) > 0 && d !== null && d >= de && d <= ate;
+  });
+
+  let aviso = null;
+  if (daPlanilha) {
+    const soma = (lista) => lista.reduce((s, x) => s + (Number(x.A_PAGAR) || 0), 0);
+    if (Math.round((soma(rows) - soma(daPlanilha)) * 100) !== 0) {
+      aviso = 'A tabela "Pagamentos provisionados no sistema" da planilha soma ' + fmtBRL(soma(daPlanilha)) +
+        ' e o cálculo sobre a Tabela1 soma ' + fmtBRL(soma(rows)) +
+        '. O PDF usou o cálculo sobre a Tabela1. Confira a fórmula da planilha.';
+    }
+  }
+  return { rows, origem: 'calculado', aviso };
+}
+
+/* A pagar que já está lançado, mas com data posterior ao período. Também é
+   calculado quando a planilha não traz a linha pronta. */
+function calculaForaDoPeriodo(detalhado, periodo) {
+  const ate = paraSerie(periodo && periodo.ate);
+  if (ate === null) return undefined;
+  return detalhado.pagamentos.rows.reduce((s, r) => {
+    const d = paraSerie(r.DATA_DE_PAGAMENTO);
+    return s + (d !== null && d > ate && Number(r.A_PAGAR) > 0 ? Number(r.A_PAGAR) : 0);
+  }, 0);
+}
+
 async function extractLogo(arrayBuffer) {
   try {
     const zip = await JSZip.loadAsync(arrayBuffer);
@@ -851,12 +915,13 @@ function buildGenericTable(columns, rows, title, subtitle, pageContentWidth) {
   });
 
   // Centraliza a tabela na página quando as colunas (todas com largura fixa)
-  // somam menos do que a largura disponível.
+  // somam menos do que a largura disponível. A largura real de cada coluna é a
+  // declarada mais o recheio da célula, senão a tabela vaza para fora da margem.
   const hasFluidColumn = columns.some(c => !c.width || c.width === '*');
   let leftMargin = 0;
   if (pageContentWidth && !hasFluidColumn) {
-    const totalWidth = columns.reduce((s, c) => s + (typeof c.width === 'number' ? c.width : 0), 0);
-    leftMargin = Math.max(0, (pageContentWidth - totalWidth) / 2);
+    const larguraReal = columns.reduce((s, c) => s + (typeof c.width === 'number' ? c.width : 0), 0) + PADDING_CELULA * numCols;
+    leftMargin = Math.max(0, (pageContentWidth - larguraReal) / 2);
   }
 
   return {
@@ -971,8 +1036,10 @@ function buildResumoSection(r, opcoes) {
     kv('(-) Saldo Bancário' + (resumo.saldoBancarioData ? ` (${fmtDate(resumo.saldoBancarioData)})` : ''), fmtBRL(resumo.saldoBancario), 'yellow'),
     kv('(+) Fundo de Reserva', fmtBRL(resumo.fundoReserva), 'yellow'),
   ];
-  if (!isEmpty(resumo.aPagarForaPeriodo) && Number(resumo.aPagarForaPeriodo) > 0) {
-    linhasResumo.push(kv('A pagar lançado para depois do período, fora deste aporte', fmtBRL(resumo.aPagarForaPeriodo), 'gray'));
+  // Vem da planilha quando ela tem a linha pronta, senão é calculado da Tabela1.
+  const foraDoPeriodo = !isEmpty(op.foraDoPeriodo) ? op.foraDoPeriodo : resumo.aPagarForaPeriodo;
+  if (!isEmpty(foraDoPeriodo) && Number(foraDoPeriodo) > 0) {
+    linhasResumo.push(kv('A pagar lançado para depois do período, fora deste aporte', fmtBRL(foraDoPeriodo), 'gray'));
   }
   const resumoCard = card('Resumo Gerencial do Aporte', linhasResumo);
 
@@ -1026,9 +1093,9 @@ function buildPagamentosSection(pagamentos) {
     { key: 'SERVICO', label: 'Serviço', width: 150 },
     { key: 'INSUMO', label: 'Insumo', width: 150 },
     { key: 'FORNECEDOR', label: 'Fornecedor', width: 150 },
-    { key: 'PROCESSO', label: 'Processo', width: 70 },
-    { key: 'DATA_DE_PAGAMENTO', label: 'Data Pagto.', width: 80, format: fmtDate },
-    { key: 'PAGO', label: 'Pago', width: 90, format: fmtBRL, align: 'right' },
+    { key: 'PROCESSO', label: 'Processo', width: 62 },
+    { key: 'DATA_DE_PAGAMENTO', label: 'Data Pagto.', width: 70, format: fmtDate },
+    { key: 'PAGO', label: 'Pago', width: 85, format: fmtBRL, align: 'right' },
   ];
   const table = buildGenericTable(columns, rows, 'Histórico de Pagamentos', 'Processos já pagos no sistema', LANDSCAPE_CENTER_WIDTH);
   const totalPago = rows.reduce((s, x) => s + (Number(x.PAGO) || 0), 0);
@@ -1042,16 +1109,16 @@ function buildPagamentosSection(pagamentos) {
 }
 
 /* Detalhamento da linha "Provisionado no sistema" do resumo: o que o ERP tem
-   lançado para pagar dentro da semana da chamada. Cabe em retrato, então não
+   lançado para pagar dentro do período da chamada. Cabe em retrato, então não
    obriga a virar a página. */
 function buildProvisionadosSection(provisionados, periodo) {
   const { rows } = provisionados;
   const columns = [
-    { key: 'FORNECEDOR', label: 'Fornecedor', width: 145 },
-    { key: 'SERVICO', label: 'Serviço', width: 150 },
-    { key: 'PROCESSO', label: 'Processo', width: 55 },
-    { key: 'DATA_DE_PAGAMENTO', label: 'Data Pagto.', width: 65, format: fmtDate },
-    { key: 'A_PAGAR', label: 'A Pagar', width: 85, format: fmtBRL, align: 'right' },
+    { key: 'FORNECEDOR', label: 'Fornecedor', width: 135 },
+    { key: 'SERVICO', label: 'Serviço', width: 128 },
+    { key: 'PROCESSO', label: 'Processo', width: 46 },
+    { key: 'DATA_DE_PAGAMENTO', label: 'Data Pagto.', width: 58, format: fmtDate },
+    { key: 'A_PAGAR', label: 'A Pagar', width: 78, format: fmtBRL, align: 'right' },
   ];
   const sub = periodo && !isEmpty(periodo.de)
     ? `Lançados no sistema com pagamento previsto de ${fmtDate(periodo.de)} até ${fmtDate(periodo.ate)}`
@@ -1069,14 +1136,14 @@ function buildProvisionadosSection(provisionados, periodo) {
 function buildContratosSection(contratos) {
   const { rows } = contratos;
   const columns = [
-    { key: 'SERVIÇO', label: 'Serviço', width: 120 },
-    { key: 'INSUMO', label: 'Insumo', width: 120 },
-    { key: 'FORNECEDOR', label: 'Fornecedor', width: 120 },
-    { key: 'ITEM PL', label: 'Item PL', width: 60 },
-    { key: 'CONTRATO', label: 'Contrato', width: 48 },
-    { key: 'TOTAL DO CONTRATO', label: 'Total Contrato', width: 78, format: fmtBRL, align: 'right' },
-    { key: 'TOTAL APROVADO', label: 'Total Aprovado', width: 78, format: fmtBRL, align: 'right' },
-    { key: 'TOTAL SALDO', label: 'Saldo', width: 72, format: fmtBRL, align: 'right' },
+    { key: 'SERVIÇO', label: 'Serviço', width: 112 },
+    { key: 'INSUMO', label: 'Insumo', width: 112 },
+    { key: 'FORNECEDOR', label: 'Fornecedor', width: 112 },
+    { key: 'ITEM PL', label: 'Item PL', width: 55 },
+    { key: 'CONTRATO', label: 'Contrato', width: 45 },
+    { key: 'TOTAL DO CONTRATO', label: 'Total Contrato', width: 72, format: fmtBRL, align: 'right' },
+    { key: 'TOTAL APROVADO', label: 'Total Aprovado', width: 72, format: fmtBRL, align: 'right' },
+    { key: 'TOTAL SALDO', label: 'Saldo', width: 68, format: fmtBRL, align: 'right' },
   ];
   const table = buildGenericTable(columns, rows, 'Histórico de Contratos', 'Contratos lançados no ERP', LANDSCAPE_CENTER_WIDTH);
   const totalContrato = rows.reduce((s, x) => s + (Number(x['TOTAL DO CONTRATO']) || 0), 0);
@@ -1101,11 +1168,11 @@ function buildGerenciaisSection(gerenciais) {
   const completa = tem('FORNECEDOR') && tem('DATA PREVISTA');
   const columns = completa
     ? [
-        { key: 'ITEM', label: 'Item', width: 85 },
-        { key: 'ALOCAÇÃO', label: 'Alocação', width: 105 },
-        { key: 'FORNECEDOR', label: 'Fornecedor', width: 145 },
-        { key: 'DATA PREVISTA', label: 'Data Prevista', width: 75, format: fmtDate },
-        { key: 'VALOR PREVISTO', label: 'Valor Previsto', width: 90, format: fmtBRL, align: 'right' },
+        { key: 'ITEM', label: 'Item', width: 72 },
+        { key: 'ALOCAÇÃO', label: 'Alocação', width: 90 },
+        { key: 'FORNECEDOR', label: 'Fornecedor', width: 135 },
+        { key: 'DATA PREVISTA', label: 'Data Prevista', width: 68, format: fmtDate },
+        { key: 'VALOR PREVISTO', label: 'Valor Previsto', width: 80, format: fmtBRL, align: 'right' },
       ]
     : [
         { key: 'ITEM', label: 'Item', width: '*' },
@@ -1195,14 +1262,19 @@ function buildDocDefinition(data, logo, options, ordem) {
   // Só o que já foi pago entra no histórico. O a pagar tem seção própria.
   const pagos = data.detalhado.pagamentos.rows.filter(x => Number(x.PAGO) > 0);
 
+  // Calculada da Tabela1, para funcionar com qualquer planilha.
+  const prov = montaProvisionados(data.detalhado, data.resumo.periodo);
+  const foraDoPeriodo = !isEmpty(data.resumo.aPagarForaPeriodo)
+    ? data.resumo.aPagarForaPeriodo
+    : calculaForaDoPeriodo(data.detalhado, data.resumo.periodo);
+
   const construtores = {
     resumo: () => buildResumoSection(data.resumo, {
-      provisionados: enabled('provisionados') && !!(data.detalhado.provisionados && data.detalhado.provisionados.rows.length),
+      provisionados: enabled('provisionados') && !!prov.rows.length,
       gerenciais: enabled('gerenciais') && !!data.detalhado.gerenciais.rows.length,
+      foraDoPeriodo,
     }),
-    provisionados: () => (data.detalhado.provisionados && data.detalhado.provisionados.rows.length
-      ? buildProvisionadosSection(data.detalhado.provisionados, data.resumo.periodo)
-      : null),
+    provisionados: () => (prov.rows.length ? buildProvisionadosSection({ rows: prov.rows }, data.resumo.periodo) : null),
     gerenciais: () => (data.detalhado.gerenciais.rows.length ? buildGerenciaisSection(data.detalhado.gerenciais) : null),
     pagamentos: () => (pagos.length ? buildPagamentosSection({ rows: pagos }) : null),
     contratos: () => (data.detalhado.contratos.rows.length ? buildContratosSection(data.detalhado.contratos) : null),
@@ -1469,14 +1541,16 @@ async function generatePdf(file) {
     const detalhado = extractDetalhado(wb);
     const logo = await extractLogo(arrayBuffer);
 
-    // Avisa o que esta planilha não tem, em vez de entregar um PDF com seção
-    // faltando sem explicação. A planilha da versão 1 cai aqui.
+    // Avisa o que esta planilha não entrega, em vez de deixar o PDF sair com
+    // menos informação sem explicação nenhuma.
     const omitidas = [];
-    if (options.provisionados && !detalhado.provisionados) {
-      omitidas.push('Pagamentos provisionados no sistema (a planilha não tem essa tabela na aba Detalhado)');
+    const prov = montaProvisionados(detalhado, resumo.periodo);
+    if (options.provisionados && prov.aviso) omitidas.push(prov.aviso);
+    if (options.provisionados && !prov.rows.length && !prov.aviso) {
+      omitidas.push('Nenhum pagamento a pagar com data dentro do período de ' + fmtDate(resumo.periodo.de) + ' até ' + fmtDate(resumo.periodo.ate) + ', então a tabela de provisionados não entrou.');
     }
     if (options.gerenciais && detalhado.gerenciais.presentes && !detalhado.gerenciais.presentes.includes('FORNECEDOR')) {
-      omitidas.push('Fornecedor e data prevista dos pagamentos gerenciais (colunas ausentes na planilha)');
+      omitidas.push('Fornecedor e data prevista dos pagamentos gerenciais, colunas que só existem no modelo novo.');
     }
 
     const docDefinition = buildDocDefinition({ resumo, eap, detalhado }, logo, options, estadoSecoes.ordem);
@@ -1489,7 +1563,7 @@ async function generatePdf(file) {
 
     pdfMake.createPdf(docDefinition).download(filename);
     if (omitidas.length) {
-      setGenStatus('info', 'PDF gerado, o download deve começar automaticamente.\nFicou de fora, porque esta planilha não tem:\n- ' + omitidas.join('\n- ') + '\nBaixe a planilha modelo desta versão para ter essas seções.');
+      setGenStatus('info', 'PDF gerado, o download deve começar automaticamente.\nPontos de atenção:\n- ' + omitidas.join('\n- '));
     } else {
       setGenStatus('success', 'PDF gerado com sucesso! O download deve começar automaticamente.');
     }

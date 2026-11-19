@@ -50,7 +50,7 @@ Não dependem de um sistema de cronograma. Cada uma lê a planilha, o PDF ou o r
 
 - **[Efetivo de Obra](https://mateusm23.github.io/FERRAMENTAS/Outros/Efetivo%20de%20Obra/EFETIVO%20DE%20OBRA.html)** (v1 · 01/08/2026)  
   Refino dos relatórios gerados pelo sistema Secullum, cruza o Cadastro de Pessoas com o relatório de Acesso por Equipamento (catraca/facial) e calcula quantas pessoas trabalharam em cada obra, por dia e por empreiteiro.
-- **[Chamada de Aporte Semanal](https://mateusm23.github.io/FERRAMENTAS/Outros/Chamada%20de%20Aporte%20Semanal/CHAMADA%20DE%20APORTE%20SEMANAL.html)** (v1 e v2 beta · 14/11/2026)  
+- **[Chamada de Aporte Semanal](https://mateusm23.github.io/FERRAMENTAS/Outros/Chamada%20de%20Aporte%20Semanal/CHAMADA%20DE%20APORTE%20SEMANAL.html)** (v1 e v2 beta · 19/11/2026)  
   Sobe a planilha do modelo de Chamada de Aporte Semanal e gera um PDF no mesmo padrão visual do Excel: Resumo Gerencial, Controle de EAP (sintético e analítico) e histórico de pagamentos e contratos, com seções configuráveis. Abre na escolha entre a versão em uso e a versão 2, em teste.
 - **[Conversor de Verbas Rescisórias](https://mateusm23.github.io/FERRAMENTAS/Outros/Conversor%20de%20Verbas%20Rescis%C3%B3rias/CONVERSOR%20DE%20VERBAS%20RESCISORIAS.html)** (v1 · 25/09/2026)  
   Sobe o PDF "Simulação de rescisão de contrato de trabalho" do UAU! e exporta um Excel tabulado, uma linha por funcionário, com conferência automática contra os totais do PDF e abas por empresa ou por obra, se preferir.

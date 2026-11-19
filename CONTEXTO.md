@@ -817,6 +817,161 @@ linha está vazia, cada linha limpa viraria uma linha fantasma no PDF.
 botão próprio de download na ferramenta, para gerar um PDF sem precisar preencher nada.
 Passou pela varredura de nome de cliente antes de entrar no repositório.
 
+### Fórmulas alinhadas com o arquivo real (2026-11-19)
+
+O Mateus mudou fórmulas no arquivo que usa de verdade e pediu para o modelo
+acompanhar. Comparação feita casando as linhas pelo rótulo da coluna B, porque o
+arquivo real está deslocado duas linhas em relação ao modelo (ele apagou linhas
+nos blocos de identificação, o mesmo motivo que fez a leitura ser por rótulo).
+
+Três mudanças reais, agora no modelo:
+
+| Onde | Antes | Agora |
+|---|---|---|
+| `E21`, fim do período | digitado | `=C21+3` |
+| `C22`, data do aporte | digitado | `=C21` |
+| `E36`, valor do aporte | `=E32+E33-E29` | `=IF(E32+E33-E29<0,0,E32+E33-E29)` |
+
+O resto do que parecia diferente era a mesma fórmula com referência deslocada.
+
+- O período passou a ser uma **janela de 4 dias** (início mais 3), e não mais uma
+  semana. Por isso o título do bloco virou "a pagar no período da chamada" e sumiu
+  a palavra semana dos textos da ferramenta. O nome da ferramenta continua Chamada
+  de Aporte Semanal, que é a periodicidade da reunião, não a janela de pagamento.
+- O piso em zero do aporte foi provado com três saldos: 50.000 dá aporte de 320.000,
+  500.000 dá zero (sem o piso seria -130.000) e 370.000, exatamente no limite, dá zero.
+- O preenchimento de teste parou de escrever em `E21`, senão sobrescreve a fórmula.
+  Vale a mesma regra para quem for usar: digitar só a data inicial.
+- **Formato do derrame agora vai até o fim da coluna.** O limite anterior era a linha
+  305, e a Tabela1 do arquivo real tem 741 linhas. Da linha 306 para baixo a lista
+  perderia o formato de data e de moeda.
+
+**O que o arquivo real mostrou, lido pela própria ferramenta** (local, nada saiu da
+máquina): a Tabela1 tem 741 linhas, das quais 366 já pagas. O a pagar do período é
+R$ 873.201,88, mas o a pagar somado de todas as datas é R$ 2.857.956,54. Ou seja,
+quase R$ 2 milhões estão lançados para fora da janela. Na versão 1 esse total
+aparecia no rodapé do histórico, ao lado de um aporte pedido de R$ 923.201,88, que é
+a origem da confusão relatada pela obra. Na v2 o histórico mostra só o que foi pago e
+o que ficou para depois aparece em linha própria do resumo.
+
+**Pontos do arquivo real para o Mateus decidir**, não alterados por aqui:
+
+- O saldo bancário está vazio nessa semana, então o aporte sai sem abater saldo.
+- `G28` repete a mesma `SUMIFS` de `E28`, sem rótulo, e `I30` e `I32` são fórmulas
+  órfãs (`SUM(I28:I29)` e `I30-I31`) em células sem cabeçalho. Parecem resíduo de
+  edição e não afetam nenhum resultado.
+- O arquivo ainda é da estrutura antiga: três blocos na aba Detalhado, Tabela3 com
+  três colunas e os rótulos antigos no resumo. A migração para a estrutura da v2 é
+  o passo que falta, e o mesmo script de montagem faz isso em cópia.
+
+### A lista virou uma fórmula só, e o que não foi copiado do arquivo real (2026-11-19)
+
+O Mateus montou a própria versão do bloco no arquivo dele, com **uma** fórmula
+`CHOOSECOLS(FILTER(Tabela1[]; ...); 7;5;8;9;11)` derramando as cinco colunas de uma
+vez, em vez das cinco `FILTER` separadas. O modelo passou a usar uma fórmula só,
+que é mais simples de manter, com três diferenças deliberadas:
+
+- **A posição das colunas vem de `MATCH` no cabeçalho da Tabela1**, não de número
+  fixo. Índice fixo (7,5,8,9,11) troca o dado de coluna em silêncio quando o UAU
+  muda a ordem do export, deixando o cabeçalho certo por cima do conteúdo errado.
+  É a regra que os próprios templates já tinham aprendido em outra ferramenta.
+- **A condição `A_PAGAR > 0` fica.** Sem ela, uma parcela já paga com data dentro
+  do período entra na lista do cliente com valor zero. O total não muda, porque
+  zero não soma, mas a tabela enche de linha sem sentido.
+- **Total e conferência usam a âncora do derrame** (`CHOOSECOLS($AH$6#, ...)`), e não
+  um intervalo fixo. No arquivo real a conferência somava `AK6:AK180` e o total
+  somava `AK6:AK1048`, dois limites diferentes e ambos fixos: passando de 180 linhas,
+  a conferência diria que diverge sem divergir.
+
+Também veio do arquivo dele uma correção que o modelo não tinha: a coluna CHAVE
+agora é `IFERROR(CONCAT(...), "")`. Sem isso, um serviço cujo nome não tem espaço
+quebra a chave com `#VALOR!`, e é por essa chave que o Controle EAP soma o pago.
+
+**Saíram do modelo** as fórmulas `=C21+3` e `=C21`, que tinham entrado na rodada
+anterior: no arquivo seguinte do Mateus elas já não existiam e a janela passou de 4
+para 8 dias. Não há fórmula que sirva sempre, então o fim do período e a data do
+aporte voltaram a ser digitados.
+
+**O que não foi copiado do arquivo real, de propósito:** `G28`, `I30` e `I32` no
+resumo (resíduo de edição, sem rótulo), `I4` no Controle EAP (conferência com o
+orçamento do cliente escrito dentro da fórmula), contas manuais dentro de células de
+valor (`=43443,71/2`) e as mudanças de estrutura da aba Controle EAP, onde o arquivo
+dele tem uma coluna a menos e nenhuma linha de total. O modelo lê o total em `I6`
+porque ali existe uma linha de total explícita; no arquivo dele funciona por
+coincidência, porque a linha 6 é o item de nível 1.
+
+**Consequência para a migração:** o bloco novo no arquivo dele está na coluna AG e no
+modelo está em AH, porque a tabela gerencial do modelo tem duas colunas a mais. Ao
+migrar, o script precisa reaproveitar ou remover o bloco AG, senão a obra fica com a
+lista duplicada.
+
+### Largura de tabela: o recheio da célula entra na conta (2026-11-19)
+
+A tabela de provisionados saiu encostada na borda direita, sem margem. Causa: o
+pdfmake trata a largura declarada de cada coluna como largura do **conteúdo** e soma
+o recheio da célula por cima. No layout de grade daqui são 5pt de cada lado, ou seja,
+**10pt por coluna**. A tabela declarava 500pt em 5 colunas e ocupava 550pt numa área
+útil de 515pt.
+
+Essa é também a explicação do vazamento em paisagem que antes tinha sido só
+contornado com folga (`LANDSCAPE_CENTER_WIDTH = 730`). Agora a conta é explícita:
+`PADDING_CELULA = 10`, somado em toda conta de largura e de centralização, e as
+constantes voltaram a ser a largura útil real da página (515.28 e 761.89).
+
+Larguras refeitas, já com o recheio: provisionados e gerenciais 445 + 50 = 495pt de
+515pt; histórico de pagamentos 667 + 60 = 727pt de 762pt; contratos 648 + 80 = 728pt
+de 762pt. Tabelas com coluna fluida (`*`), como o EAP e os cartões do resumo, não
+entram nessa conta porque o pdfmake ajusta sozinho.
+
+**Como isso passou batido antes:** o teste somava só as larguras declaradas, a mesma
+conta errada que o código fazia, então concordava com o defeito. O teste agora **mede
+o PDF renderizado**: converte cada página em imagem cinza a 72 dpi, onde um pixel é um
+ponto, e acha a primeira e a última coluna com tinta. Resultado atual das 17 páginas do
+exemplo: 40pt de margem dos dois lados, em todas.
+
+Lição: teste que repete a conta do código não testa nada. Para geometria, medir o
+arquivo final.
+
+### Modelo inchou de 105 KB para 20 MB (2026-11-19)
+
+Para o formato de data e de moeda valer em toda a extensão do derrame, a formatação
+tinha sido colada em coluna inteira. Colar formato em coluna inteira **materializa um
+milhão de células** por coluna, e o modelo foi de 105 KB para 20 MB, levando o exemplo
+junto. Trocado por formato de número aplicado à coluna (`EntireColumn.NumberFormat`),
+que fica num único atributo do bloco `<cols>`: arquivo de volta a 98 KB, e conferido
+que o formato continua valendo nas linhas 300, 741 e 5000.
+
+### A lista de provisionados passou a ser calculada, não lida (2026-11-19)
+
+No primeiro uso real o PDF saiu **sem** a tabela de provisionados. Motivo: a
+ferramenta lia a tabela de um bloco pronto da aba Detalhado, e a planilha de
+produção não tem esse bloco, porque ainda é da estrutura antiga.
+
+A lista agora é **calculada da Tabela1**, com a mesma regra da linha do resumo: a
+pagar maior que zero e data de pagamento dentro do período. Com isso qualquer
+planilha gera o PDF completo, nova ou antiga, e a tabela nunca mais depende de o
+arquivo ter sido migrado. O mesmo vale para a linha do a pagar que fica para
+depois do período: vem da planilha quando existe, senão é calculada.
+
+O bloco na planilha continua valendo, para auditar dentro do Excel, e virou
+**conferência**: se o total dele divergir do cálculo sobre a Tabela1, a tela avisa,
+em vez de escolher um dos dois em silêncio.
+
+Provado contra o arquivo real: 65 linhas na lista, somando R$ 873.201,88, igual à
+linha do resumo, e R$ 1.612.686,03 de a pagar lançado para depois do período. E
+travado por um teste que monta uma planilha da estrutura antiga com pagamentos no
+período e exige que a seção apareça.
+
+Lição: toda seção do PDF deve depender do dado bruto que a planilha sempre tem, e
+não de um bloco auxiliar que só existe depois de migrar o arquivo.
+
+**Dado real dentro da pasta do repositório.** O arquivo `Chamada de Aporte - 19.11.xlsx`
+chegou solto em `v2/`, com nome de cliente, fornecedores e valores reais, e sem nenhuma
+regra que o impedisse de entrar num commit. Entrou no `.gitignore` o padrão
+`**/Chamada de Aporte Semanal/**/Chamada de Aporte*.xlsx`, que protege os arquivos reais
+preenchidos sem pegar o `Modelo_` nem o `Exemplo_`. O lugar certo dele é fora do
+repositório.
+
 ## Conversor de Verbas Rescisórias (Outros)
 
 Arquivo: `Outros/Conversor de Verbas Rescisórias/CONVERSOR DE VERBAS RESCISORIAS.html`.

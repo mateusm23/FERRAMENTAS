@@ -15,3 +15,7 @@ EXEMPLO DE BASE DE DADOS.xlsx
 **/EQUIVALENCIAS*.txt
 **/Base UAU*.xlsx
 **/notas-de-despesa*.csv
+
+# Chamada de Aporte: arquivos reais preenchidos de obra (dado de cliente), nunca versionar.
+# O modelo (Modelo_*) e o exemplo ficticio (Exemplo_*) continuam versionados.
+**/Chamada de Aporte Semanal/**/Chamada de Aporte*.xlsx
